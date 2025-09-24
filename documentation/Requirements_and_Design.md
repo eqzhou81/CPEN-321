@@ -10,7 +10,11 @@
 
 ## 2. Project Description
 
-[WRITE_PROJECT_DESCRIPTION_HERE]
+Currently, people have difficulty finding job-relevant coding practice/system design
+questions to do, so it is hard to prepare for the specific job one is applying for, especially
+under time constraints. With AI integration that is able to parse through job descriptions
+and find relevant coding/system design questions to help you practice, get the most out
+of your time!
 
 ---
 
@@ -124,3 +128,4 @@
 1. [**[WRITE_NAME_HERE]**](#nfr1)
     - **Validation**: ...
 2. ...
+
