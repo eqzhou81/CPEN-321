@@ -22,6 +22,14 @@ of your time!
 
 ### **3.1. List of Features**
 
+1. Authentication
+2. Manage job applications: upload/paste job descriptions links.
+3. Question Generation/Query: generate behavioural/ technical role-specific questions
+4. Suggest a Similar job posting: Based on the job that the user provided, suggest similar positions
+5. Manage Forums: users can create or join forum discussions. After joining or creating a forum, the user can discuss with others their experiences regarding similar interviews 
+6. Progress Tracker: Users can input their progress on the generated questions, to complete the list of questions provided to them. Their progress on the list of generated questions is tracked by the app.
+7. Mock interview for behavioural questions: Users will be redirected to another screen where they can answer and get feedback on behavioural questions
+
 
 ### **3.2. Use Case Diagram**
 
@@ -128,4 +136,5 @@ of your time!
 1. [**[WRITE_NAME_HERE]**](#nfr1)
     - **Validation**: ...
 2. ...
+
 
