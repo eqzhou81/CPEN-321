@@ -10,11 +10,10 @@
 
 ## 2. Project Description
 
-Currently, people have difficulty finding job-relevant coding practice/system design
-questions to do, so it is hard to prepare for the specific job one is applying for, especially
-under time constraints. With AI integration that is able to parse through job descriptions
-and find relevant coding/system design questions to help you practice, get the most out
-of your time!
+Struggling to find relevant interview questions is a thing of the past. Our AI-powered platform tackles this by taking your uploaded job descriptions and generating a highly tailored set of practice materials. This includes role-specific coding challenges, system design problems, and behavioral interview questions. To ensure you're interview-ready, you can input and track your progress against these personalized lists using the progress tracker, and refine your soft skills with the mock interview, which provides instant feedback to hone your behavioural question delivery.
+
+This comprehensive tool extends beyond just preparation by helping users discover new opportunities and build community. Based on the initial job information provided, the platform intelligently suggests comparable roles, broadening the user's career search and expanding their practice scope. Furthermore, users can engage in peer-to-peer learning by creating or joining discussion groups, allowing them to share recent interview experiences, discuss preparation strategies, and exchange insights with others pursuing similar roles. This integrated approach ensures a personalized, efficient, and collaborative journey toward securing their desired position.
+
 
 ---
 
@@ -22,13 +21,41 @@ of your time!
 
 ### **3.1. List of Features**
 
-1. Authentication
-2. Manage job applications: upload/paste job descriptions links.
-3. Question Generation/Query: generate behavioural/ technical role-specific questions
-4. Suggest a Similar job posting: Based on the job that the user provided, suggest similar positions
-5. Manage Forums: users can create or join forum discussions. After joining or creating a forum, the user can discuss with others their experiences regarding similar interviews 
-6. Progress Tracker: Users can input their progress on the generated questions, to complete the list of questions provided to them. Their progress on the list of generated questions is tracked by the app.
-7. Mock interview for behavioural questions: Users will be redirected to another screen where they can answer and get feedback on behavioural questions
+1. Authentication: To access app features, a user must Sign In using Google Authentication Service first. New users should Sign Up before Signing In. An authenticated user can Sign Out. Users can also remove their account.
+
+2. Manage job applications: This feature allows users to build a personalized database of job opportunities they're interested in. Users can upload job description documents directly to the app or paste links to job postings from various career websites. The system stores and organizes these job applications, making them easily accessible for reference during interview preparation. This creates a centralized hub where users can track all their potential opportunities and use them as input for generating relevant interview questions.
+
+3. Generate questions: For each job application, the user can request relevant coding and behavioral questions. Upon request, the app generates a curated set of interview questions by leveraging a Selenium web scraper and a community LeetCode API to gather coding and system-level questions tailored to the job description. The app then displays two options: Coding Questions and Behavioral Questions.
+
+If the user selects Coding Questions, the app displays a list of relevant coding and system-level questions. When the user taps on a question, they are redirected to the appropriate external platform (e.g., LeetCode, HackerRank) where they can practice and solve the problem in a real coding environment.
+
+If the user selects Behavioral Questions, the app displays a list of relevant behavioral questions along with a "Start Mock Interview" button. When the user taps the button, the app initiates a mock interview session where they can answer the behavioral questions and receive detailed feedback on their responses.
+
+4. Mock Interviews: A user can start a mock interview session for behavioral questions. When the user taps the "Start Mock Interview" button, the app redirects them to a dedicated mock interview screen where the behavioral questions are displayed one at a time.
+
+The user can type or record their answer to each behavioral question. After submitting an answer, the app analyzes the response and provides detailed feedback, highlighting strengths and areas for improvement based on common interview best practices.
+
+The user can proceed through all the behavioral questions in the mock interview session. Once the session is complete, the app displays a summary of the user's performance, including feedback for each question and an overall assessment of their responses.
+
+5. Progress Tracker: A user can track their progress on the generated questions for each job application. When viewing the list of coding or behavioral questions, the user can mark individual questions as complete after practicing or solving them.
+
+The app automatically tracks the user's progress, displaying the number of completed questions out of the total generated questions. The user can view their overall progress as a percentage or completion count (e.g., "5/10 questions completed").
+
+If the user marks a question as complete while viewing the progress tracker, the completion status and progress percentage are automatically updated in real-time, allowing the user to monitor their preparation progress for each job application.
+
+
+6. Find similar jobs: For each job application, the user can search for similar job postings. Upon request, the app uses a Selenium web scraper to search for job positions with the same or similar titles currently available on the market. The app then calculates the distance between each job location and the user's location to filter for nearby opportunities, as well as identifies remote positions.
+
+The app displays a curated list of similar job postings, showing both local opportunities within the user's vicinity and remote positions. When the user taps on a job posting, the app displays the full job details, including the company name, job description, location, and a link to apply. The user can then choose to save the job posting to their job applications or apply directly through the external link.
+
+7. Manage Discussions: A user can create a group discussion and become its owner. When creating a discussion, the discussion owner provides the group topic (e.g., "Amazon SDE Interview" or "Google Behavioral Tips").
+
+After creating the discussion, the owner can view group details such as the discussion topic, the number of participants, and their role in the discussion ("owner"). The owner can also delete groups they own.
+
+Any user can browse a list of active discussions and join discussions relevant to their job search. When joining a discussion, the user can view the discussion topic, participant list, and previous messages. 
+
+Users can then post messages to share their interview experiences, ask questions, and engage with others who have applied to similar positions or companies. If a new user joins the discussion or posts a message while it is being viewed by another user, the participant list are automatically updated in real-time, ensuring all members stay synchronized with the latest activity.
+
 
 
 ### **3.2. Use Case Diagram**
