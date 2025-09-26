@@ -498,6 +498,47 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 ### **4.5. Dependencies Diagram**
 
+@startuml
+skinparam componentStyle rectangle
+skinparam wrapWidth 220
+title Dependencies / Components
+
+actor User
+
+package "Backend (Express.js API)" {
+  [Application API]
+  [Users Component]
+  [Job Postings Component]
+  [Question Bank Component]
+  [Mock Interview Component]
+  [Discussion Component]
+}
+
+database "MongoDB" as DB
+
+User --> [Application API]
+
+[Application API] --> [Users Component]
+[Application API] --> [Job Postings Component]
+[Application API] --> [Question Bank Component]
+[Application API] --> [Mock Interview Component]
+[Application API] --> [Discussion Component]
+
+[Users Component] --> DB
+[Job Postings Component] --> DB
+[Question Bank Component] --> DB
+[Mock Interview Component] --> DB
+[Discussion Component] --> DB
+
+[Application API] ..> (Google OAuth API)
+[Question Bank Component] ..> (OpenAI API)
+[Question Bank Component] ..> (Community LeetCode API)
+[Mock Interview Component] ..> (OpenAI API)
+[Job Postings Component] ..> (Job Search API)
+
+@enduml
+
+
 
 ### **4.6. Use Case Sequence Diagram (5 Most Major Use Cases)**
 1. [**[WRITE_NAME_HERE]**](#uc1)\
@@ -509,6 +550,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 1. [**[WRITE_NAME_HERE]**](#nfr1)
     - **Validation**: ...
 2. ...
+
 
 
 
