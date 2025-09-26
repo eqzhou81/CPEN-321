@@ -347,34 +347,153 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 ---
 
-## 4. Designs Specification
-### **4.1. Main Components**
-1. **[WRITE_NAME_HERE]**
-    - **Purpose**: ...
-    - **Interfaces**: 
-        1. ...
-            - **Purpose**: ...
-        2. ...
-2. ...
-
-
-### **4.2. Databases**
-1. **[WRITE_NAME_HERE]**
-    - **Purpose**: ...
-2. ...
-
-
-### **4.3. External Modules**
-1. **[WRITE_NAME_HERE]** 
-    - **Purpose**: ...
-2. ...
-
-
-### **4.4. Frameworks**
-1. **[WRITE_NAME_HERE]**
-    - **Purpose**: ...
-    - **Reason**: ...
-2. ...
+*   ###   
+    
+    ### 4.1. Main Components
+    
+    ### 
+    
+    1.  **Users Component**
+        
+        *   **Purpose:** Manage user authentication, store profile data, and track user activity across job applications and discussions.
+            
+        *   **Interfaces:**
+            
+            *   Google OAuth API (for sign in/out).
+                
+            *   Database collections (`users`, `sessions`).
+                
+    2.  **Job Postings Component**
+        
+        *   **Purpose:** Store and manage job applications entered by users, either by copy-pasting text or pasting links. Provides searchable and filterable portfolio of jobs.
+            
+        *   **Interfaces:**
+            
+            *   Job Search API (to retrieve similar jobs).
+                
+            *   Database collections (`jobApplications`).
+                
+    3.  **Question Bank Component**
+        
+        *   **Purpose:** Manage generated technical and behavioral questions, track completion status, and progress.
+            
+        *   **Interfaces:**
+            
+            *   Community LeetCode API (fetch coding questions).
+                
+            *   OpenAI API (generate behavioral questions).
+                
+            *   Database collections (`questions`, `answers`).
+                
+    4.  **Mock Interview Component**
+        
+        *   **Purpose:** Deliver behavioral questions in a session, capture user responses, send them to OpenAI API for feedback, and compile performance summaries.
+            
+        *   **Interfaces:**
+            
+            *   OpenAI API.
+                
+            *   Database collections (`sessions`, `answers`).
+                
+    5.  **Discussion Component**
+        
+        *   **Purpose:** Provide chat-style rooms for peer-to-peer discussions on interview preparation.
+            
+        *   **Interfaces:**
+            
+            *   Database collections (`discussions`, `messages`).
+                
+    6.  **Web Scraper Component**
+        
+        *   **Purpose:** Extract job information from links provided by the user when uploading a posting.
+            
+        *   **Interfaces:**
+            
+            *   Job posting websites.
+                
+            *   Database (`jobApplications`).
+                
+    
+    * * *
+    
+    ### 4.2. Databases
+    
+    ### 
+    
+    *   **MongoDB** (NoSQL database)
+        
+    
+    Collections:
+    
+    1.  **users**
+        
+        *   **Purpose:** Store user authentication info, profile data, and ownership of content.
+            
+    2.  **jobApplications**
+        
+        *   **Purpose:** Contain uploaded job postings, including title, company, description, tags.
+            
+    3.  **questions**
+        
+        *   **Purpose:** Store technical/system design/behavioral questions, with status (pending, completed).
+            
+    4.  **sessions**
+        
+        *   **Purpose:** Track active mock interview sessions and their state.
+            
+    5.  **answers**
+        
+        *   **Purpose:** Store user-submitted answers and AI-generated feedback.
+            
+    6.  **discussions**
+        
+        *   **Purpose:** Contain discussion room metadata.
+            
+    7.  **messages**
+        
+        *   **Purpose:** Store chat content (user messages inside discussions).
+            
+    
+    * * *
+    
+    ### 4.3. External Modules
+    
+    ### 
+    
+    1.  **Community LeetCode API**
+        
+        *   **Purpose:** Retrieve coding and system design questions relevant to job postings.
+            
+    2.  **Google OAuth API**
+        
+        *   **Purpose:** Manage user authentication and sign-in with Google accounts.
+            
+    3.  **OpenAI API**
+        
+        *   **Purpose:** Generate behavioral interview questions from job descriptions and provide feedback on user answers.
+            
+    4.  **Job Search API**
+        
+        *   **Purpose:** Fetch similar job postings from external job boards.
+            
+    
+    * * *
+    
+    ### 4.4. Frameworks
+    
+    ### 
+    
+    1.  **Express.js**
+        
+        *   **Purpose:** Backend framework for API routing and business logic.
+            
+        *   **Reason:** Lightweight, scalable, and familiar to the development team.
+            
+    2.  **Azure VM**
+        
+        *   **Purpose:** Host backend services and database in the cloud.
+            
+        *   **Reason:** Strong support for scalability and the team’s prior experience.
 
 
 ### **4.5. Dependencies Diagram**
@@ -390,6 +509,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 1. [**[WRITE_NAME_HERE]**](#nfr1)
     - **Validation**: ...
 2. ...
+
 
 
 
