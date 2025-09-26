@@ -61,8 +61,15 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 
 ### **3.3. Actors Description**
-1. User (primary actor): ...
-2. **[WRITE_NAME_HERE]**: ...
+*   **User (Candidate):** The primary actor who uses the platform to manage job applications, generate tailored interview questions, practice technical and behavioral answers, and participate in discussions.
+    
+*   **OpenAI API:** External service responsible for generating behavioral interview questions and providing feedback on user responses in mock interviews.
+    
+*   **Community LeetCode API:** External service that supplies technical coding and system design questions relevant to specific job postings.
+    
+*   **Job Search API:** External service used to search and fetch similar job postings from the internet.
+    
+*   **Discussion Participants (Peers):** Other authenticated users who join and contribute to discussion groups by sharing interview experiences and insights.
 
 ### **3.4. Use Case Description**
 - Use cases for feature 1: Authentication 
@@ -248,5 +255,6 @@ Any user can browse a list of active discussions and find discussions relevant t
 1. [**[WRITE_NAME_HERE]**](#nfr1)
     - **Validation**: ...
 2. ...
+
 
 
