@@ -196,7 +196,142 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 <a name="uc2"></a>
 
-#### Use Case 2: [WRITE_USE_CASE_2_NAME_HERE]
+<a name="uc2"></a>
+
+#### Use Case 2: Start Mock Interview Session  
+
+**Description**: The user begins a mock interview session and the system loads behavioral questions.  
+
+**Primary actor(s)**: User  
+
+**Secondary actor(s)**: OpenAI API  
+
+**Preconditions:**  
+- User is authenticated and logged in.  
+- User has generated behavioral questions for at least one job.  
+
+**Post-conditions:**  
+- Mock interview session is active.  
+- First behavioral question is displayed to the user.  
+
+**Main success scenario**:  
+1. User selects a job application.  
+2. User clicks on **Start Mock Interview**.  
+3. System retrieves associated behavioral questions.  
+4. System loads interview session UI and displays the first question.  
+
+**Failure scenario(s)**:  
+- 1a. No behavioral questions exist for this job:  
+  - 1a1. System displays: *“No interview questions available. Please generate questions first.”*  
+- 2a. Session initialization fails:  
+  - 2a1. System shows error: *“Unable to start mock interview, please try again later.”*  
+- 3a. API retrieval error:  
+  - 3a1. System displays: *“Failed to fetch questions. Retry?”*  
+
+---
+
+<a name="uc3"></a>
+
+#### Use Case 3: Submit Answer for Feedback  
+
+**Description**: The user submits a typed behavioral answer, and the system analyzes it using the OpenAI API.  
+
+**Primary actor(s)**: User  
+
+**Secondary actor(s)**: OpenAI API  
+
+**Preconditions:**  
+- A mock interview session is active.  
+
+**Post-conditions:**  
+- Answer is stored.  
+- Feedback is displayed to the user.  
+- Question is marked as completed in progress tracker.  
+
+**Main success scenario**:  
+1. User types their response into the answer field.  
+2. User clicks **Submit**.  
+3. System sends response text to OpenAI API.  
+4. API returns structured feedback.  
+5. System stores answer and feedback.  
+6. System displays feedback to the user.  
+
+**Failure scenario(s)**:  
+- 1a. Empty response submitted:  
+  - 1a1. System shows: *“Answer cannot be empty.”*  
+- 2a. API timeout or failure:  
+  - 2a1. System displays: *“Unable to analyze your answer. Please try again.”*  
+- 3a. Storage failure:  
+  - 3a1. System shows: *“Feedback could not be saved. Retry?”*  
+
+---
+
+<a name="uc4"></a>
+
+#### Use Case 4: Redirect to External Platform  
+
+**Description**: When the user selects a technical question, the system opens the original problem page on LeetCode/HackerRank.  
+
+**Primary actor(s)**: User  
+
+**Secondary actor(s)**: Community LeetCode API  
+
+**Preconditions:**  
+- Technical questions have already been generated.  
+
+**Post-conditions:**  
+- The problem link is opened in a new browser tab.  
+
+**Main success scenario**:  
+1. User navigates to the list of technical questions.  
+2. User clicks on a question.  
+3. System retrieves the stored problem URL.  
+4. System opens the URL in a new tab/window.  
+
+**Failure scenario(s)**:  
+- 1a. URL is missing or corrupted:  
+  - 1a1. System displays: *“Problem link not available.”*  
+- 2a. External site down:  
+  - 2a1. System shows: *“The coding platform is currently unavailable.”*  
+- 3a. Browser fails to open new tab:  
+  - 3a1. System retries or displays: *“Unable to redirect. Open manually via link.”*  
+
+---
+
+<a name="uc5"></a>
+
+#### Use Case 5: Find Similar Jobs  
+
+**Description**: The user requests similar job postings, and the system retrieves them from the Job Search API.  
+
+**Primary actor(s)**: User  
+
+**Secondary actor(s)**: Job Search API  
+
+**Preconditions:**  
+- User is authenticated.  
+- At least one job application exists in the user’s portfolio.  
+
+**Post-conditions:**  
+- A list of similar jobs is displayed, filtered by location and remote availability.  
+
+**Main success scenario**:  
+1. User selects a saved job application.  
+2. User clicks **Find Similar Jobs**.  
+3. System sends job title, skills, and location to Job Search API.  
+4. API returns a list of similar jobs.  
+5. System filters results (remote + nearby) and displays list to the user.  
+
+**Failure scenario(s)**:  
+- 1a. No job applications exist:  
+  - 1a1. System displays: *“No saved applications. Add a job first.”*  
+- 2a. API call fails:  
+  - 2a1. System shows: *“Unable to fetch similar jobs. Please try again later.”*  
+- 3a. No matching results:  
+  - 3a1. System displays: *“No similar jobs found at this time.”*  
+- 4a. Results parsing error:  
+  - 4a1. System shows: *“Error processing job results.”*  
+
 ...
 
 ### **3.6. Screen Mock-ups**
@@ -255,6 +390,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 1. [**[WRITE_NAME_HERE]**](#nfr1)
     - **Validation**: ...
 2. ...
+
 
 
 
