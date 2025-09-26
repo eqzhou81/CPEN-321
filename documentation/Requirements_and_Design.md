@@ -504,15 +504,27 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 
 ### **4.6. Use Case Sequence Diagram (5 Most Major Use Cases)**
-1. [**[WRITE_NAME_HERE]**](#uc1)\
-[SEQUENCE_DIAGRAM_HERE]
-2. ...
+<img width="1418" height="540" alt="Screenshot 2025-09-26 at 3 44 19 PM" src="https://github.com/user-attachments/assets/ec283ee1-790b-4bc0-8d99-c9c7fec30dea" />
+
+<img width="823" height="430" alt="Screenshot 2025-09-26 at 3 45 37 PM" src="https://github.com/user-attachments/assets/d65f562b-1972-4fbe-896d-4f240880c25a" />
+
+<img width="796" height="394" alt="Screenshot 2025-09-26 at 3 46 34 PM" src="https://github.com/user-attachments/assets/fa00cc4e-490a-4b1e-9c4d-49c861dc0687" />
+
+<img width="935" height="386" alt="Screenshot 2025-09-26 at 3 47 28 PM" src="https://github.com/user-attachments/assets/621f8d6a-5c27-4d50-9d3e-447412d9c345" />
+
+<img width="902" height="391" alt="Screenshot 2025-09-26 at 3 48 19 PM" src="https://github.com/user-attachments/assets/fe91ab5e-c566-4b11-8018-7a2021a66d62" />
+
+
+
+
+
 
 
 ### **4.7. Design and Ways to Test Non-Functional Requirements**
 1. [**[WRITE_NAME_HERE]**](#nfr1)
     - **Validation**: ...
 2. ...
+
 
 
 
