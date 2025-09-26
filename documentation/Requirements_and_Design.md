@@ -117,7 +117,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 **Primary actor(s)**: User
 
-**Secondar actor(s)**: OpenAI API, Community LeetCode API, Google Authentication API
+**Secondar actor(s)**: OpenAI API, Community LeetCode API
 
 **Preconditions:** 
 - User is authenticated and logged into the system
@@ -300,39 +300,98 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 <a name="uc5"></a>
 
-#### Use Case 5: Find Similar Jobs  
+#### Use Case 4: Find Similar and Close-by jobs 
 
-**Description**: The user requests similar job postings, and the system retrieves them from the Job Search API.  
+**Description:** User searches for job postings with similar titles and roles to their saved job application, filtered by proximity to the original job location and remote opportunities.
 
-**Primary actor(s)**: User  
+**Primary Actors:** User  
+**Secondary Actors:** External Job Search Services  
 
-**Secondary actor(s)**: Job Search API  
+**Preconditions:** 
+- User is authenticated and logged into the system
+- User has at least one saved job application
 
-**Preconditions:**  
-- User is authenticated.  
-- At least one job application exists in the user’s portfolio.  
+**Post-conditions:** 
+- User receives a curated list of similar job postings
+- User can view job details and save interesting positions to their saved job applications
+- Search results are temporarily cached for quick access
 
-**Post-conditions:**  
-- A list of similar jobs is displayed, filtered by location and remote availability.  
+**Main Success Scenario:**
+1. User navigates to their job applications list
+2. User selects one of their saved job applications
+3. User clicks on "Find Similar Jobs" button
+4. System retrieves saved job title, key requirements, and location from the selected application
+5. System searches external job sites for similar positions
+6. System calculates distance between each found job location and the original job's location
+7. System filters results for opportunities near the original job location or remote positions
+8. System displays a curated list of similar job postings with location information relative to original job
+9. User taps on a job posting to view full details
+10. User can choose to save the job posting to their saved job applications
 
-**Main success scenario**:  
-1. User selects a saved job application.  
-2. User clicks **Find Similar Jobs**.  
-3. System sends job title, skills, and location to Job Search API.  
-4. API returns a list of similar jobs.  
-5. System filters results (remote + nearby) and displays list to the user.  
+**Failure scenario(s)**:
+- 1a. Job applications list fails to load:
+    - 1a1. System displays error message: "Unable to load job applications. Please check your connection and try again."
 
-**Failure scenario(s)**:  
-- 1a. No job applications exist:  
-  - 1a1. System displays: *“No saved applications. Add a job first.”*  
-- 2a. API call fails:  
-  - 2a1. System shows: *“Unable to fetch similar jobs. Please try again later.”*  
-- 3a. No matching results:  
-  - 3a1. System displays: *“No similar jobs found at this time.”*  
-- 4a. Results parsing error:  
-  - 4a1. System shows: *“Error processing job results.”*  
+- 2a. No saved job applications available:
+    - 2a1. System displays message: "No job applications found. Please add a job application first."
+    - 2a2. System provides option to "Add Job Application"
 
-...
+- 2b. Selected job application cannot be accessed:
+    - 2b1. System displays error message: "Selected job application is no longer available or corrupted."
+
+- 3a. Find Similar Jobs button is unresponsive:
+    - 3a1. System displays error message: "Service temporarily unavailable. Please try again."
+
+- 4a. System fails to retrieve job data:
+    - 4a1. System displays error message: "Unable to retrieve job details. Please try again."
+
+- 4b. Original job location is unavailable:
+    - 4b1. System displays warning: "Original job location not found. Showing all similar positions without location filtering."
+    - 4b2. System continues without location-based filtering
+
+- 4c. Insufficient job information for meaningful search:
+    - 4c1. System displays warning: "Limited job information may result in broad search results."
+    - 4c2. System continues with available information
+
+- 5a. External job search service failure:
+    - 5a1. System displays error message: "Unable to search job sites at this time. Please try again later."
+
+- 5b. Job sites are temporarily unavailable:
+    - 5b1. System displays error message: "Job search services are currently unavailable. Please try again later."
+
+- 6a. Distance calculation fails:
+    - 6a1. System displays warning: "Unable to calculate distances from original job location. Showing all results."
+
+- 6b. Found job locations cannot be processed:
+    - 6b1. System displays warning: "Some job locations could not be processed. Results may be incomplete."
+
+- 7a. Location filtering service failure:
+    - 7a1. System displays warning: "Location filtering unavailable. Showing all results."
+
+- 8a. No similar jobs found:
+    - 8a1. System displays message: "No similar job postings found near the original job location. Try broadening your search criteria or check back later."
+
+- 8b. Results display failure:
+    - 8b1. System displays error message: "Unable to display search results. Please try again."
+
+- 9a. Job posting details cannot be retrieved:
+    - 9a1. System displays error message: "Unable to load job details. This posting may no longer be available."
+
+- 9b. External job site is unresponsive:
+    - 9b1. System displays error message: "Job details temporarily unavailable. Please try again later."
+    - 9b2. User returns to search results list
+
+- 10a. Save job posting fails:
+    - 10a1. System displays error message: "Unable to save job posting. Please try again."
+    - 10a2. User can retry saving or continue browsing other results
+
+- 10b. Duplicate job posting detected:
+    - 10b1. System displays warning: "This job posting is already in your applications."
+    - 10b2. User can continue browsing other results
+
+- 10c. System storage operation fails:
+    - 10c1. System displays error message: "Error occurred while saving. Please try again."
+    - 10c2. User can retry saving or continue browsing other results
 
 ### **3.6. Screen Mock-ups**
 
