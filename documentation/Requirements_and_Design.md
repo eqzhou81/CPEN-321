@@ -141,58 +141,58 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 **Failure scenario(s)**:
 - 1a. Job applications list fails to load:
-    - 1a1. System displays error message: "Unable to load job applications. Please check your connection and try again."
+    - System displays error message: "Unable to load job applications. Please check your connection and try again."
 
 - 2a. No saved job applications available:
-    - 2a1. System displays message: "No job applications found. Please add a job application first."
-    - 2a2. System provides option to "Add Job Application"
+    - System displays message: "No job applications found. Please add a job application first."
+    - System provides option to "Add Job Application"
 
 - 2b. Selected job application cannot be accessed:
-    - 2b1. System displays error message: "Selected job application is no longer available or corrupted."
+    - System displays error message: "Selected job application is no longer available or corrupted."
 
 - 3a. Generate Questions button is unresponsive:
-    - 3a1. System displays error message: "Service temporarily unavailable. Please try again shortly."
+    - System displays error message: "Service temporarily unavailable. Please try again shortly."
 
 - 4a. No job description content available:
-    - 4a1. System displays error message: "Unable to generate questions. Job description is missing or incomplete. Please edit the job application and add job description content."
+    - System displays error message: "Unable to generate questions. Job description is missing or incomplete. Please edit the job application and add job description content."
 
 - 4b. Job description extraction fails:
-    - 4b1. System displays error message: "Unable to process job description. Please try again or contact support."
+    - System displays error message: "Unable to process job description. Please try again or contact support."
 
 - 5a. OpenAI API failure:
-    - 5a1. System displays error message: "Unable to generate behavioral questions at this time."
-    - 5a2. System continues to step 6 to attempt coding questions generation
-    - 5a3. If coding questions are successfully generated, system displays only "Technical Questions" button
-    - 5a4. If both APIs fail, no buttons are displayed and use case terminates unsuccessfully
+    - System displays error message: "Unable to generate behavioral questions at this time."
+    - System continues to step 6 to attempt coding questions generation
+    - If coding questions are successfully generated, system displays only "Technical Questions" button
+    - If both APIs fail, no buttons are displayed and use case terminates unsuccessfully
 
 - 5b. OpenAI API returns no behavioral questions:
-    - 5b1. System displays warning: "No behavioral questions could be generated for this job type."
-    - 5b2. System continues to step 6 to attempt coding questions generation
-    - 5b3. If coding questions are successfully generated, system displays only "Technical Questions" button
-    - 5b4. If no coding questions are generated either, no buttons are displayed and use case terminates unsuccessfully
+    - System displays warning: "No behavioral questions could be generated for this job type."
+    - System continues to step 6 to attempt coding questions generation
+    - If coding questions are successfully generated, system displays only "Technical Questions" button
+    - If no coding questions are generated either, no buttons are displayed and use case terminates unsuccessfully
 
 - 6a. Community LeetCode API failure:
-    - 6a1. System displays error message: "Unable to generate coding questions at this time."
-    - 6a2. If behavioral questions were successfully generated, system displays only "Behavioral Questions" button
-    - 6a3. If both APIs fail, no buttons are displayed and use case terminates unsuccessfully
+    - System displays error message: "Unable to generate coding questions at this time."
+    - If behavioral questions were successfully generated, system displays only "Behavioral Questions" button
+    - If both APIs fail, no buttons are displayed and use case terminates unsuccessfully
 
 - 6b. LeetCode API returns no coding questions:
-    - 6b1. System displays warning: "No relevant coding questions found for this job type."
-    - 6b2. If behavioral questions were successfully generated, system displays only "Behavioral Questions" button
-    - 6b3. If no behavioral questions were generated either, no buttons are displayed and use case terminates unsuccessfully
+    - System displays warning: "No relevant coding questions found for this job type."
+    - If behavioral questions were successfully generated, system displays only "Behavioral Questions" button
+    - If no behavioral questions were generated either, no buttons are displayed and use case terminates unsuccessfully
 
 - 7a. Question processing failure:
-    - 7a1. System displays error message: "Questions generated but could not be processed. Please try again."
+    - System displays error message: "Questions generated but could not be processed. Please try again."
 
 - 7b. Question storage failure:
-    - 7b1. System displays error message: "Questions generated but could not be saved. Please try again."
+    - System displays error message: "Questions generated but could not be saved. Please try again."
 
 - 8a. UI rendering failure:
-    - 8a1. System displays error message: "Interface error occurred. Please refresh and try again."
+    - System displays error message: "Interface error occurred. Please refresh and try again."
 
 - 9a. Button interaction failure:
-    - 9a1. System displays error message: "Unable to load questions. Please try generating questions again."
-    - 9a2. Use case returns to step 3
+    - System displays error message: "Unable to load questions. Please try generating questions again."
+    - Use case returns to step 3
 
 <a name="uc2"></a>
 
@@ -222,11 +222,11 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 **Failure scenario(s)**:  
 - 1a. No behavioral questions exist for this job:  
-  - 1a1. System displays: *“No interview questions available. Please generate questions first.”*  
+  -  System displays: *“No interview questions available. Please generate questions first.”*  
 - 2a. Session initialization fails:  
-  - 2a1. System shows error: *“Unable to start mock interview, please try again later.”*  
+  -  System shows error: *“Unable to start mock interview, please try again later.”*  
 - 3a. API retrieval error:  
-  - 3a1. System displays: *“Failed to fetch questions. Retry?”*  
+  -  System displays: *“Failed to fetch questions. Retry?”*  
 
 ---
 
@@ -258,11 +258,11 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 **Failure scenario(s)**:  
 - 1a. Empty response submitted:  
-  - 1a1. System shows: *“Answer cannot be empty.”*  
+  - System shows: *“Answer cannot be empty.”*  
 - 2a. API timeout or failure:  
-  - 2a1. System displays: *“Unable to analyze your answer. Please try again.”*  
+  - System displays: *“Unable to analyze your answer. Please try again.”*  
 - 3a. Storage failure:  
-  - 3a1. System shows: *“Feedback could not be saved. Retry?”*  
+  - System shows: *“Feedback could not be saved. Retry?”*  
 
 ---
 
@@ -499,6 +499,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 ### **4.5. Dependencies Diagram**
 
 
+<img width="1328" height="485" alt="Screenshot 2025-09-26 at 3 36 01 PM" src="https://github.com/user-attachments/assets/80a6d354-6dc8-4865-9794-4166148066de" />
 
 
 
@@ -512,6 +513,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 1. [**[WRITE_NAME_HERE]**](#nfr1)
     - **Validation**: ...
 2. ...
+
 
 
 
