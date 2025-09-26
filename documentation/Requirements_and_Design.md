@@ -65,7 +65,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 2. **[WRITE_NAME_HERE]**: ...
 
 ### **3.4. Use Case Description**
-- Use cases for feature 1: [WRITE_FEATURE_1_NAME_HERE]
+- Use cases for feature 1: Generate Questions for a Saved Job 
 1. **[WRITE_NAME_HERE]**: ...
 2. **[WRITE_NAME_HERE]**: ...
 - Use cases for feature 2: [WRITE_FEATURE_2_NAME_HERE]
@@ -76,30 +76,88 @@ Any user can browse a list of active discussions and find discussions relevant t
 ### **3.5. Formal Use Case Specifications (5 Most Major Use Cases)**
 <a name="uc1"></a>
 
-#### Use Case 1: [WRITE_USE_CASE_1_NAME_HERE]
+#### Use Case 1: Generate Questions for a Saved Job 
 
-**Description**: ...
+**Description**: User generates tailored interview questions (behavioral and technical) for a specific saved job application using external APIs.
 
-**Primary actor(s)**: ... 
+**Primary actor(s)**: User
+
+**Secondar actor(s)**: OpenAI API, Community LeetCode API
+
+**Preconditions:** 
+- User is authenticated and logged into the system
+- User has at least one saved job application in their portfolio
+
+**Post-conditions:** 
+- User can access tailored behavioral and coding questions for the selected job application
+- Questions are stored and available for future practice sessions
+- Progress tracking is initialized for the generated questions
     
 **Main success scenario**:
-1. ...
-2. ...
+1. User navigates to their job applications list
+2. User selects one of their saved job applications
+3. User clicks on "Generate Questions" button
+4. System extracts job description and requirements from the selected application
+5. System calls OpenAI API to generate behavioral questions based on job description
+6. System calls Community LeetCode API to gather relevant coding questions based on job title and requirements
+7. System processes and stores the generated questions
+8. System displays two options: "Behavioral Questions" and "Technical Questions" buttons
+9. User can click either button to view the respective list of generated questions
 
 **Failure scenario(s)**:
-- 1a. ...
-    - 1a1. ...
-    - 1a2. ...
+- 1a. Job applications list fails to load:
+    - 1a1. System displays error message: "Unable to load job applications. Please check your connection and try again."
 
-- 1b. ...
-    - 1b1. ...
-    - 1b2. ...
-                
-- 2a. ...
-    - 2a1. ...
-    - 2a2. ...
+- 2a. No saved job applications available:
+    - 2a1. System displays message: "No job applications found. Please add a job application first."
+    - 2a2. System provides option to "Add Job Application"
 
-...
+- 2b. Selected job application cannot be accessed:
+    - 2b1. System displays error message: "Selected job application is no longer available or corrupted."
+
+- 3a. Generate Questions button is unresponsive:
+    - 3a1. System displays error message: "Service temporarily unavailable. Please try again shortly."
+
+- 4a. No job description content available:
+    - 4a1. System displays error message: "Unable to generate questions. Job description is missing or incomplete. Please edit the job application and add job description content."
+
+- 4b. Job description extraction fails:
+    - 4b1. System displays error message: "Unable to process job description. Please try again or contact support."
+
+- 5a. OpenAI API failure:
+    - 5a1. System displays error message: "Unable to generate behavioral questions at this time."
+    - 5a2. System continues to step 6 to attempt coding questions generation
+    - 5a3. If coding questions are successfully generated, system displays only "Technical Questions" button
+    - 5a4. If both APIs fail, no buttons are displayed and use case terminates unsuccessfully
+
+- 5b. OpenAI API returns no behavioral questions:
+    - 5b1. System displays warning: "No behavioral questions could be generated for this job type."
+    - 5b2. System continues to step 6 to attempt coding questions generation
+    - 5b3. If coding questions are successfully generated, system displays only "Technical Questions" button
+    - 5b4. If no coding questions are generated either, no buttons are displayed and use case terminates unsuccessfully
+
+- 6a. Community LeetCode API failure:
+    - 6a1. System displays error message: "Unable to generate coding questions at this time."
+    - 6a2. If behavioral questions were successfully generated, system displays only "Behavioral Questions" button
+    - 6a3. If both APIs fail, no buttons are displayed and use case terminates unsuccessfully
+
+- 6b. LeetCode API returns no coding questions:
+    - 6b1. System displays warning: "No relevant coding questions found for this job type."
+    - 6b2. If behavioral questions were successfully generated, system displays only "Behavioral Questions" button
+    - 6b3. If no behavioral questions were generated either, no buttons are displayed and use case terminates unsuccessfully
+
+- 7a. Question processing failure:
+    - 7a1. System displays error message: "Questions generated but could not be processed. Please try again."
+
+- 7b. Question storage failure:
+    - 7b1. System displays error message: "Questions generated but could not be saved. Please try again."
+
+- 8a. UI rendering failure:
+    - 8a1. System displays error message: "Interface error occurred. Please refresh and try again."
+
+- 9a. Button interaction failure:
+    - 9a1. System displays error message: "Unable to load questions. Please try generating questions again."
+    - 9a2. Use case returns to step 3
 
 <a name="uc2"></a>
 
