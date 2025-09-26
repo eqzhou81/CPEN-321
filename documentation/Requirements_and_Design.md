@@ -353,7 +353,7 @@ Any user can browse a list of active discussions and find discussions relevant t
     
     ### 
     
-    1.  **Users Component**
+    1. **Users Component**
         
         *   **Purpose:** Manage user authentication, store profile data, and track user activity across job applications and discussions.
             
@@ -363,7 +363,7 @@ Any user can browse a list of active discussions and find discussions relevant t
                 
             *   Database collections (`users`, `sessions`).
                 
-    2.  **Job Postings Component**
+    2. **Job Postings Component**
         
         *   **Purpose:** Store and manage job applications entered by users, either by copy-pasting text or pasting links. Provides searchable and filterable portfolio of jobs.
             
@@ -373,7 +373,7 @@ Any user can browse a list of active discussions and find discussions relevant t
                 
             *   Database collections (`jobApplications`).
                 
-    3.  **Question Bank Component**
+    3. **Question Bank Component**
         
         *   **Purpose:** Manage generated technical and behavioral questions, track completion status, and progress.
             
@@ -385,7 +385,7 @@ Any user can browse a list of active discussions and find discussions relevant t
                 
             *   Database collections (`questions`, `answers`).
                 
-    4.  **Mock Interview Component**
+    4. **Mock Interview Component**
         
         *   **Purpose:** Deliver behavioral questions in a session, capture user responses, send them to OpenAI API for feedback, and compile performance summaries.
             
@@ -395,7 +395,7 @@ Any user can browse a list of active discussions and find discussions relevant t
                 
             *   Database collections (`sessions`, `answers`).
                 
-    5.  **Discussion Component**
+    5. **Discussion Component**
         
         *   **Purpose:** Provide chat-style rooms for peer-to-peer discussions on interview preparation.
             
@@ -403,7 +403,7 @@ Any user can browse a list of active discussions and find discussions relevant t
             
             *   Database collections (`discussions`, `messages`).
                 
-    6.  **Web Scraper Component**
+    6. **Web Scraper Component**
         
         *   **Purpose:** Extract job information from links provided by the user when uploading a posting.
             
@@ -425,31 +425,31 @@ Any user can browse a list of active discussions and find discussions relevant t
     
     Collections:
     
-    1.  **users**
+    1. **users**
         
         *   **Purpose:** Store user authentication info, profile data, and ownership of content.
             
-    2.  **jobApplications**
+    2. **jobApplications**
         
         *   **Purpose:** Contain uploaded job postings, including title, company, description, tags.
             
-    3.  **questions**
+    3. **questions**
         
         *   **Purpose:** Store technical/system design/behavioral questions, with status (pending, completed).
             
-    4.  **sessions**
+    4. **sessions**
         
         *   **Purpose:** Track active mock interview sessions and their state.
             
-    5.  **answers**
+    5. **answers**
         
         *   **Purpose:** Store user-submitted answers and AI-generated feedback.
             
-    6.  **discussions**
+    6. **discussions**
         
         *   **Purpose:** Contain discussion room metadata.
             
-    7.  **messages**
+    7. **messages**
         
         *   **Purpose:** Store chat content (user messages inside discussions).
             
@@ -460,19 +460,19 @@ Any user can browse a list of active discussions and find discussions relevant t
     
     ### 
     
-    1.  **Community LeetCode API**
+    1. **Community LeetCode API**
         
         *   **Purpose:** Retrieve coding and system design questions relevant to job postings.
             
-    2.  **Google OAuth API**
+    2. **Google OAuth API**
         
         *   **Purpose:** Manage user authentication and sign-in with Google accounts.
             
-    3.  **OpenAI API**
+    3. **OpenAI API**
         
         *   **Purpose:** Generate behavioral interview questions from job descriptions and provide feedback on user answers.
             
-    4.  **Job Search API**
+    4. **Job Search API**
         
         *   **Purpose:** Fetch similar job postings from external job boards.
             
@@ -483,13 +483,13 @@ Any user can browse a list of active discussions and find discussions relevant t
     
     ### 
     
-    1.  **Express.js**
+    1. **Express.js**
         
         *   **Purpose:** Backend framework for API routing and business logic.
             
         *   **Reason:** Lightweight, scalable, and familiar to the development team.
             
-    2.  **Azure VM**
+    2. **Azure VM**
         
         *   **Purpose:** Host backend services and database in the cloud.
             
@@ -509,6 +509,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 1. [**[WRITE_NAME_HERE]**](#nfr1)
     - **Validation**: ...
 2. ...
+
 
 
 
