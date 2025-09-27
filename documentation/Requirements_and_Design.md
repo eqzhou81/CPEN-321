@@ -339,7 +339,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 <a name="uc5"></a>
 
-#### Use Case 4: Find Similar and Close-by jobs 
+#### Use Case 5: Find Similar and Close-by jobs 
 
 **Description:** User searches for job postings with similar titles and roles to their saved job application, filtered by proximity to the original job location and remote opportunities.
 
@@ -645,6 +645,7 @@ Any user can browse a list of active discussions and find discussions relevant t
     *   Chaos drills: kill API process; simulate OpenAI/LeetCode outages (DNS blackhole). Pass if app **degrades gracefully** (cached content, clear messaging) and **auto-recovers < 1 min**.
         
     *   Backup/restore: snapshot Mongo in non-prod and restore. Pass if **RTO ≤ 60 min** and integrity checks succeed.
+
 
 
 
