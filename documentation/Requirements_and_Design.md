@@ -609,7 +609,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 ### **4.7. Design and Ways to Test Non-Functional Requirements**
 *     
     
-    **\[Performance & Responsiveness\]**  
+    **Performance & Responsiveness**  
     **Validation:**
     
     *   Load-test **UC1 (Generate Questions)** with 100 virtual users (k6/JMeter): ramp 2 min → steady 5 min. Pass if **p95 ≤ 10s** end-to-end and error rate < 1%.
@@ -621,7 +621,7 @@ Any user can browse a list of active discussions and find discussions relevant t
     
     * * *
     
-    **\[Security & Privacy\]**  
+    **Security & Privacy**  
     **Validation:**
     
     *   Transport security: SSL Labs scan must grade **A**; HSTS present; only HTTPS reachable.
@@ -637,7 +637,7 @@ Any user can browse a list of active discussions and find discussions relevant t
     
     * * *
     
-    **\[Availability & Resilience\]**  
+    **Availability & Resilience**  
     **Validation:**
     
     *   Uptime SLO via Azure Monitor/App Insights: Pass if **≥ 99.5% monthly** (excl. planned maintenance).
@@ -645,6 +645,7 @@ Any user can browse a list of active discussions and find discussions relevant t
     *   Chaos drills: kill API process; simulate OpenAI/LeetCode outages (DNS blackhole). Pass if app **degrades gracefully** (cached content, clear messaging) and **auto-recovers < 1 min**.
         
     *   Backup/restore: snapshot Mongo in non-prod and restore. Pass if **RTO ≤ 60 min** and integrity checks succeed.
+
 
 
 
