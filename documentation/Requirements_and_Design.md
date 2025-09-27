@@ -72,42 +72,81 @@ Any user can browse a list of active discussions and find discussions relevant t
 *   **Discussion Participants (Peers):** Other authenticated users who join and contribute to discussion groups by sharing interview experiences and insights.
 
 ### **3.4. Use Case Description**
-- Use cases for feature 1: Authentication 
-1. Sign Up: ...
-2. Sign In: ...
-3. Sign Out: ...
-4. Remove Account: ...
-- Use cases for feature 2: Manage job applications
-1. Paste job posting : ...
-2. Paste job posting link: ...
-3. Click on saved job applications: ...
-4. Delete job application: ...
-- Use cases for feature 3: Generate questions
-1. Generate questions for a saved job: ...
-2. View overall progress: ...
-3. Access Technical Questions: ...
-4. Access Behavioural Questions: ...
-- Use cases for feature 4: Solving technical questions
-1. Click to solve a Technical Question: ...
-2. Redirect to external website: ...
-3. Mark a technical question as complete: ...
-- Use cases for feature 5: Mock Interviews
-1. Start mock interview: ...
-2. Answer behvaioural question: ...
-3. Get feedback: ...
-4. End/Finish a mock interview
-5. Get summary and analysis
-- Use cases for feature 6: Find similar jobs 
-1. Search for similar and close by jobs: ...
-2. View a similar and close by job*: ...
-3. Save a similar job: ...
-- Use cases for feature 7: Manage discussions 
-1. Browse existing discussions: ...
-2. Create a discussion: ...
-3. View a discussion: ...
-4. Post in a discussion: ...
-...
+**Feature 1: Authentication**
 
+*   **Sign Up:** A new user authenticates via Google OAuth; the system creates a linked account record.
+    
+*   **Sign In:** The user signs in with Google OAuth and gains access to protected features.
+    
+*   **Sign Out:** The user ends the current authenticated session.
+    
+*   **Remove Account:** The user requests deletion; the system permanently removes their data.
+    
+
+**Feature 2: Manage Job Applications**
+
+*   **Paste job posting:** The user pastes JD text; the system stores title, company, and description.
+    
+*   **Paste job posting link:** The user saves a URL; the system fetches and normalizes the JD.
+    
+*   **Click saved job applications:** The user opens a job to drive generation and practice flows.
+    
+*   **Delete job application:** The user removes an existing job from their portfolio.
+    
+
+**Feature 3: Generate Questions**
+
+*   **Generate questions for a saved job:** The system produces behavioral (OpenAI) and technical (LeetCode) sets for the selected job.
+    
+*   **View overall progress:** The system shows completion status across generated questions.
+    
+*   **Access Technical Questions:** The user opens the technical set for that job.
+    
+*   **Access Behavioral Questions:** The user opens the behavioral set for that job.
+    
+
+**Feature 4: Solving Technical Questions**
+
+*   **Click to solve a Technical Question:** The user selects a problem to practice.
+    
+*   **Redirect to external website:** The system opens the problem on its host platform.
+    
+*   **Mark a technical question as complete:** The user marks it done; progress updates.
+    
+
+**Feature 5: Mock Interviews**
+
+*   **Start mock interview:** The user starts a behavioral session for the selected job.
+    
+*   **Answer behavioral question:** The user types an answer into the response box.
+    
+*   **Get feedback:** The system analyzes the answer via OpenAI and returns feedback.
+    
+*   **End/Finish a mock interview:** The user ends the session.
+    
+*   **Get summary and analysis:** The system compiles per-question feedback and an overall summary.
+    
+
+**Feature 6: Find Similar Jobs**
+
+*   **Search for similar and close-by jobs:** The system queries external job sites and filters by remote/nearby.
+    
+*   **View a similar job:** The user opens a posting to read details and apply link.
+    
+*   **Save a similar job:** The user adds a posting into their portfolio.
+    
+
+**Feature 7: Manage Discussions**
+
+*   **Browse existing discussions:** The user views/searches topic rooms.
+    
+*   **Create a discussion:** The user creates a new topic room with an initial message.
+    
+*   **View a discussion:** The user opens a room to read its messages.
+    
+*   **Post in a discussion:** The user submits a message to the room.
+
+  
 ### **3.5. Formal Use Case Specifications (5 Most Major Use Cases)**
 <a name="uc1"></a>
 
@@ -395,14 +434,36 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 ### **3.6. Screen Mock-ups**
 
+<img width="975" height="789" alt="Screenshot 2025-09-26 at 10 46 29 PM" src="https://github.com/user-attachments/assets/87c59d73-f14f-481e-a9d7-e2141818c2d4" />
+<img width="746" height="484" alt="Screenshot 2025-09-26 at 10 46 52 PM" src="https://github.com/user-attachments/assets/6fb789cd-5a74-4c98-abfe-054f054adbca" />
+<img width="1024" height="780" alt="Screenshot 2025-09-26 at 10 47 12 PM" src="https://github.com/user-attachments/assets/60b9ec54-250a-4b50-b393-f7577b1c8ec5" />
+<img width="976" height="717" alt="Screenshot 2025-09-26 at 10 47 28 PM" src="https://github.com/user-attachments/assets/ba21b031-9a9f-4316-9824-e927ee1f4ff1" />
+
+
+
 
 ### **3.7. Non-Functional Requirements**
-<a name="nfr1"></a>
 
-1. **[WRITE_NAME_HERE]**
-    - **Description**: ...
-    - **Justification**: ...
-2. ...
+
+**NFR-1 Performance**
+
+*   **Requirement:** Generate a 20-question set (behavioral + technical) in **≤ 10 s p95**.
+    
+*   **Why it matters:** Fast iteration is critical during prep; slow generation breaks flow.
+    
+
+**NFR-2 Security & Privacy**
+
+*   **Requirement:** TLS 1.2+ in transit; AES-256 at rest for résumés/JDs/answers; per-user data isolation; hard delete on account removal.
+    
+*   **Why it matters:** Users share sensitive information; trust hinges on strong data protection.
+    
+
+**NFR-3 Availability**
+
+*   **Requirement:** **≥ 99.5% uptime** monthly (excl. planned maintenance); graceful degradation if external APIs are down.
+    
+*   **Why it matters:** Users prep near interview dates; downtime must be rare and non-blocking.
 
 ---
 
@@ -411,66 +472,32 @@ Any user can browse a list of active discussions and find discussions relevant t
     ### 4.1. Main Components
     
     ### 
+*   **Application API (Gateway)**
     
-    1. **Users Component**
+    *   **Purpose:** Expose REST endpoints for jobs, generation, sessions, discussions; auth checks; caching; request validation.
         
-        *   **Purpose:** Manage user authentication, store profile data, and track user activity across job applications and discussions.
-            
-        *   **Interfaces:**
-            
-            *   Google OAuth API (for sign in/out).
-                
-            *   Database collections (`users`, `sessions`).
-                
-    2. **Job Postings Component**
+    *   **Rationale:** Centralizes cross-cutting concerns (auth, rate-limit, validation) instead of scattering them across services.
         
-        *   **Purpose:** Store and manage job applications entered by users, either by copy-pasting text or pasting links. Provides searchable and filterable portfolio of jobs.
-            
-        *   **Interfaces:**
-            
-            *   Job Search API (to retrieve similar jobs).
-                
-            *   Database collections (`jobApplications`).
-                
-    3. **Question Bank Component**
+
+*   **Evidence & Ingestion Service**
+    
+    *   **Purpose:** Normalize JDs (paste or link), optionally scrape/fetch details, and enrich skills/tags for queries.
         
-        *   **Purpose:** Manage generated technical and behavioral questions, track completion status, and progress.
-            
-        *   **Interfaces:**
-            
-            *   Community LeetCode API (fetch coding questions).
-                
-            *   OpenAI API (generate behavioral questions).
-                
-            *   Database collections (`questions`, `answers`).
-                
-    4. **Mock Interview Component**
+    *   **Rationale:** Separates I/O-heavy, fault-prone fetching/parsing from core API to keep latency predictable.
         
-        *   **Purpose:** Deliver behavioral questions in a session, capture user responses, send them to OpenAI API for feedback, and compile performance summaries.
-            
-        *   **Interfaces:**
-            
-            *   OpenAI API.
-                
-            *   Database collections (`sessions`, `answers`).
-                
-    5. **Discussion Component**
+
+*   **Question Generation & Curation Service**
+    
+    *   **Purpose:** Orchestrate OpenAI + LeetCode calls, deduplicate/label questions, attach sources, persist sets.
         
-        *   **Purpose:** Provide chat-style rooms for peer-to-peer discussions on interview preparation.
-            
-        *   **Interfaces:**
-            
-            *   Database collections (`discussions`, `messages`).
-                
-    6. **Web Scraper Component**
+    *   **Rationale:** Encapsulates provider logic and quality controls, making it easy to swap APIs or tune prompts.
         
-        *   **Purpose:** Extract job information from links provided by the user when uploading a posting.
-            
-        *   **Interfaces:**
-            
-            *   Job posting websites.
-                
-            *   Database (`jobApplications`).
+
+*   **Practice & Community Service**
+    
+    *   **Purpose:** Run mock sessions, store answers + feedback, track progress, and power discussion chat rooms.
+        
+    *   **Rationale:** Groups session state and realtime messaging features separate from generation concerns.
                 
     
     * * *
@@ -583,6 +610,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 1. [**[WRITE_NAME_HERE]**](#nfr1)
     - **Validation**: ...
 2. ...
+
 
 
 
