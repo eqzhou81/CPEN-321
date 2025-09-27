@@ -607,9 +607,45 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 
 ### **4.7. Design and Ways to Test Non-Functional Requirements**
-1. [**[WRITE_NAME_HERE]**](#nfr1)
-    - **Validation**: ...
-2. ...
+*     
+    
+    **\[Performance & Responsiveness\]**  
+    **Validation:**
+    
+    *   Load-test **UC1 (Generate Questions)** with 100 virtual users (k6/JMeter): ramp 2 min → steady 5 min. Pass if **p95 ≤ 10s** end-to-end and error rate < 1%.
+        
+    *   API latency tests for lightweight endpoints (e.g., `GET /jobs`, `GET /questions`) with 100 VUs. Pass if **p95 ≤ 500ms**.
+        
+    *   Client render timing via Lighthouse (mobile emulation). Pass if **First Contentful Paint ≤ 2s p95** on mid-range hardware.
+        
+    
+    * * *
+    
+    **\[Security & Privacy\]**  
+    **Validation:**
+    
+    *   Transport security: SSL Labs scan must grade **A**; HSTS present; only HTTPS reachable.
+        
+    *   App vulns: run **OWASP ZAP** authenticated scan; Pass if **0 High/Critical** (Mediums triaged).
+        
+    *   Secrets & deps: **Gitleaks/TruffleHog** + `npm audit` CI step; Pass if **no exposed secrets** and **no critical** vulns.
+        
+    *   AuthZ tests: attempt cross-user access to `/jobs/{id}` and `/answers/{id}`; Pass if **403/404** for non-owners.
+        
+    *   Data deletion: create user → add data → “Delete Account” → verify **hard delete within 24h** (Mongo queries).
+        
+    
+    * * *
+    
+    **\[Availability & Resilience\]**  
+    **Validation:**
+    
+    *   Uptime SLO via Azure Monitor/App Insights: Pass if **≥ 99.5% monthly** (excl. planned maintenance).
+        
+    *   Chaos drills: kill API process; simulate OpenAI/LeetCode outages (DNS blackhole). Pass if app **degrades gracefully** (cached content, clear messaging) and **auto-recovers < 1 min**.
+        
+    *   Backup/restore: snapshot Mongo in non-prod and restore. Pass if **RTO ≤ 60 min** and integrity checks succeed.
+
 
 
 
