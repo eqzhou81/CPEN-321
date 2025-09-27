@@ -644,7 +644,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 ### **4.5. Dependencies Diagram**
 
 
-![System Diagram](./images/M2_dependency.png)
+![System Diagram](./images/M2_dependecy.png)
 
 
 
