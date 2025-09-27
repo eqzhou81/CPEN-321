@@ -10,7 +10,7 @@
 
 ## 2. Project Description
 
-Struggling to find relevant interview questions is a thing of the past. Our AI-powered platform tackles this by taking your uploaded job descriptions and generating a highly tailored set of practice materials. This includes role-specific coding challenges, system design problems, and behavioral interview questions. To ensure you're interview-ready, you can input and track your progress against these personalized lists using the progress tracker, and refine your soft skills with the mock interview, which provides instant feedback to hone your behavioural question delivery.
+Struggling to find relevant interview questions is a thing of the past. Our AI-powered platform tackles this by taking your uploaded job posting and generating a highly tailored set of practice materials. This includes role-specific coding challenges, system design problems, and behavioral interview questions. To ensure you're interview-ready, you can input and track your progress against these personalized lists, and refine your soft skills with the mock interview, which provides instant feedback to hone your behavioural question delivery.
 
 This comprehensive tool extends beyond just preparation by helping users discover new opportunities and build community. Based on the initial job information provided, the platform intelligently suggests comparable roles, broadening the user's career search and expanding their practice scope. Furthermore, users can engage in peer-to-peer learning by creating or joining discussion groups, allowing them to share recent interview experiences, discuss preparation strategies, and exchange insights with others pursuing similar roles. This integrated approach ensures a personalized, efficient, and collaborative journey toward securing their desired position.
 
@@ -57,19 +57,18 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 ### **3.2. Use Case Diagram**
 
-![System Diagram](./images/M2_usecase.png)
+![System Diagram](./images/M2_usecase_final.png)
 
 
 ### **3.3. Actors Description**
 *   **User (Candidate):** The primary actor who uses the platform to manage job applications, generate tailored interview questions, practice technical and behavioral answers, and participate in discussions.
     
-*   **OpenAI API:** External service responsible for generating behavioral interview questions and providing feedback on user responses in mock interviews.
+*   **OpenAI API (non-active actor):** External service responsible for generating behavioral interview questions and providing feedback on user responses in mock interviews.
     
-*   **Community LeetCode API:** External service that supplies technical coding and system design questions relevant to specific job postings.
+*   **Community LeetCode API (non-active actor):** External service that supplies technical coding and system design questions relevant to specific job postings.
     
-*   **Job Search API:** External service used to search and fetch similar job postings from the internet.
-    
-*   **Discussion Participants (Peers):** Other authenticated users who join and contribute to discussion groups by sharing interview experiences and insights.
+*   **Job Search API (non-active actor):** External service used to search and fetch similar job postings from the internet.
+
 
 ### **3.4. Use Case Description**
 **Feature 1: Authentication**
@@ -85,11 +84,11 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 **Feature 2: Manage Job Applications**
 
-*   **Paste job posting:** The user pastes JD text; the system stores title, company, and description.
+*   **Paste job posting:** The user pastes job posting text; the system stores title, company, and description.
     
-*   **Paste job posting link:** The user saves a URL; the system fetches and normalizes the JD.
+*   **Paste job posting link:** The user saves a URL; the system fetches and normalizes the jpb posting.
     
-*   **Click saved job applications:** The user opens a job to drive generation and practice flows.
+*   **Click saved job applications:** The user opens a stored job application in their job portfolio.
     
 *   **Delete job application:** The user removes an existing job from their portfolio.
     
@@ -111,40 +110,44 @@ Any user can browse a list of active discussions and find discussions relevant t
     
 *   **Redirect to external website:** The system opens the problem on its host platform.
     
-*   **Mark a technical question as complete:** The user marks it done; progress updates.
+*   **Mark a technical question as complete:** The user marks it done; overall progress updates.
     
 
 **Feature 5: Mock Interviews**
 
-*   **Start mock interview:** The user starts a behavioral session for the selected job.
+*   **Start mock interview:** The user starts a behavioral mock interview session for the selected job.
     
 *   **Answer behavioral question:** The user types an answer into the response box.
+
+*   **Submit Answer:** The user submits their answer to the behvaioural question. This use case includes getting a feedback to the user's answer using OpenAI API and marking the question as complete.
     
-*   **Get feedback:** The system analyzes the answer via OpenAI and returns feedback.
+*   **Get feedback:** The system analyzes the answer via OpenAI and returns feedback. This is included when a user submits an answer to a behavioural question.
+
+*   **Mark Behavioural Question as complete:** This is included in the Submit Answer use case, where the system automatically marks a behavioural question as a complete when a user submits an answerto it.
     
-*   **End/Finish a mock interview:** The user ends the session.
+*   **End/Finish a mock interview:** The user can end the session without completing the set of questios or finish the session my completing the entire set of questions. This includes getting feedback and a summary analysis using the OpenAI API.
     
 *   **Get summary and analysis:** The system compiles per-question feedback and an overall summary.
     
 
 **Feature 6: Find Similar Jobs**
 
-*   **Search for similar and close-by jobs:** The system queries external job sites and filters by remote/nearby.
+*   **Search for similar and close-by jobs:** The systme generates a list of similar jobs in terms of duties and positions and proximity to the job application chosen by the user. It will also include similar postions that are completly remote.
     
-*   **View a similar job:** The user opens a posting to read details and apply link.
+*   **View a similar and close-by job:** The user opens a posting to view the found job posting details.
     
-*   **Save a similar job:** The user adds a posting into their portfolio.
+*   **Save a similar job:** The user adds the viewed similar job posting to their portfolio.
     
 
 **Feature 7: Manage Discussions**
 
-*   **Browse existing discussions:** The user views/searches topic rooms.
+*   **Browse existing discussions:** User can view and search through available discussion topics related to job interviews and career preparation.
     
-*   **Create a discussion:** The user creates a new topic room with an initial message.
+*   **Create a discussion:** User can start a new discussion topic (e.g., "Amazon SDE Interview Tips") to connect with others preparing for similar interviews.
     
-*   **View a discussion:** The user opens a room to read its messages.
+*   **View a discussion:** User can open and read all messages within a specific discussion thread to learn from others' experiences.
     
-*   **Post in a discussion:** The user submits a message to the room.
+*   **Post in a discussion:** User can share their own interview experiences, ask questions, or provide advice by posting messages in relevant discussions.
 
   
 ### **3.5. Formal Use Case Specifications (5 Most Major Use Cases)**
@@ -233,113 +236,111 @@ Any user can browse a list of active discussions and find discussions relevant t
     - System displays error message: "Unable to load questions. Please try generating questions again."
     - Use case returns to step 3
 
-<a name="uc2"></a>
+
 
 <a name="uc2"></a>
 
-#### Use Case 2: Start Mock Interview Session  
+#### Use Case 2: Solve Technical Questions  
 
-**Description**: The user begins a mock interview session and the system loads behavioral questions.  
+**Description**: User accesses and solves technical coding questions by being redirected to external coding platforms, then marks questions as complete to track progress.
 
 **Primary actor(s)**: User  
 
-**Secondary actor(s)**: OpenAI API  
+**Secondary actor(s)**: External Coding Platforms (LeetCode, HackerRank)  
 
 **Preconditions:**  
-- User is authenticated and logged in.  
-- User has generated behavioral questions for at least one job.  
+- User has generated technical questions for a job application
+- Technical questions list is displayed to the user
 
 **Post-conditions:**  
-- Mock interview session is active.  
-- First behavioral question is displayed to the user.  
+- User is redirected to external coding platform to solve the problem
 
 **Main success scenario**:  
-1. User selects a job application.  
-2. User clicks on **Start Mock Interview**.  
-3. System retrieves associated behavioral questions.  
-4. System loads interview session UI and displays the first question.  
+1. User navigates to the list of technical questions for a selected job application
+2. User clicks on a specific technical question
+3. System retrieves the stored problem URL for the selected question
+4. System opens the external coding platform URL in a new browser tab/window
+5. User solves the problem on the external platform
 
 **Failure scenario(s)**:  
-- 1a. No behavioral questions exist for this job:  
-  -  System displays: *“No interview questions available. Please generate questions first.”*  
-- 2a. Session initialization fails:  
-  -  System shows error: *“Unable to start mock interview, please try again later.”*  
-- 3a. API retrieval error:  
-  -  System displays: *“Failed to fetch questions. Retry?”*  
+- 1a. Technical questions list fails to load:
+    - 1a1. System displays error message: "Unable to load technical questions. Please try again."
+
+- 2a. Question selection fails:
+    - 2a1. System displays error message: "Unable to select question. Please refresh and try again."
+
+- 3a. Problem URL is missing or corrupted:
+    - 3a1. System displays error message: "Problem link not available for this question."
+    - 3a2. User returns to questions list
+
+- 4a. External coding platform is unavailable:
+    - 4a1. System displays error message: "The coding platform is currently unavailable. Please try again later."
+
+- 4b. Browser fails to open new tab:
+    - 4b1. System displays error message: "Unable to redirect. Please copy the link and open manually."
+    - 4b2. System provides clickable link as fallback
 
 ---
 
 <a name="uc3"></a>
 
-#### Use Case 3: Submit Answer for Feedback  
+#### Use Case 3: Start Mock Interview Session  
 
-**Description**: The user submits a typed behavioral answer, and the system analyzes it using the OpenAI API.  
+**Description**: User initiates a mock interview session for behavioral questions, progressing through questions with AI-powered feedback and performance tracking.
 
 **Primary actor(s)**: User  
 
 **Secondary actor(s)**: OpenAI API  
 
 **Preconditions:**  
-- A mock interview session is active.  
+- User is authenticated and logged in
+- User has generated behavioral questions for a selected job application
+- Behavioral questions are available and stored in the system
 
 **Post-conditions:**  
-- Answer is stored.  
-- Feedback is displayed to the user.  
-- Question is marked as completed in progress tracker.  
+- Mock interview session is active with the first question displayed
+- User can proceed through questions and receive feedback
+- Session progress is tracked for completion monitoring
 
 **Main success scenario**:  
-1. User types their response into the answer field.  
-2. User clicks **Submit**.  
-3. System sends response text to OpenAI API.  
-4. API returns structured feedback.  
-5. System stores answer and feedback.  
-6. System displays feedback to the user.  
+1. User navigates to behavioral questions for a selected job application
+2. User clicks on "Start Mock Interview" button
+3. System retrieves the stored behavioral questions for the selected job
+4. System initializes mock interview session interface
+5. System displays the first behavioral question to the user
+6. User can begin answering questions and receiving feedback
 
 **Failure scenario(s)**:  
-- 1a. Empty response submitted:  
-  - System shows: *“Answer cannot be empty.”*  
-- 2a. API timeout or failure:  
-  - System displays: *“Unable to analyze your answer. Please try again.”*  
-- 3a. Storage failure:  
-  - System shows: *“Feedback could not be saved. Retry?”*  
+- 1a. Behavioral questions list fails to load:
+    - 1a1. System displays error message: "Unable to load behavioral questions. Please try again."
+
+- 2a. Start Mock Interview button is unresponsive:
+    - 2a1. System displays error message: "Service temporarily unavailable. Please try again."
+
+- 3a. No behavioral questions exist for selected job:
+    - 3a1. System displays message: "No behavioral questions available for this job. Please generate questions first."
+    - 3a2. System provides option to return to question generation
+
+- 3b. Question retrieval from storage fails:
+    - 3b1. System displays error message: "Unable to retrieve questions. Please try generating questions again."
+
+- 4a. Mock interview session initialization fails:
+    - 4a1. System displays error message: "Unable to start mock interview session. Please try again later."
+
+- 4b. Session interface fails to load:
+    - 4b1. System displays error message: "Interview interface could not load. Please refresh and try again."
+
+- 5a. Question display fails:
+    - 5a1. System displays error message: "Unable to display question. Please restart the mock interview."
+
+- 5b. OpenAI API connection fails during session setup:
+    - 5b1. System displays error message: "Interview feedback service unavailable. Please try again later."
 
 ---
 
 <a name="uc4"></a>
 
-#### Use Case 4: Redirect to External Platform  
-
-**Description**: When the user selects a technical question, the system opens the original problem page on LeetCode/HackerRank.  
-
-**Primary actor(s)**: User  
-
-**Secondary actor(s)**: Community LeetCode API  
-
-**Preconditions:**  
-- Technical questions have already been generated.  
-
-**Post-conditions:**  
-- The problem link is opened in a new browser tab.  
-
-**Main success scenario**:  
-1. User navigates to the list of technical questions.  
-2. User clicks on a question.  
-3. System retrieves the stored problem URL.  
-4. System opens the URL in a new tab/window.  
-
-**Failure scenario(s)**:  
-- 1a. URL is missing or corrupted:  
-  - 1a1. System displays: *“Problem link not available.”*  
-- 2a. External site down:  
-  - 2a1. System shows: *“The coding platform is currently unavailable.”*  
-- 3a. Browser fails to open new tab:  
-  - 3a1. System retries or displays: *“Unable to redirect. Open manually via link.”*  
-
----
-
-<a name="uc5"></a>
-
-#### Use Case 5: Find Similar and Close-by jobs 
+#### Use Case 4: Find Similar and Close-by jobs 
 
 **Description:** User searches for job postings with similar titles and roles to their saved job application, filtered by proximity to the original job location and remote opportunities.
 
@@ -432,12 +433,79 @@ Any user can browse a list of active discussions and find discussions relevant t
     - 10c1. System displays error message: "Error occurred while saving. Please try again."
     - 10c2. User can retry saving or continue browsing other results
 
-### **3.6. Screen Mock-ups**
+----
+<a name="uc5"></a>
+
+#### Use Case 5: Create Discussion  
+
+**Description**: User creates a new discussion topic to connect with other job seekers preparing for similar interviews and share experiences.
+
+**Primary actor(s)**: User  
+
+**Preconditions:**  
+- User is authenticated and logged into the system
+- User has access to the discussions feature
+
+**Post-conditions:**  
+- New discussion topic is created and stored in the system
+- Discussion is available for other users to browse and join
+- User can post messages in the newly created discussion
+
+**Main success scenario**:  
+1. User navigates to the discussions section
+2. User clicks on "Create Discussion" button
+3. System displays discussion creation form
+4. User enters discussion topic title (e.g., "Amazon SDE Interview Tips")
+5. User optionally adds an initial description or message
+6. User clicks "Create Discussion" to submit
+7. System stores the discussion
+8. System redirects user to the newly created discussion page
+9. User can begin posting messages in the discussion
+
+**Failure scenario(s)**:  
+- 1a. Discussions section fails to load:
+    - 1a1. System displays error message: "Unable to load discussions. Please check your connection and try again."
+
+- 2a. Create Discussion button is unresponsive:
+    - 2a1. System displays error message: "Service temporarily unavailable. Please try again."
+
+- 3a. Discussion creation form fails to display:
+    - 3a1. System displays error message: "Unable to load discussion form. Please refresh and try again."
+
+- 4a. User submits empty discussion topic:
+    - 4a1. System displays validation error: "Discussion topic is required. Please enter a topic title."
+    - 4a2. User remains on creation form to provide input
+
+- 4b. Discussion topic exceeds character limit:
+    - 4b1. System displays validation error: "Topic title is too long. Please keep it under 100 characters."
+    - 4b2. User can edit the topic title
+
+- 5a. Initial description exceeds character limit:
+    - 5a1. System displays validation error: "Description is too long. Please keep it under 500 characters."
+    - 5a2. User can edit the description
+
+- 6a. Create Discussion submission fails:
+    - 6a1. System displays error message: "Unable to submit discussion. Please try again."
+
+- 7a. System storage fails:
+    - 9a1. System displays error message: "Unable to save discussion. Please try again."
+    - 9a2. User can retry creation
+
+- 8a. Redirection to discussion page fails:
+    - 10a1. System displays message: "Discussion created successfully but unable to redirect. Please check your discussions list."
+    - 10a2. System provides manual link to the new discussion
+
+- 9a. Initial message posting interface fails to load:
+    - 11a1. System displays warning: "Discussion created but messaging interface unavailable. Please refresh to start posting."
+
+---
+
+<!-- ### **3.6. Screen Mock-ups**
 
 <img width="975" height="789" alt="Screenshot 2025-09-26 at 10 46 29 PM" src="https://github.com/user-attachments/assets/87c59d73-f14f-481e-a9d7-e2141818c2d4" />
 <img width="746" height="484" alt="Screenshot 2025-09-26 at 10 46 52 PM" src="https://github.com/user-attachments/assets/6fb789cd-5a74-4c98-abfe-054f054adbca" />
 <img width="1024" height="780" alt="Screenshot 2025-09-26 at 10 47 12 PM" src="https://github.com/user-attachments/assets/60b9ec54-250a-4b50-b393-f7577b1c8ec5" />
-<img width="976" height="717" alt="Screenshot 2025-09-26 at 10 47 28 PM" src="https://github.com/user-attachments/assets/ba21b031-9a9f-4316-9824-e927ee1f4ff1" />
+<img width="976" height="717" alt="Screenshot 2025-09-26 at 10 47 28 PM" src="https://github.com/user-attachments/assets/ba21b031-9a9f-4316-9824-e927ee1f4ff1" /> -->
 
 
 
@@ -589,7 +657,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 
 
-### **4.6. Use Case Sequence Diagram (5 Most Major Use Cases)**
+<!-- ### **4.6. Use Case Sequence Diagram (5 Most Major Use Cases)**
 <img width="1418" height="540" alt="Screenshot 2025-09-26 at 3 44 19 PM" src="https://github.com/user-attachments/assets/ec283ee1-790b-4bc0-8d99-c9c7fec30dea" />
 
 <img width="823" height="430" alt="Screenshot 2025-09-26 at 3 45 37 PM" src="https://github.com/user-attachments/assets/d65f562b-1972-4fbe-896d-4f240880c25a" />
@@ -598,7 +666,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 <img width="935" height="386" alt="Screenshot 2025-09-26 at 3 47 28 PM" src="https://github.com/user-attachments/assets/621f8d6a-5c27-4d50-9d3e-447412d9c345" />
 
-<img width="902" height="391" alt="Screenshot 2025-09-26 at 3 48 19 PM" src="https://github.com/user-attachments/assets/fe91ab5e-c566-4b11-8018-7a2021a66d62" />
+<img width="902" height="391" alt="Screenshot 2025-09-26 at 3 48 19 PM" src="https://github.com/user-attachments/assets/fe91ab5e-c566-4b11-8018-7a2021a66d62" /> -->
 
 
 
@@ -606,7 +674,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 
 
-### **4.7. Design and Ways to Test Non-Functional Requirements**
+<!-- ### **4.7. Design and Ways to Test Non-Functional Requirements**
 *     
     
     **Performance & Responsiveness**  
@@ -644,7 +712,7 @@ Any user can browse a list of active discussions and find discussions relevant t
         
     *   Chaos drills: kill API process; simulate OpenAI/LeetCode outages (DNS blackhole). Pass if app **degrades gracefully** (cached content, clear messaging) and **auto-recovers < 1 min**.
         
-    *   Backup/restore: snapshot Mongo in non-prod and restore. Pass if **RTO ≤ 60 min** and integrity checks succeed.
+    *   Backup/restore: snapshot Mongo in non-prod and restore. Pass if **RTO ≤ 60 min** and integrity checks succeed. -->
 
 
 
