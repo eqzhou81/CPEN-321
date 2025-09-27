@@ -537,35 +537,28 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 *   ###   
     
-    ### 4.1. Main Components
-    
-    ### 
-*   **Application API (Gateway)**
-    
-    *   **Purpose:** Expose REST endpoints for jobs, generation, sessions, discussions; auth checks; caching; request validation.
-        
-    *   **Rationale:** Centralizes cross-cutting concerns (auth, rate-limit, validation) instead of scattering them across services.
-        
+   ### 4.1. Main Components
+   ###
 
-*   **Evidence & Ingestion Service**
-    
-    *   **Purpose:** Normalize JDs (paste or link), optionally scrape/fetch details, and enrich skills/tags for queries.
-        
-    *   **Rationale:** Separates I/O-heavy, fault-prone fetching/parsing from core API to keep latency predictable.
-        
+**Job Applications**
+- **Purpose:** Handle job application management - adding, storing, viewing, and organizing user's saved job postings
+- **Rationale:** Centralizes all job-related data operations and provides foundation for question generation
 
-*   **Question Generation & Curation Service**
-    
-    *   **Purpose:** Orchestrate OpenAI + LeetCode calls, deduplicate/label questions, attach sources, persist sets.
-        
-    *   **Rationale:** Encapsulates provider logic and quality controls, making it easy to swap APIs or tune prompts.
-        
+**Users** 
+- **Purpose:** Manage user authentication, profiles, and user-specific data access
+- **Rationale:** Handles all user-related operations and maintains user session state
 
-*   **Practice & Community Service**
-    
-    *   **Purpose:** Run mock sessions, store answers + feedback, track progress, and power discussion chat rooms.
-        
-    *   **Rationale:** Groups session state and realtime messaging features separate from generation concerns.
+**Question Bank**
+- **Purpose:** Generate, store, and retrieve technical and behavioral interview questions for specific job applications
+- **Rationale:** Encapsulates question generation logic and manages question lifecycle
+
+**Mock Interview**
+- **Purpose:** Conduct mock interview sessions, collect user responses, and provide AI-generated feedback
+- **Rationale:** Manages interview flow and integrates with OpenAI for response analysis
+
+**Discussion**
+- **Purpose:** Handle discussion room creation, management, and user participation
+- **Rationale:** Manages community features separate from individual practice components
                 
     
     * * *
@@ -574,7 +567,8 @@ Any user can browse a list of active discussions and find discussions relevant t
     
     ### 
     
-    *   **MongoDB** (NoSQL database)
+    *   **MongoDB** (NoSQL database) in a larger scale project we would have used multiple databases for separation of concerns; however, to reduce overhead we will only be using one with multiple collections.
+
         
     
     Collections:
@@ -626,9 +620,6 @@ Any user can browse a list of active discussions and find discussions relevant t
         
         *   **Purpose:** Generate behavioral interview questions from job descriptions and provide feedback on user answers.
             
-    4. **Job Search API**
-        
-        *   **Purpose:** Fetch similar job postings from external job boards.
             
     
     * * *
@@ -653,7 +644,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 ### **4.5. Dependencies Diagram**
 
 
-<img width="1328" height="485" alt="Screenshot 2025-09-26 at 3 36 01 PM" src="https://github.com/user-attachments/assets/80a6d354-6dc8-4865-9794-4166148066de" />
+![System Diagram](./images/M2_dependency.png)
 
 
 
