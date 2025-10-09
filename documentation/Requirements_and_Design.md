@@ -57,7 +57,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 ### **3.2. Use Case Diagram**
 
-![System Diagram](./images/M2_usecase_final.png)
+![System Diagram](./images/usecase_M3.drawio.png)
 
 
 ### **3.3. Actors Description**
@@ -86,18 +86,16 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 *   **Paste job posting:** The user pastes job posting text; the system stores title, company, and description.
     
-*   **Paste job posting link:** The user saves a URL; the system fetches and normalizes the jpb posting.
+*   **Paste job posting link:** The user saves a URL; the system fetches and normalizes the job posting.
     
-*   **Click saved job applications:** The user opens a stored job application in their job portfolio.
+*   **View saved job application details:** The user opens a stored job application in their job portfolio.
     
 *   **Delete job application:** The user removes an existing job from their portfolio.
     
 
 **Feature 3: Generate Questions**
 
-*   **Generate questions for a saved job:** The system produces behavioral (OpenAI) and technical (LeetCode) sets for the selected job.
-    
-*   **View overall progress:** The system shows completion status across generated questions.
+*   **Generate questions for a saved job:** The system produces behavioral (OpenAI) and technical (LeetCode) sets for the selected job. The system shows the user's overall completion progress across the generated questions.
     
 *   **Access Technical Questions:** The user opens the technical set for that job.
     
@@ -106,28 +104,18 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 **Feature 4: Solving Technical Questions**
 
-*   **Click to solve a Technical Question:** The user selects a problem to practice.
+*   **Solve a Technical Question:** The user selects a problem to practice then the system redireted the user to the external website that hosts the question (LeetCode).
     
-*   **Redirect to external website:** The system opens the problem on its host platform.
-    
-*   **Mark a technical question as complete:** The user marks it done; overall progress updates.
+*   **Mark a technical question as complete:** The user marks a question as completed; overall user progress for the job application updates.
     
 
 **Feature 5: Mock Interviews**
 
 *   **Start mock interview:** The user starts a behavioral mock interview session for the selected job.
     
-*   **Answer behavioral question:** The user types an answer into the response box.
-
-*   **Submit Answer:** The user submits their answer to the behvaioural question. This use case includes getting a feedback to the user's answer using OpenAI API and marking the question as complete.
+*   **Answer behavioral questions:** The user types an answer into the response box and submits. The system analyzes the answer via OpenAI and returns feedback then marks the question as complete.
     
-*   **Get feedback:** The system analyzes the answer via OpenAI and returns feedback. This is included when a user submits an answer to a behavioural question.
-
-*   **Mark Behavioural Question as complete:** This is included in the Submit Answer use case, where the system automatically marks a behavioural question as a complete when a user submits an answerto it.
-    
-*   **End/Finish a mock interview:** The user can end the session without completing the set of questios or finish the session my completing the entire set of questions. This includes getting feedback and a summary analysis using the OpenAI API.
-    
-*   **Get summary and analysis:** The system compiles per-question feedback and an overall summary.
+*   **End/Finish a mock interview:** The user can end the session without completing the set of questios or finish the session my completing the entire set of questions. The system then gives the user feedback and a summary analysis using the OpenAI API.
     
 
 **Feature 6: Find Similar Jobs**
@@ -136,7 +124,7 @@ Any user can browse a list of active discussions and find discussions relevant t
     
 *   **View a similar and close-by job:** The user opens a posting to view the found job posting details.
     
-*   **Save a similar job:** The user adds the viewed similar job posting to their portfolio.
+*   **Save a similar and close-by job:** The user adds the viewed similar job posting to their portfolio.
     
 
 **Feature 7: Manage Discussions**
@@ -151,15 +139,14 @@ Any user can browse a list of active discussions and find discussions relevant t
 
   
 ### **3.5. Formal Use Case Specifications (5 Most Major Use Cases)**
+
 <a name="uc1"></a>
 
 #### Use Case 1: Generate Questions for a Saved Job 
 
-**Description**: User generates tailored interview questions (behavioral and technical) for a specific saved job application using external APIs.
+**Description**: User selects a saved job application and requests tailored interview questions (behavioral and technical) for the selected job application.
 
-**Primary actor(s)**: User
-
-**Secondar actor(s)**: OpenAI API, Community LeetCode API
+**Primary actor(s)**: User, OpenAI API, Community LeetCode API
 
 **Preconditions:** 
 - User is authenticated and logged into the system
@@ -172,69 +159,41 @@ Any user can browse a list of active discussions and find discussions relevant t
     
 **Main success scenario**:
 1. User navigates to their job applications list
-2. User selects one of their saved job applications
+2. User selects a saved job application
 3. User clicks on "Generate Questions" button
-4. System extracts job description and requirements from the selected application
+4. System obtains saved job description details
 5. System calls OpenAI API to generate behavioral questions based on job description
-6. System calls Community LeetCode API to gather relevant coding questions based on job title and requirements
+6. System calls Community LeetCode API to gather relevant coding questions based on job details
 7. System processes and stores the generated questions
 8. System displays two options: "Behavioral Questions" and "Technical Questions" buttons
 9. User can click either button to view the respective list of generated questions
 
 **Failure scenario(s)**:
-- 1a. Job applications list fails to load:
-    - System displays error message: "Unable to load job applications. Please check your connection and try again."
-
-- 2a. No saved job applications available:
-    - System displays message: "No job applications found. Please add a job application first."
-    - System provides option to "Add Job Application"
-
-- 2b. Selected job application cannot be accessed:
-    - System displays error message: "Selected job application is no longer available or corrupted."
-
-- 3a. Generate Questions button is unresponsive:
-    - System displays error message: "Service temporarily unavailable. Please try again shortly."
 
 - 4a. No job description content available:
-    - System displays error message: "Unable to generate questions. Job description is missing or incomplete. Please edit the job application and add job description content."
-
-- 4b. Job description extraction fails:
-    - System displays error message: "Unable to process job description. Please try again or contact support."
+    - 4a1. System displays error message: "Unable to generate questions. Job description is missing or incomplete. Please edit the job application and add job description content."
 
 - 5a. OpenAI API failure:
-    - System displays error message: "Unable to generate behavioral questions at this time."
-    - System continues to step 6 to attempt coding questions generation
-    - If coding questions are successfully generated, system displays only "Technical Questions" button
-    - If both APIs fail, no buttons are displayed and use case terminates unsuccessfully
+    - 5a1. System displays error message: "Unable to generate behavioral questions at this time."
+    - 5a2. System continues to step 6 to attempt coding questions generation.
+    - 5a3. No "Behavioural Questions" button will be available in step 8.
 
 - 5b. OpenAI API returns no behavioral questions:
-    - System displays warning: "No behavioral questions could be generated for this job type."
-    - System continues to step 6 to attempt coding questions generation
-    - If coding questions are successfully generated, system displays only "Technical Questions" button
-    - If no coding questions are generated either, no buttons are displayed and use case terminates unsuccessfully
+    - 5b1. System displays warning: "No behavioral questions could be generated for this job type."
+    - 5b2. System continues to step 6 to attempt coding questions generation.
+    - 5b3. No "Behavioural Questions" button will be available in step 8.
 
 - 6a. Community LeetCode API failure:
-    - System displays error message: "Unable to generate coding questions at this time."
-    - If behavioral questions were successfully generated, system displays only "Behavioral Questions" button
-    - If both APIs fail, no buttons are displayed and use case terminates unsuccessfully
+    - 6a1. System displays error message: "Unable to generate coding questions at this time."
+    - 6a2. No "Technical Questions" button will be available in step 8.
 
 - 6b. LeetCode API returns no coding questions:
-    - System displays warning: "No relevant coding questions found for this job type."
-    - If behavioral questions were successfully generated, system displays only "Behavioral Questions" button
-    - If no behavioral questions were generated either, no buttons are displayed and use case terminates unsuccessfully
-
+    - 6b1. System displays warning: "No relevant coding questions found for this job type."
+    - 6b2. No "Technical Questions" button will be available in step 8.
+    
 - 7a. Question processing failure:
-    - System displays error message: "Questions generated but could not be processed. Please try again."
+    - 7a1. System displays error message: "Questions generated but could not be processed. Please try again."
 
-- 7b. Question storage failure:
-    - System displays error message: "Questions generated but could not be saved. Please try again."
-
-- 8a. UI rendering failure:
-    - System displays error message: "Interface error occurred. Please refresh and try again."
-
-- 9a. Button interaction failure:
-    - System displays error message: "Unable to load questions. Please try generating questions again."
-    - Use case returns to step 3
 
 
 
@@ -342,10 +301,9 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 #### Use Case 4: Find Similar and Close-by jobs 
 
-**Description:** User searches for job postings with similar titles and roles to their saved job application, filtered by proximity to the original job location and remote opportunities.
+**Description:** User selects a saved job describtion and requests similar job postings that have similar titles and duties to their saved job, the simialr jobs are filtered by proximity to the original job location and include remote opportunities.
 
 **Primary Actors:** User  
-**Secondary Actors:** External Job Search Services  
 
 **Preconditions:** 
 - User is authenticated and logged into the system
@@ -354,11 +312,10 @@ Any user can browse a list of active discussions and find discussions relevant t
 **Post-conditions:** 
 - User receives a curated list of similar job postings
 - User can view job details and save interesting positions to their saved job applications
-- Search results are temporarily cached for quick access
 
 **Main Success Scenario:**
 1. User navigates to their job applications list
-2. User selects one of their saved job applications
+2. User selects a saved job application, which has a "Fine Similar Jobs" button on the bottom of the screen
 3. User clicks on "Find Similar Jobs" button
 4. System retrieves saved job title, key requirements, and location from the selected application
 5. System searches external job sites for similar positions
@@ -369,82 +326,36 @@ Any user can browse a list of active discussions and find discussions relevant t
 10. User can choose to save the job posting to their saved job applications
 
 **Failure scenario(s)**:
-- 1a. Job applications list fails to load:
-    - 1a1. System displays error message: "Unable to load job applications. Please check your connection and try again."
-
-- 2a. No saved job applications available:
-    - 2a1. System displays message: "No job applications found. Please add a job application first."
-    - 2a2. System provides option to "Add Job Application"
-
-- 2b. Selected job application cannot be accessed:
-    - 2b1. System displays error message: "Selected job application is no longer available or corrupted."
-
-- 3a. Find Similar Jobs button is unresponsive:
-    - 3a1. System displays error message: "Service temporarily unavailable. Please try again."
-
-- 4a. System fails to retrieve job data:
-    - 4a1. System displays error message: "Unable to retrieve job details. Please try again."
-
 - 4b. Original job location is unavailable:
     - 4b1. System displays warning: "Original job location not found. Showing all similar positions without location filtering."
     - 4b2. System continues without location-based filtering
 
-- 4c. Insufficient job information for meaningful search:
-    - 4c1. System displays warning: "Limited job information may result in broad search results."
-    - 4c2. System continues with available information
-
-- 5a. External job search service failure:
-    - 5a1. System displays error message: "Unable to search job sites at this time. Please try again later."
-
-- 5b. Job sites are temporarily unavailable:
-    - 5b1. System displays error message: "Job search services are currently unavailable. Please try again later."
+- 5a. No similar jobs found:
+    - 5a1. System displays error message: "No similar jobs found. Check back later"
+    - 5a2. The use case terminates unsuccessfully and the system just shows the current saved job description screen.
 
 - 6a. Distance calculation fails:
     - 6a1. System displays warning: "Unable to calculate distances from original job location. Showing all results."
 
-- 6b. Found job locations cannot be processed:
-    - 6b1. System displays warning: "Some job locations could not be processed. Results may be incomplete."
+- 8a. No similar jobs found after location filtration:
+    - 8a1. System displays message: "No similar job postings found near the original job location. Check back later."
+    - 8a2. The use case terminates unsuccessfully and the system just shows the current saved job description screen.
 
-- 7a. Location filtering service failure:
-    - 7a1. System displays warning: "Location filtering unavailable. Showing all results."
-
-- 8a. No similar jobs found:
-    - 8a1. System displays message: "No similar job postings found near the original job location. Try broadening your search criteria or check back later."
-
-- 8b. Results display failure:
-    - 8b1. System displays error message: "Unable to display search results. Please try again."
-
-- 9a. Job posting details cannot be retrieved:
-    - 9a1. System displays error message: "Unable to load job details. This posting may no longer be available."
-
-- 9b. External job site is unresponsive:
-    - 9b1. System displays error message: "Job details temporarily unavailable. Please try again later."
-    - 9b2. User returns to search results list
-
-- 10a. Save job posting fails:
-    - 10a1. System displays error message: "Unable to save job posting. Please try again."
-    - 10a2. User can retry saving or continue browsing other results
-
-- 10b. Duplicate job posting detected:
-    - 10b1. System displays warning: "This job posting is already in your applications."
-    - 10b2. User can continue browsing other results
-
-- 10c. System storage operation fails:
-    - 10c1. System displays error message: "Error occurred while saving. Please try again."
-    - 10c2. User can retry saving or continue browsing other results
+- 10a. Duplicate job posting detected:
+    - 10a1. System displays warning: "This job posting is already in your applications."
+    - 10a2. User can continue browsing other results
 
 ----
 <a name="uc5"></a>
 
 #### Use Case 5: Create Discussion  
 
-**Description**: User creates a new discussion topic to connect with other job seekers preparing for similar interviews and share experiences.
+**Description**: User creates a new discussion and enters the topic of the discussion. This created discussion is then available for all users to browse, view and post in.
 
 **Primary actor(s)**: User  
 
 **Preconditions:**  
 - User is authenticated and logged into the system
-- User has access to the discussions feature
 
 **Post-conditions:**  
 - New discussion topic is created and stored in the system
