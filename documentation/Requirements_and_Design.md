@@ -4,7 +4,7 @@
 
 | **Change Date**   | **Modified Sections** | **Rationale** |
 | ----------------- | --------------------- | ------------- |
-| _Nothing to show_ |
+| . October 9th 2025| usecase diagram, usecase descriptions. formal use case specifications, backend components, high level design
 
 ---
 
@@ -454,7 +454,7 @@ Any user can browse a list of active discussions and find discussions relevant t
         
         *   **Purpose:** Store user authentication info, profile data, and ownership of content.
             
-    2. **jobApplications**
+    2. **jobs**
         
         *   **Purpose:** Contain uploaded job postings, including title, company, description, tags.
             
