@@ -162,19 +162,19 @@ Any user can browse a list of active discussions and find discussions relevant t
 2. User selects a saved job application
 3. User clicks on "Generate Questions" button
 4. System obtains saved job description details
-5. System calls OpenAI API to generate behavioral questions based on job description
-6. System calls Community LeetCode API to gather relevant coding questions based on job details
-7. System processes and stores the generated questions
-8. System displays two options: "Behavioral Questions" and "Technical Questions" buttons
-9. User can click either button to view the respective list of generated questions
+5. System calls OpenAI API and LeetCode API to generate behavioural and technical questions.
+6. System processes and stores the generated questions
+7. System displays two options: "Behavioral Questions" and "Technical Questions" buttons
+8. User can click either button to view the respective list of generated questions
 
 **Failure scenario(s)**:
 
 - 4a. No job description content available:
-    - 4a1. System displays error message: "Unable to generate questions. Job description is missing or incomplete. Please edit the job application and add job description content."
+    - 4a1. System displays error message: "Unable to generate questions. Job description is missing or incomplete."
+    - 4a2. System continues showing the saved job appliaction screen. 
 
 - 5a. OpenAI API failure:
-    - 5a1. System displays error message: "Unable to generate behavioral questions at this time."
+    - 5a1. System displays error message: "Unable to generate behavioral questions at this time. Please try again later."
     - 5a2. System continues to step 6 to attempt coding questions generation.
     - 5a3. No "Behavioural Questions" button will be available in step 8.
 
@@ -183,42 +183,42 @@ Any user can browse a list of active discussions and find discussions relevant t
     - 5b2. System continues to step 6 to attempt coding questions generation.
     - 5b3. No "Behavioural Questions" button will be available in step 8.
 
-- 6a. Community LeetCode API failure:
-    - 6a1. System displays error message: "Unable to generate coding questions at this time."
-    - 6a2. No "Technical Questions" button will be available in step 8.
+- 5c. Community LeetCode API failure:
+    - 5c1. System displays error message: "Unable to generate coding questions at this time."
+    - 5c2. No "Technical Questions" button will be available in step 8.
 
-- 6b. LeetCode API returns no coding questions:
-    - 6b1. System displays warning: "No relevant coding questions found for this job type."
-    - 6b2. No "Technical Questions" button will be available in step 8.
+- 5d. LeetCode API returns no coding questions:
+    - 5d1. System displays warning: "No relevant coding questions found for this job type."
+    - 5d2. No "Technical Questions" button will be available in step 8.
     
-- 7a. Question processing failure:
-    - 7a1. System displays error message: "Questions generated but could not be processed. Please try again."
+- 6a. Question processing failure:
+    - 6a1. System displays error message: "Questions generated but could not be processed. Please try again later."
 
 
 
 
 <a name="uc2"></a>
 
-#### Use Case 2: Solve Technical Questions  
+#### Use Case 2: Solve a Technical Question  
 
-**Description**: User accesses and solves technical coding questions by being redirected to external coding platforms, then marks questions as complete to track progress.
+**Description**: User accesses and solves a technical coding question by being redirected to external coding platforms, then user can mark the question as complete to track progress.
 
 **Primary actor(s)**: User  
 
-**Secondary actor(s)**: External Coding Platforms (LeetCode, HackerRank)  
-
-**Preconditions:**  
+**Preconditions:** 
+- User is authenticated and logged in 
 - User has generated technical questions for a job application
 - Technical questions list is displayed to the user
 
 **Post-conditions:**  
 - User is redirected to external coding platform to solve the problem
+- User can return back to the app and mark the question as complete
 
 **Main success scenario**:  
 1. User navigates to the list of technical questions for a selected job application
-2. User clicks on a specific technical question
+2. User clicks to solve a specific technical question
 3. System retrieves the stored problem URL for the selected question
-4. System opens the external coding platform URL in a new browser tab/window
+4. System opens the external coding platform URL in a browser tab/window
 5. User solves the problem on the external platform
 
 **Failure scenario(s)**:  
@@ -232,9 +232,6 @@ Any user can browse a list of active discussions and find discussions relevant t
     - 3a1. System displays error message: "Problem link not available for this question."
     - 3a2. User returns to questions list
 
-- 4a. External coding platform is unavailable:
-    - 4a1. System displays error message: "The coding platform is currently unavailable. Please try again later."
-
 - 4b. Browser fails to open new tab:
     - 4b1. System displays error message: "Unable to redirect. Please copy the link and open manually."
     - 4b2. System provides clickable link as fallback
@@ -243,9 +240,9 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 <a name="uc3"></a>
 
-#### Use Case 3: Start Mock Interview Session  
+#### Use Case 3: Start Mock Interview 
 
-**Description**: User initiates a mock interview session for behavioral questions, progressing through questions with AI-powered feedback and performance tracking.
+**Description**: User initiates a mock interview session for the generated behavioral questions, progressing through questions with AI-powered feedback and performance tracking.
 
 **Primary actor(s)**: User  
 
@@ -319,11 +316,10 @@ Any user can browse a list of active discussions and find discussions relevant t
 3. User clicks on "Find Similar Jobs" button
 4. System retrieves saved job title, key requirements, and location from the selected application
 5. System searches external job sites for similar positions
-6. System calculates distance between each found job location and the original job's location
-7. System filters results for opportunities near the original job location or remote positions
-8. System displays a curated list of similar job postings with location information relative to original job
-9. User taps on a job posting to view full details
-10. User can choose to save the job posting to their saved job applications
+6. System filters results for opportunities near the original job location or remote positions
+7. System displays a curated list of similar job postings with location information relative to original job
+8. User taps on redirect button to be redirected to job posting's website
+9. User can choose to save the job posting to their saved job applications
 
 **Failure scenario(s)**:
 - 4b. Original job location is unavailable:
@@ -334,16 +330,13 @@ Any user can browse a list of active discussions and find discussions relevant t
     - 5a1. System displays error message: "No similar jobs found. Check back later"
     - 5a2. The use case terminates unsuccessfully and the system just shows the current saved job description screen.
 
-- 6a. Distance calculation fails:
-    - 6a1. System displays warning: "Unable to calculate distances from original job location. Showing all results."
+- 7a. No similar jobs found after location filtration:
+    - 7a1. System displays message: "No similar job postings found near the original job location. Check back later."
+    - 7a2. The use case terminates unsuccessfully and the system just shows the current saved job description screen.
 
-- 8a. No similar jobs found after location filtration:
-    - 8a1. System displays message: "No similar job postings found near the original job location. Check back later."
-    - 8a2. The use case terminates unsuccessfully and the system just shows the current saved job description screen.
-
-- 10a. Duplicate job posting detected:
-    - 10a1. System displays warning: "This job posting is already in your applications."
-    - 10a2. User can continue browsing other results
+- 9a. Duplicate job posting detected:
+    - 9a1. System displays warning: "This job posting is already in your applications."
+    - 9a2. User can continue browsing other results
 
 ----
 <a name="uc5"></a>
@@ -374,15 +367,6 @@ Any user can browse a list of active discussions and find discussions relevant t
 9. User can begin posting messages in the discussion
 
 **Failure scenario(s)**:  
-- 1a. Discussions section fails to load:
-    - 1a1. System displays error message: "Unable to load discussions. Please check your connection and try again."
-
-- 2a. Create Discussion button is unresponsive:
-    - 2a1. System displays error message: "Service temporarily unavailable. Please try again."
-
-- 3a. Discussion creation form fails to display:
-    - 3a1. System displays error message: "Unable to load discussion form. Please refresh and try again."
-
 - 4a. User submits empty discussion topic:
     - 4a1. System displays validation error: "Discussion topic is required. Please enter a topic title."
     - 4a2. User remains on creation form to provide input
@@ -394,20 +378,6 @@ Any user can browse a list of active discussions and find discussions relevant t
 - 5a. Initial description exceeds character limit:
     - 5a1. System displays validation error: "Description is too long. Please keep it under 500 characters."
     - 5a2. User can edit the description
-
-- 6a. Create Discussion submission fails:
-    - 6a1. System displays error message: "Unable to submit discussion. Please try again."
-
-- 7a. System storage fails:
-    - 9a1. System displays error message: "Unable to save discussion. Please try again."
-    - 9a2. User can retry creation
-
-- 8a. Redirection to discussion page fails:
-    - 10a1. System displays message: "Discussion created successfully but unable to redirect. Please check your discussions list."
-    - 10a2. System provides manual link to the new discussion
-
-- 9a. Initial message posting interface fails to load:
-    - 11a1. System displays warning: "Discussion created but messaging interface unavailable. Please refresh to start posting."
 
 ---
 
@@ -451,7 +421,7 @@ Any user can browse a list of active discussions and find discussions relevant t
    ### 4.1. Main Components
    ###
 
-**Job Applications**
+**Jobs**
 - **Purpose:** Handle job application management - adding, storing, viewing, and organizing user's saved job postings
 - **Rationale:** Centralizes all job-related data operations and provides foundation for question generation
 
@@ -459,15 +429,11 @@ Any user can browse a list of active discussions and find discussions relevant t
 - **Purpose:** Manage user authentication, profiles, and user-specific data access
 - **Rationale:** Handles all user-related operations and maintains user session state
 
-**Question Bank**
+**Questions**
 - **Purpose:** Generate, store, and retrieve technical and behavioral interview questions for specific job applications
 - **Rationale:** Encapsulates question generation logic and manages question lifecycle
 
-**Mock Interview**
-- **Purpose:** Conduct mock interview sessions, collect user responses, and provide AI-generated feedback
-- **Rationale:** Manages interview flow and integrates with OpenAI for response analysis
-
-**Discussion**
+**Discussions**
 - **Purpose:** Handle discussion room creation, management, and user participation
 - **Rationale:** Manages community features separate from individual practice components
                 
