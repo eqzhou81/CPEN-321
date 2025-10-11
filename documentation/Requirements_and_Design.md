@@ -270,24 +270,11 @@ Any user can browse a list of active discussions and find discussions relevant t
 - 1a. Behavioral questions list fails to load:
     - 1a1. System displays error message: "Unable to load behavioral questions. Please try again."
 
-- 2a. Start Mock Interview button is unresponsive:
-    - 2a1. System displays error message: "Service temporarily unavailable. Please try again."
-
-- 3a. No behavioral questions exist for selected job:
-    - 3a1. System displays message: "No behavioral questions available for this job. Please generate questions first."
-    - 3a2. System provides option to return to question generation
-
 - 3b. Question retrieval from storage fails:
     - 3b1. System displays error message: "Unable to retrieve questions. Please try generating questions again."
 
-- 4a. Mock interview session initialization fails:
-    - 4a1. System displays error message: "Unable to start mock interview session. Please try again later."
-
 - 4b. Session interface fails to load:
     - 4b1. System displays error message: "Interview interface could not load. Please refresh and try again."
-
-- 5a. Question display fails:
-    - 5a1. System displays error message: "Unable to display question. Please restart the mock interview."
 
 - 5b. OpenAI API connection fails during session setup:
     - 5b1. System displays error message: "Interview feedback service unavailable. Please try again later."
@@ -311,30 +298,29 @@ Any user can browse a list of active discussions and find discussions relevant t
 - User can view job details and save interesting positions to their saved job applications
 
 **Main Success Scenario:**
-1. User navigates to their job applications list
-2. User selects a saved job application, which has a "Fine Similar Jobs" button on the bottom of the screen
-3. User clicks on "Find Similar Jobs" button
-4. System retrieves saved job title, key requirements, and location from the selected application
-5. System searches external job sites for similar positions
-6. System filters results for opportunities near the original job location or remote positions
-7. System displays a curated list of similar job postings with location information relative to original job
-8. User taps on redirect button to be redirected to job posting's website
-9. User can choose to save the job posting to their saved job applications
+1. User selects a saved job application, which has a "Fine Similar Jobs" button on the bottom of the screen
+2. User clicks on "Find Similar Jobs" button
+3. System retrieves saved job title, key requirements, and location from the selected application
+4. System searches external job sites for similar positions
+5. System filters results for opportunities near the original job location or remote positions
+6. System displays a curated list of similar job postings with location information relative to original job
+7. User taps on redirect button to be redirected to job posting's website
+8. User can choose to save the job posting to their saved job applications
 
 **Failure scenario(s)**:
-- 4b. Original job location is unavailable:
+- 3b. Original job location is unavailable:
     - 4b1. System displays warning: "Original job location not found. Showing all similar positions without location filtering."
     - 4b2. System continues without location-based filtering
 
-- 5a. No similar jobs found:
+- 4a. No similar jobs found:
     - 5a1. System displays error message: "No similar jobs found. Check back later"
     - 5a2. The use case terminates unsuccessfully and the system just shows the current saved job description screen.
 
-- 7a. No similar jobs found after location filtration:
+- 6a. No similar jobs found after location filtration:
     - 7a1. System displays message: "No similar job postings found near the original job location. Check back later."
     - 7a2. The use case terminates unsuccessfully and the system just shows the current saved job description screen.
 
-- 9a. Duplicate job posting detected:
+- 8a. Duplicate job posting detected:
     - 9a1. System displays warning: "This job posting is already in your applications."
     - 9a2. User can continue browsing other results
 
@@ -534,6 +520,12 @@ Any user can browse a list of active discussions and find discussions relevant t
 ![System Diagram](./images/sequence_uc1.png)
 #### **Use Case 2: Solve a Technical Question**
 ![System Diagram](./images/sequence_usecase2.png)
+#### **Use Case 3: Start Mock Interview**
+![System Diagram](./images/seqence_uc3.png)
+#### **Use Case 4: Find Similar and Close-by jobs **
+![System Diagram](./images/sequence_uc4.png)
+#### **Use Case 5: Create Discussion**
+![System Diagram](./images/sequence_uc5.png)
 
 
 
