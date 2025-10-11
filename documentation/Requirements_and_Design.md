@@ -424,18 +424,22 @@ Any user can browse a list of active discussions and find discussions relevant t
 **Jobs**
 - **Purpose:** Handle job application management - adding, storing, viewing, and organizing user's saved job postings
 - **Rationale:** Centralizes all job-related data operations and provides foundation for question generation
+- **Interface:**
 
 **Users** 
 - **Purpose:** Manage user authentication, profiles, and user-specific data access
 - **Rationale:** Handles all user-related operations and maintains user session state
+- **Interface:**
 
 **Questions**
 - **Purpose:** Generate, store, and retrieve technical and behavioral interview questions for specific job applications
 - **Rationale:** Encapsulates question generation logic and manages question lifecycle
+- **Interface:**
 
 **Discussions**
 - **Purpose:** Handle discussion room creation, management, and user participation
 - **Rationale:** Manages community features separate from individual practice components
+- **Interface:** 
                 
     
     * * *
@@ -525,16 +529,8 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 
 
-<!-- ### **4.6. Use Case Sequence Diagram (5 Most Major Use Cases)**
-<img width="1418" height="540" alt="Screenshot 2025-09-26 at 3 44 19 PM" src="https://github.com/user-attachments/assets/ec283ee1-790b-4bc0-8d99-c9c7fec30dea" />
-
-<img width="823" height="430" alt="Screenshot 2025-09-26 at 3 45 37 PM" src="https://github.com/user-attachments/assets/d65f562b-1972-4fbe-896d-4f240880c25a" />
-
-<img width="796" height="394" alt="Screenshot 2025-09-26 at 3 46 34 PM" src="https://github.com/user-attachments/assets/fa00cc4e-490a-4b1e-9c4d-49c861dc0687" />
-
-<img width="935" height="386" alt="Screenshot 2025-09-26 at 3 47 28 PM" src="https://github.com/user-attachments/assets/621f8d6a-5c27-4d50-9d3e-447412d9c345" />
-
-<img width="902" height="391" alt="Screenshot 2025-09-26 at 3 48 19 PM" src="https://github.com/user-attachments/assets/fe91ab5e-c566-4b11-8018-7a2021a66d62" /> -->
+### **4.6. Use Case Sequence Diagram (5 Most Major Use Cases)**
+![System Diagram](./images/sequence_uc1.png)
 
 
 
