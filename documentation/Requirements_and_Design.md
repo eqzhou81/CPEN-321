@@ -530,7 +530,10 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 
 ### **4.6. Use Case Sequence Diagram (5 Most Major Use Cases)**
+#### **Use Case 1: Generate Questions for a Saved Job**
 ![System Diagram](./images/sequence_uc1.png)
+#### **Use Case 2: Solve a Technical Question**
+![System Diagram](./images/sequence_usecase2.png)
 
 
 
