@@ -1,7 +1,16 @@
 import { NextFunction, Request, RequestHandler, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
-import { userModel } from './user.model';
+import { userModel } from '../models/user.model';
+
+// Extend Request interface to include user
+declare global {
+  namespace Express {
+    interface Request {
+      user?: any;
+    }
+  }
+}
 
 export const authenticateToken: RequestHandler = async (
   req: Request,
