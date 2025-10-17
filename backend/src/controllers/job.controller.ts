@@ -10,7 +10,7 @@ import {
     JobSearchRequest,
     SimilarJobsResponse,
     UpdateJobApplicationRequest,
-} from '../types/job.types';
+} from '../types/jobs.types';
 import logger from '../utils/logger.util';
 
 export class JobController {

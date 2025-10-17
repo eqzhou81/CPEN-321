@@ -5,7 +5,7 @@ import {
     createJobApplicationSchema,
     IJobApplication,
     updateJobApplicationSchema,
-} from '../types/job.types';
+} from '../types/jobs.types';
 import logger from '../utils/logger.util';
 
 const jobApplicationSchema = new Schema<IJobApplication>(

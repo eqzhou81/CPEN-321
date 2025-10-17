@@ -7,7 +7,7 @@ import {
     IScraperConfig,
     IScraperResult,
     ISimilarJob
-} from '../types/job.types';
+} from '../types/jobs.types';
 import { LocationUtils } from '../utils/location.util';
 import logger from '../utils/logger.util';
 

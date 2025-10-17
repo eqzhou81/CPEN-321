@@ -1,5 +1,5 @@
 import geocoder from 'node-geocoder';
-import { ILocation } from '../types/job.types';
+import { ILocation } from '../types/jobs.types';
 import logger from './logger.util';
 
 // Initialize geocoder with OpenStreetMap provider (free)

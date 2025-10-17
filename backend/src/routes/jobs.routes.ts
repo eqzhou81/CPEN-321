@@ -6,7 +6,7 @@ import {
     createJobApplicationSchema,
     jobSearchSchema,
     updateJobApplicationSchema,
-} from '../types/job.types';
+} from '../types/jobs.types';
 
 const router = Router();
 const jobController = new JobController();
