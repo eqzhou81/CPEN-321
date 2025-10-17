@@ -36,7 +36,7 @@ export interface DeleteProfileRequest {
 // ==================== RESPONSE TYPES ====================
 
 // Profile Response (what gets sent back to client)
-export interface ProfileResponse {
+export interface GetProfileResponse {
   id: string;
   email: string;
   name: string;
@@ -56,7 +56,7 @@ export interface DeleteProfileResponse {
 export interface UpdateProfileResponse {
   success: boolean;
   message: string;
-  profile: ProfileResponse;
+  profile: GetProfileResponse;
 }
 
 // ==================== VALIDATION SCHEMAS ====================
@@ -94,6 +94,12 @@ export interface AuthenticatedRequest extends Request {
 
 // ==================== HELPER TYPES ====================
 
+export interface GoogleUserInfo {
+  googleId: string;
+  email: string;
+  name: string;
+}
+
 // For creating a new user (from Google OAuth)
 export interface CreateUserInput {
   googleId: string;
@@ -105,7 +111,7 @@ export interface CreateUserInput {
 // For updating user in database (internal use)
 export interface UpdateUserInput {
   name?: string;
-  updatedAt: Date;
+  updatedAt?: Date;  // Make this optional since the model sets it automatically
 }
 
 // For adding/removing saved jobs (internal use)

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { IUser } from './user.types';
+import { IUser } from './users.types';
 
 // Zod schemas
 // ------------------------------------------------------------
@@ -27,7 +27,7 @@ export type AuthResult = {
 declare global {
   namespace Express {
     interface Request {
-      user?: IUser;
+      users?: IUser;
     }
   }
 }

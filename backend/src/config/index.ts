@@ -3,8 +3,8 @@ import express from 'express';
 import cors from 'cors';
 
 import { connectDB } from './database';
-import { errorHandler, notFoundHandler } from '../../middleware/errorHandler.middleware';
-import router from '../../routes/routes';
+import { errorHandler, notFoundHandler } from '../middleware/errorHandler.middleware';
+import router from '../routes/routes';
 import path from 'path';
 
 dotenv.config();

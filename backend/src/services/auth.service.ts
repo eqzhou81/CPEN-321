@@ -1,10 +1,10 @@
 import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 
-import type { AuthResult } from './auth.types';
-import type { GoogleUserInfo, IUser } from './user.types';
-import logger from './logger.util';
-import { userModel } from './user.model';
+import type { AuthResult } from '../types/auth.types';
+import type { GoogleUserInfo, IUser } from '../types/users.types';
+import logger from '../utils/logger.util';
+import { userModel } from '../models/user.model';
 
 export class AuthService {
   private googleClient: OAuth2Client;
@@ -33,7 +33,7 @@ export class AuthService {
         googleId: payload.sub,
         email: payload.email,
         name: payload.name,
-        profilePicture: payload.picture,
+      
       };
     } catch (error) {
       logger.error('Google token verification failed:', error);

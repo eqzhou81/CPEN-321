@@ -171,8 +171,8 @@ export class JobSearchService {
               const locationEl = card.querySelector(selectors.location);
               const descriptionEl = card.querySelector(selectors.description);
               const urlEl = card.querySelector(selectors.url);
-              const salaryEl = card.querySelector(selectors.salary);
-              const postedEl = card.querySelector(selectors.postedDate);
+              const salaryEl = selectors.salary ? card.querySelector(selectors.salary) : null;
+              const postedEl = selectors.postedDate ? card.querySelector(selectors.postedDate) : null;
               
               if (titleEl && companyEl) {
                 const job: any = {
