@@ -5,6 +5,8 @@ import {
   UpdateUserInput,
   AddSavedJobInput,
   RemoveSavedJobInput,
+  AddSavedQuestionInput,
+  RemoveSavedQuestionInput,
 } from '../types/users.types';
 
 // ==================== MONGOOSE SCHEMA ====================
@@ -31,6 +33,10 @@ const userSchema = new Schema<IUser>(
       trim: true,
     },
     savedJobs: {
+      type: [String],
+      default: [],
+    },
+    savedQuestions: {
       type: [String],
       default: [],
     },
@@ -153,6 +159,46 @@ class UserModel {
   async getSavedJobs(userId: string): Promise<string[]> {
     const user = await User.findById(userId).select('savedJobs').exec();
     return user ? user.savedJobs : [];
+  }
+
+  /**
+   * Get user's saved questions
+   */
+  async getSavedQuestions(userId: string): Promise<string[]> {
+    const user = await User.findById(userId).select('savedQuestions').exec();
+    return user ? user.savedQuestions : [];
+  }
+
+  /**
+   * Add a question to user's saved questions
+   */
+  async addSavedQuestion(input: AddSavedQuestionInput): Promise<IUser | null> {
+    const { userId, questionId } = input;
+
+    return await User.findByIdAndUpdate(
+      userId,
+      {
+        $addToSet: { savedQuestions: questionId }, // $addToSet prevents duplicates
+        updatedAt: new Date(),
+      },
+      { new: true }
+    ).exec();
+  }
+
+  /**
+   * Remove a question from user's saved questions
+   */
+  async removeSavedQuestion(input: RemoveSavedQuestionInput): Promise<IUser | null> {
+    const { userId, questionId } = input;
+
+    return await User.findByIdAndUpdate(
+      userId,
+      {
+        $pull: { savedQuestions: questionId },
+        updatedAt: new Date(),
+      },
+      { new: true }
+    ).exec();
   }
 
   /**
