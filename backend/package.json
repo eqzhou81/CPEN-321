@@ -24,6 +24,7 @@
     "mongoose": "^8.18.0",
     "multer": "^2.0.2",
     "node-geocoder": "^4.4.1",
+    "openai": "^6.5.0",
     "puppeteer": "^24.23.0",
     "zod": "^4.1.1"
   },
