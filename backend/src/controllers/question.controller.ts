@@ -50,7 +50,7 @@ export class QuestionController {
       const question = await questionModel.findById(questionId);
 
       if (!question) {
-        return res.status(404).json({ message: 'Question not found' });
+        return res.status(404).json(); // No body, just 404
       }
 
       const response = this.transformQuestionToResponse(question);
@@ -119,11 +119,19 @@ export class QuestionController {
       const question = await questionModel.update(questionId, updateData);
 
       if (!question) {
-        return res.status(404).json({ message: 'Question not found' });
+        return res.status(404).json({
+          success: false,
+          message: 'Question not found',
+          question: null as any // or undefined, but must match type
+        });
       }
 
       const response = this.transformQuestionToResponse(question);
-      res.status(200).json(response);
+      res.status(200).json({
+        success: true,
+        message: 'Question updated',
+        question: response
+      });
     } catch (error) {
       logger.error('Failed to update question:', error);
       next(error);
