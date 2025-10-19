@@ -12,6 +12,15 @@ import logger from '../utils/logger.util';
 import { questionModel } from '../models/question.model';
 
 export class QuestionController {
+  constructor() {
+    // Bind methods to preserve 'this' context
+    this.createQuestion = this.createQuestion.bind(this);
+    this.getQuestion = this.getQuestion.bind(this);
+    this.getAllUserQuestions = this.getAllUserQuestions.bind(this);
+    this.getQuestionsByTags = this.getQuestionsByTags.bind(this);
+    this.updateQuestion = this.updateQuestion.bind(this);
+  }
+
   // Helper method to transform IUser to GetProfileResponse
   private transformQuestionToResponse(question: Question): GetQuestionResponse {
     return {
@@ -41,7 +50,7 @@ export class QuestionController {
 
   // Get Question by ID
   async getQuestion(
-    req: Request<GetQuestionRequest>, 
+    req: Request<{ id: string }>, 
     res: Response<GetQuestionResponse>,
     next: NextFunction
   ) {

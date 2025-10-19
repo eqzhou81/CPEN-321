@@ -27,7 +27,12 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('*', notFoundHandler);
 app.use(errorHandler);
 
-connectDB();
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+// Only start server if not in test mode
+if (process.env.NODE_ENV !== 'test') {
+  connectDB();
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+  });
+}
+
+export { app };
