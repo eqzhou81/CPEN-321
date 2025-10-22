@@ -219,11 +219,11 @@ export class JobController {
         });
       }
       
-      // Search for similar jobs using database-based algorithm
-      const similarJobs = await jobSearchService.findSimilarJobsFromDatabase(
-        jobApplication,
+      // Search for similar jobs using web scraping + database fallback
+      const similarJobs = await jobSearchService.findSimilarJobs(
+        req.params.id,
         user._id.toString(),
-        req.body
+        req.body.limit || 5
       );
       
       res.status(200).json({

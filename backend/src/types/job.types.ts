@@ -33,7 +33,7 @@ export interface ISimilarJob {
   experienceLevel?: string;
   distance?: number; // Distance from original job location
   isRemote?: boolean;
-  source: 'linkedin' | 'indeed' | 'glassdoor' | 'ziprecruiter' | 'monster' | 'other' | 'database';
+  source: 'linkedin' | 'indeed' | 'glassdoor' | 'ziprecruiter' | 'monster' | 'other' | 'database' | 'github_jobs' | 'remoteok' | 'wellfound' | 'company_careers' | 'rss_feed';
   postedDate?: Date;
   score?: number; // Similarity score for database-based matching
 }

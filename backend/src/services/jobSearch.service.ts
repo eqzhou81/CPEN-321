@@ -131,6 +131,426 @@ export class JobSearchService {
   }
 
   /**
+   * Find similar jobs using multiple strategies: web scraping + database fallback
+   */
+  async findSimilarJobs(
+    jobId: string,
+    userId: string,
+    limit: number = 5
+  ): Promise<ISimilarJob[]> {
+    try {
+      // First try web scraping from alternative sources
+      const scrapedJobs = await this.scrapeSimilarJobsFromAlternativeSources(jobId, limit);
+      
+      if (scrapedJobs.length > 0) {
+        logger.info(`Found ${scrapedJobs.length} similar jobs from web scraping`);
+        return scrapedJobs.slice(0, limit);
+      }
+      
+      // Fallback to database similarity if scraping fails
+      logger.info('Web scraping failed, falling back to database similarity');
+      const jobApplication = await this.getJobById(jobId);
+      if (!jobApplication) {
+        throw new Error('Job not found');
+      }
+      return await this.findSimilarJobsFromDatabase(jobApplication, userId, { limit });
+      
+    } catch (error) {
+      logger.error('Error in findSimilarJobs:', error);
+      // Always fallback to database similarity
+      const jobApplication = await this.getJobById(jobId);
+      if (!jobApplication) {
+        return [];
+      }
+      return await this.findSimilarJobsFromDatabase(jobApplication, userId, { limit });
+    }
+  }
+
+  /**
+   * Scrape similar jobs from alternative sources (RSS feeds, APIs, less protected sites)
+   */
+  private async scrapeSimilarJobsFromAlternativeSources(
+    jobId: string,
+    limit: number
+  ): Promise<ISimilarJob[]> {
+    const similarJobs: ISimilarJob[] = [];
+    
+    try {
+      // Get the original job to extract keywords
+      const originalJob = await this.getJobById(jobId);
+      if (!originalJob) {
+        throw new Error('Original job not found');
+      }
+
+      // Extract search keywords from the original job
+      const searchKeywords = this.extractSearchKeywords(originalJob);
+      
+      // Try multiple alternative sources
+      const sources = [
+        () => this.scrapeFromGitHubJobs(searchKeywords),
+        () => this.scrapeFromRemoteOK(searchKeywords),
+        () => this.scrapeFromAngelList(searchKeywords),
+        () => this.scrapeFromCompanyCareerPages(searchKeywords),
+        () => this.scrapeFromJobRSSFeeds(searchKeywords)
+      ];
+
+      // Try each source until we get enough results
+      for (const source of sources) {
+        try {
+          const jobs = await source();
+          similarJobs.push(...jobs);
+          
+          if (similarJobs.length >= limit) {
+            break;
+          }
+        } catch (error) {
+          logger.warn(`Failed to scrape from source: ${error instanceof Error ? error.message : String(error)}`);
+          continue;
+        }
+      }
+
+      // Calculate similarity scores and sort
+      const scoredJobs = similarJobs.map(job => ({
+        ...job,
+        score: this.calculateJobSimilarity(originalJob, job)
+      }));
+
+      return scoredJobs
+        .filter(job => job.score > 0.1)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, limit);
+
+    } catch (error) {
+      logger.error('Error in scrapeSimilarJobsFromAlternativeSources:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Extract search keywords from a job for finding similar positions
+   */
+  private extractSearchKeywords(job: any): string[] {
+    const keywords: string[] = [];
+    
+    // Extract from title
+    if (job.title) {
+      keywords.push(...this.extractKeywords(job.title));
+    }
+    
+    // Extract from description
+    if (job.description) {
+      keywords.push(...this.extractKeywords(job.description));
+    }
+    
+    // Extract from company
+    if (job.company) {
+      keywords.push(job.company.toLowerCase());
+    }
+    
+    // Extract technical keywords
+    const techKeywords = this.extractTechnicalKeywords(job.description || '');
+    keywords.push(...techKeywords);
+    
+    // Remove duplicates and filter out common words
+    const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'must', 'shall']);
+    
+    return [...new Set(keywords)]
+      .filter(keyword => keyword.length > 2 && !stopWords.has(keyword.toLowerCase()))
+      .slice(0, 10); // Limit to top 10 keywords
+  }
+
+  /**
+   * Scrape jobs from GitHub Jobs API (if available) or similar developer-focused sources
+   */
+  private async scrapeFromGitHubJobs(keywords: string[]): Promise<ISimilarJob[]> {
+    const jobs: ISimilarJob[] = [];
+    
+    try {
+      // Try GitHub Jobs API (deprecated but some alternatives exist)
+      const searchQuery = keywords.slice(0, 3).join(' ');
+      
+      // Alternative: Try Stack Overflow Jobs or similar developer-focused APIs
+      const response = await fetch(`https://jobs.github.com/positions.json?description=${encodeURIComponent(searchQuery)}&location=remote`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        for (const job of data.slice(0, 5)) {
+          jobs.push({
+            title: job.title || 'Unknown Title',
+            company: job.company || 'Unknown Company',
+            location: job.location || 'Remote',
+            description: job.description || '',
+            url: job.url || '',
+            salary: job.salary || '',
+            postedDate: job.created_at || new Date().toISOString(),
+            source: 'github_jobs',
+            score: 0 // Will be calculated later
+          });
+        }
+      }
+    } catch (error) {
+      logger.warn('GitHub Jobs scraping failed:', error instanceof Error ? error.message : String(error));
+    }
+    
+    return jobs;
+  }
+
+  /**
+   * Scrape jobs from RemoteOK (remote job board)
+   */
+  private async scrapeFromRemoteOK(keywords: string[]): Promise<ISimilarJob[]> {
+    const jobs: ISimilarJob[] = [];
+    
+    try {
+      const searchQuery = keywords.slice(0, 2).join(' ');
+      const response = await fetch(`https://remoteok.io/api?tags=${encodeURIComponent(searchQuery)}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        for (const job of data.slice(1, 6)) { // Skip first element (metadata)
+          if (job.position && job.company) {
+            jobs.push({
+              title: job.position,
+              company: job.company,
+              location: 'Remote',
+              description: job.description || '',
+              url: job.url || `https://remoteok.io/remote-jobs/${job.id}`,
+              salary: job.salary || '',
+              postedDate: job.date || new Date().toISOString(),
+              source: 'remoteok',
+              score: 0
+            });
+          }
+        }
+      }
+    } catch (error) {
+      logger.warn('RemoteOK scraping failed:', error instanceof Error ? error.message : String(error));
+    }
+    
+    return jobs;
+  }
+
+  /**
+   * Scrape jobs from AngelList (startup jobs)
+   */
+  private async scrapeFromAngelList(keywords: string[]): Promise<ISimilarJob[]> {
+    const jobs: ISimilarJob[] = [];
+    
+    try {
+      // AngelList has been acquired by Wellfound, but we can try their API
+      const searchQuery = keywords.slice(0, 2).join(' ');
+      
+      // Try to scrape from Wellfound (formerly AngelList)
+      const browser = await puppeteer.launch({ 
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+      
+      const page = await browser.newPage();
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+      
+      try {
+        await page.goto(`https://wellfound.com/jobs?search=${encodeURIComponent(searchQuery)}`, {
+          waitUntil: 'networkidle2',
+          timeout: 10000
+        });
+        
+        const jobData = await page.evaluate(() => {
+          const jobs: any[] = [];
+          const jobCards = document.querySelectorAll('[data-test="JobCard"], .job-card, .job-listing');
+          
+          for (const card of Array.from(jobCards).slice(0, 5)) {
+            const titleEl = card.querySelector('h3, .job-title, [data-test="JobCard-title"]');
+            const companyEl = card.querySelector('.company-name, [data-test="JobCard-company"]');
+            const locationEl = card.querySelector('.location, [data-test="JobCard-location"]');
+            const linkEl = card.querySelector('a');
+            
+            if (titleEl && companyEl) {
+              jobs.push({
+                title: titleEl.textContent?.trim() || '',
+                company: companyEl.textContent?.trim() || '',
+                location: locationEl?.textContent?.trim() || 'Remote',
+                description: '',
+                url: linkEl?.href || '',
+                salary: '',
+                postedDate: new Date().toISOString(),
+                source: 'wellfound'
+              });
+            }
+          }
+          
+          return jobs;
+        });
+        
+        jobs.push(...jobData.map(job => ({ ...job, score: 0 })));
+        
+      } catch (pageError) {
+        logger.warn('Wellfound page scraping failed:', pageError instanceof Error ? pageError.message : String(pageError));
+      } finally {
+        await browser.close();
+      }
+      
+    } catch (error) {
+      logger.warn('AngelList scraping failed:', error instanceof Error ? error.message : String(error));
+    }
+    
+    return jobs;
+  }
+
+  /**
+   * Scrape jobs from company career pages (less protected)
+   */
+  private async scrapeFromCompanyCareerPages(keywords: string[]): Promise<ISimilarJob[]> {
+    const jobs: ISimilarJob[] = [];
+    
+    try {
+      // List of companies known to have open career pages
+      const companies = ['netflix', 'spotify', 'stripe', 'shopify', 'airbnb'];
+      const searchQuery = keywords.slice(0, 2).join(' ');
+      
+      for (const company of companies.slice(0, 2)) { // Limit to 2 companies to avoid timeout
+        try {
+          const browser = await puppeteer.launch({ 
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+          });
+          
+          const page = await browser.newPage();
+          await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+          
+          // Try common career page patterns
+          const careerUrls = [
+            `https://${company}.com/careers`,
+            `https://${company}.com/jobs`,
+            `https://jobs.${company}.com`,
+            `https://careers.${company}.com`
+          ];
+          
+          for (const url of careerUrls) {
+            try {
+              await page.goto(url, { waitUntil: 'networkidle2', timeout: 5000 });
+              
+              const jobData = await page.evaluate((query) => {
+                const jobs: any[] = [];
+                const jobElements = document.querySelectorAll('.job, .position, .opening, [data-job]');
+                
+                for (const element of Array.from(jobElements).slice(0, 3)) {
+                  const titleEl = element.querySelector('h3, h4, .title, .job-title');
+                  const locationEl = element.querySelector('.location, .office');
+                  const linkEl = element.querySelector('a');
+                  
+                  if (titleEl && titleEl.textContent?.toLowerCase().includes(query.toLowerCase())) {
+                    jobs.push({
+                      title: titleEl.textContent?.trim() || '',
+                      company: company.charAt(0).toUpperCase() + company.slice(1),
+                      location: locationEl?.textContent?.trim() || 'Remote',
+                      description: '',
+                      url: linkEl?.href || url,
+                      salary: '',
+                      postedDate: new Date().toISOString(),
+                      source: 'company_careers'
+                    });
+                  }
+                }
+                
+                return jobs;
+              }, searchQuery);
+              
+              jobs.push(...jobData.map(job => ({ ...job, score: 0 })));
+              break; // Found jobs, no need to try other URLs
+              
+            } catch (urlError) {
+              continue; // Try next URL
+            }
+          }
+          
+          await browser.close();
+          
+        } catch (companyError) {
+          logger.warn(`Failed to scrape ${company} careers:`, companyError instanceof Error ? companyError.message : String(companyError));
+          continue;
+        }
+      }
+      
+    } catch (error) {
+      logger.warn('Company career pages scraping failed:', error instanceof Error ? error.message : String(error));
+    }
+    
+    return jobs;
+  }
+
+  /**
+   * Scrape jobs from RSS feeds
+   */
+  private async scrapeFromJobRSSFeeds(keywords: string[]): Promise<ISimilarJob[]> {
+    const jobs: ISimilarJob[] = [];
+    
+    try {
+      // List of job RSS feeds
+      const rssFeeds = [
+        'https://jobs.github.com/positions.atom',
+        'https://remoteok.io/remote-jobs.rss',
+        'https://stackoverflow.com/jobs/feed'
+      ];
+      
+      for (const feedUrl of rssFeeds.slice(0, 2)) { // Limit to 2 feeds
+        try {
+          const response = await fetch(feedUrl);
+          if (response.ok) {
+            const xmlText = await response.text();
+            
+            // Simple XML parsing for job titles and companies
+            const titleMatches = xmlText.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/g) || [];
+            const linkMatches = xmlText.match(/<link>(.*?)<\/link>/g) || [];
+            
+            for (let i = 0; i < Math.min(titleMatches.length, 5); i++) {
+              const title = titleMatches[i]?.replace(/<title><!\[CDATA\[(.*?)\]\]><\/title>/, '$1') || '';
+              const link = linkMatches[i]?.replace(/<link>(.*?)<\/link>/, '$1') || '';
+              
+              if (title && keywords.some(keyword => title.toLowerCase().includes(keyword.toLowerCase()))) {
+                jobs.push({
+                  title: title,
+                  company: 'Unknown Company',
+                  location: 'Remote',
+                  description: '',
+                  url: link,
+                  salary: '',
+                  postedDate: new Date(),
+                  source: 'rss_feed',
+                  score: 0
+                });
+              }
+            }
+          }
+        } catch (feedError) {
+          logger.warn(`Failed to parse RSS feed ${feedUrl}:`, feedError instanceof Error ? feedError.message : String(feedError));
+          continue;
+        }
+      }
+      
+    } catch (error) {
+      logger.warn('RSS feeds scraping failed:', error instanceof Error ? error.message : String(error));
+    }
+    
+    return jobs;
+  }
+
+  /**
+   * Get job by ID (helper method)
+   */
+  private async getJobById(jobId: string): Promise<any> {
+    try {
+      const { jobApplicationModel } = await import('../models/jobApplication.model');
+      return await jobApplicationModel.findById(new mongoose.Types.ObjectId(jobId), new mongoose.Types.ObjectId());
+    } catch (error) {
+      logger.error('Error getting job by ID:', error);
+      return null;
+    }
+  }
+
+  /**
    * Find similar jobs from existing job applications in the database
    * This is the manual algorithm approach using weighted similarity
    */
