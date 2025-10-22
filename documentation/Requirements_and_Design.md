@@ -522,7 +522,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 ![System Diagram](./images/sequence_usecase2.png)
 #### **Use Case 3: Start Mock Interview**
 ![System Diagram](./images/seqence_uc3.png)
-#### **Use Case 4: Find Similar and Close-by jobs **
+#### **Use Case 4: Find Similar and Close-by jobs**
 ![System Diagram](./images/sequence_uc4.png)
 #### **Use Case 5: Create Discussion**
 ![System Diagram](./images/sequence_uc5.png)
