@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
 
-import logger from '../utils/logger.util';
 import { MediaService } from '../services/media.service';
 import { UploadImageRequest, UploadImageResponse } from '../types/media.types';
+import logger from '../utils/logger.util';
 import { sanitizeInput } from '../utils/sanitizeInput.util';
 
 export class MediaController {
