@@ -34,10 +34,12 @@ object RetrofitClient {
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
-    val authInterface: AuthInterface = retrofit.create(AuthInterface::class.java)
-    val imageInterface: ImageInterface = retrofit.create(ImageInterface::class.java)
-    val userInterface: UserInterface = retrofit.create(UserInterface::class.java)
-    val hobbyInterface: HobbyInterface = retrofit.create(HobbyInterface::class.java)
+    val authInterface: AuthInterface by lazy { retrofit.create(AuthInterface::class.java) }
+    val imageInterface: ImageInterface by lazy { retrofit.create(ImageInterface::class.java) }
+    val userInterface: UserInterface by lazy { retrofit.create(UserInterface::class.java) }
+    val hobbyInterface: HobbyInterface by lazy { retrofit.create(HobbyInterface::class.java) }
+    val jobApiService: JobApiService by lazy { retrofit.create(JobApiService::class.java) }
+    val questionApiService: QuestionApiService by lazy { retrofit.create(QuestionApiService::class.java) }
 
     fun setAuthToken(token: String?) {
         authToken = token

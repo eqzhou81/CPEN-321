@@ -1,11 +1,14 @@
 package com.cpen321.usermanagement.ui.screens
 
 import Icon
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -14,6 +17,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -33,7 +37,8 @@ import com.cpen321.usermanagement.ui.theme.LocalSpacing
 @Composable
 fun MainScreen(
     mainViewModel: MainViewModel,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onJobDashboardClick: () -> Unit
 ) {
     val uiState by mainViewModel.uiState.collectAsState()
     val snackBarHostState = remember { SnackbarHostState() }
@@ -42,6 +47,7 @@ fun MainScreen(
         uiState = uiState,
         snackBarHostState = snackBarHostState,
         onProfileClick = onProfileClick,
+        onJobDashboardClick = onJobDashboardClick,
         onSuccessMessageShown = mainViewModel::clearSuccessMessage
     )
 }
@@ -51,6 +57,7 @@ private fun MainContent(
     uiState: MainUiState,
     snackBarHostState: SnackbarHostState,
     onProfileClick: () -> Unit,
+    onJobDashboardClick: () -> Unit,
     onSuccessMessageShown: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -67,7 +74,10 @@ private fun MainContent(
             )
         }
     ) { paddingValues ->
-        MainBody(paddingValues = paddingValues)
+        MainBody(
+            paddingValues = paddingValues,
+            onJobDashboardClick = onJobDashboardClick
+        )
     }
 }
 
@@ -148,6 +158,7 @@ private fun MainSnackbarHost(
 @Composable
 private fun MainBody(
     paddingValues: PaddingValues,
+    onJobDashboardClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -156,7 +167,19 @@ private fun MainBody(
             .padding(paddingValues),
         contentAlignment = Alignment.Center
     ) {
-        WelcomeMessage()
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            WelcomeMessage()
+            
+            Button(
+                onClick = onJobDashboardClick,
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text("Manage Job Applications")
+            }
+        }
     }
 }
 

@@ -58,7 +58,8 @@ private data class AuthScreenActions(
 @Composable
 fun AuthScreen(
     authViewModel: AuthViewModel,
-    profileViewModel: ProfileViewModel
+    profileViewModel: ProfileViewModel,
+    onGoogleSignInRequest: (android.content.Intent) -> Unit = {}
 ) {
     val context = LocalContext.current
     val uiState by authViewModel.uiState.collectAsState()
@@ -75,20 +76,12 @@ fun AuthScreen(
         uiState = uiState,
         snackBarHostState = snackBarHostState,
         onSignInClick = {
-            (context as? ComponentActivity)?.lifecycleScope?.launch {
-                val result = authViewModel.signInWithGoogle(context)
-                result.onSuccess { credential ->
-                    authViewModel.handleGoogleSignInResult(credential)
-                }
-            }
+            val signInIntent = authViewModel.getGoogleSignInIntent()
+            onGoogleSignInRequest(signInIntent)
         },
         onSignUpClick = {
-            (context as? ComponentActivity)?.lifecycleScope?.launch {
-                val result = authViewModel.signInWithGoogle(context)
-                result.onSuccess { credential ->
-                    authViewModel.handleGoogleSignUpResult(credential)
-                }
-            }
+            val signInIntent = authViewModel.getGoogleSignInIntent()
+            onGoogleSignInRequest(signInIntent)
         },
         onSuccessMessageShown = authViewModel::clearSuccessMessage,
         onErrorMessageShown = authViewModel::clearError

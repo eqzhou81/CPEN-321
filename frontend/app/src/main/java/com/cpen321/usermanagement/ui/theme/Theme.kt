@@ -17,9 +17,17 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF331E37),
-    secondary = Color(0xFFF1F1F1),
-    tertiary = Color(0xFF706993)
+    primary = Color(0xFF1A365D), // UBC Navy Blue
+    secondary = Color(0xFFFFD700), // UBC Gold
+    tertiary = Color(0xFF10B981), // Success Green
+    background = Color(0xFFFFFFFF), // White background
+    surface = Color(0xFFFFFFFF), // White surface
+    error = Color(0xFFEF4444), // Error Red
+    onPrimary = Color(0xFFFFFFFF), // White on primary
+    onSecondary = Color(0xFF1A365D), // Navy on secondary
+    onBackground = Color(0xFF1A365D), // Navy on background
+    onSurface = Color(0xFF1A365D), // Navy on surface
+    onError = Color(0xFFFFFFFF) // White on error
 )
 
 data class Spacing(

@@ -1,6 +1,5 @@
 package com.cpen321.usermanagement.ui.viewmodels
 
-
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -8,8 +7,6 @@ import androidx.lifecycle.viewModelScope
 import com.cpen321.usermanagement.data.remote.dto.AuthData
 import com.cpen321.usermanagement.data.remote.dto.User
 import com.cpen321.usermanagement.data.repository.AuthRepository
-import com.cpen321.usermanagement.ui.navigation.NavRoutes
-import com.cpen321.usermanagement.ui.navigation.NavigationStateManager
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,8 +36,7 @@ data class AuthUiState(
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authRepository: AuthRepository,
-    private val navigationStateManager: NavigationStateManager
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     companion object {
@@ -60,7 +56,6 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isCheckingAuth = true)
-                updateNavigationState(isLoading = true)
 
                 val isAuthenticated = authRepository.isUserAuthenticated()
                 val user = if (isAuthenticated) authRepository.getCurrentUser() else null
@@ -70,12 +65,6 @@ class AuthViewModel @Inject constructor(
                     isAuthenticated = isAuthenticated,
                     user = user,
                     isCheckingAuth = false
-                )
-
-                updateNavigationState(
-                    isAuthenticated = isAuthenticated,
-                    needsProfileCompletion = needsProfileCompletion,
-                    isLoading = false
                 )
             } catch (e: java.net.SocketTimeoutException) {
                 handleAuthError("Network timeout. Please check your connection.", e)
@@ -87,18 +76,6 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    private fun updateNavigationState(
-        isAuthenticated: Boolean = false,
-        needsProfileCompletion: Boolean = false,
-        isLoading: Boolean = false
-    ) {
-        navigationStateManager.updateAuthenticationState(
-            isAuthenticated = isAuthenticated,
-            needsProfileCompletion = needsProfileCompletion,
-            isLoading = isLoading,
-            currentRoute = NavRoutes.LOADING
-        )
-    }
 
     private fun handleAuthError(errorMessage: String, exception: Exception) {
         Log.e(TAG, "Authentication check failed: $errorMessage", exception)
@@ -107,11 +84,29 @@ class AuthViewModel @Inject constructor(
             isAuthenticated = false,
             errorMessage = errorMessage
         )
-        updateNavigationState()
     }
 
     suspend fun signInWithGoogle(context: Context): Result<GoogleIdTokenCredential> {
         return authRepository.signInWithGoogle(context)
+    }
+
+    fun getGoogleSignInIntent(): android.content.Intent {
+        return authRepository.getGoogleSignInIntent()
+    }
+
+    fun handleGoogleSignInResult(data: android.content.Intent) {
+        authRepository.handleGoogleSignInResult(data)
+            .onSuccess { credential ->
+                handleGoogleSignInResult(credential)
+            }
+            .onFailure { error ->
+                Log.e(TAG, "Google Sign-In failed", error)
+                _uiState.value = _uiState.value.copy(
+                    isSigningIn = false,
+                    isSigningUp = false,
+                    errorMessage = error.message
+                )
+            }
     }
 
     private fun handleGoogleAuthResult(
@@ -137,14 +132,6 @@ class AuthViewModel @Inject constructor(
                         isAuthenticated = true,
                         user = authData.user,
                         errorMessage = null
-                    )
-
-                    // Trigger navigation through NavigationStateManager
-                    navigationStateManager.updateAuthenticationState(
-                        isAuthenticated = true,
-                        needsProfileCompletion = needsProfileCompletion,
-                        isLoading = false,
-                        currentRoute = NavRoutes.AUTH
                     )
                 }
                 .onFailure { error ->
