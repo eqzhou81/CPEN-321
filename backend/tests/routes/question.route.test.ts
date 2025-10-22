@@ -111,7 +111,7 @@ describe('QuestionController', () => {
     // Add more tests for getAllUserQuestions, getQuestionsByTags, and updateQuestion as needed
 
     describe('GET /api/question/search', () => {
-    it('should return external search results for two sum', async () => {
+        it('should return external search results for two sum', async () => {
       // Search API test
       const response = await request(app)
         .get('/api/question/leetCodeSearch')

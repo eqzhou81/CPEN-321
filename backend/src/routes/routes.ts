@@ -11,13 +11,22 @@ const router = Router();
 
 router.use('/auth', authRoutes);
 
-router.use('/user', authenticateToken, usersRoutes);
+// Optionally disable authentication for testing by setting DISABLE_AUTH=true in environment
+const disableAuth = process.env.DISABLE_AUTH === 'true';
 
-router.use('/jobs', authenticateToken,  jobRoutes);
-
-router.use('/discussions', authenticateToken, discussionRoutes);
-
-router.use('/question', authenticateToken, questionRoutes);
+if (disableAuth) {
+	// Mount routes without authentication (testing only)
+	router.use('/user', usersRoutes);
+	router.use('/jobs', jobRoutes);
+	router.use('/discussions', discussionRoutes);
+	router.use('/question', questionRoutes);
+} else {
+	// Normal operation: protect routes with authenticateToken
+	router.use('/user', authenticateToken, usersRoutes);
+	router.use('/jobs', authenticateToken, jobRoutes);
+	router.use('/discussions', authenticateToken, discussionRoutes);
+	router.use('/question', authenticateToken, questionRoutes);
+}
 
 
 

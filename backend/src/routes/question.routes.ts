@@ -6,6 +6,7 @@ import { QuestionController } from '../controllers/question.controller';
 import { validateBody } from '../middleware/validation.middleware';
 import { createQuestionSchema } from '../types/question.types';
 import { leetCodeController } from '../controllers/leetcode.controller';
+import { generateQuestionsController } from '../controllers/generateQuestions.controller';
 
 const router = Router();
 const questionController = new QuestionController();
@@ -16,16 +17,22 @@ router.post('/', validateBody(createQuestionSchema), (req, res, next) => {
 });
 
 // Update a question by id
-router.put('/:id', validateBody(createQuestionSchema), (req, res, next) => {
+router.put('/:id', validateBody(createQuestionSchema), (req: any, res, next) => {
 	console.log('PUT /api/question/:id handler called');
 	return questionController.updateQuestion(req, res, next);
 });
 
 
 // Get saved questions by tags for the authenticated user
-router.get('/savedQuestionsByTags', (req, res, next) => {
+router.get('/savedQuestionsByTags', (req: any, res, next) => {
 	console.log('GET /api/question/savedQuestionsByTags handler called');
 	return questionController.getQuestionsByTags(req, res, next);
+});
+
+// Generate questions based on job description using OpenAI + LeetCode API
+router.post('/generateQuestions', (req, res) => {
+	console.log('POST /api/question/generateQuestions handler called');
+	return generateQuestionsController(req, res);
 });
 
 // Search LeetCode questions using the community API (renamed to leetCodeSearch and moved above :id)
