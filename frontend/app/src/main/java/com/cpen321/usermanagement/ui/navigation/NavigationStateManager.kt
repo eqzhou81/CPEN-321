@@ -19,6 +19,8 @@ sealed class NavigationEvent {
     object ClearBackStack : NavigationEvent()
     object NoNavigation : NavigationEvent()
 
+    object NavigateToDiscussions : NavigationEvent()
+
     object NavigateToPlaces: NavigationEvent()
 }
 
@@ -160,11 +162,7 @@ class NavigationStateManager @Inject constructor() {
             _navigationState.value.copy(currentRoute = NavRoutes.MANAGE_HOBBIES)
     }
 
-    fun navigateToPlaces() {
-        _navigationEvent.value = NavigationEvent.NavigateToPlaces
-        _navigationState.value =
-            _navigationState.value.copy(currentRoute = NavRoutes.Places)
-    }
+
 
     /**
      * Navigate back
@@ -223,6 +221,10 @@ class NavigationStateManager @Inject constructor() {
         navigateToAuthWithMessage("Signed Out Successfully!")
     }
 
+    fun navigateToDiscussions() {
+        _navigationEvent.value = NavigationEvent.NavigateToDiscussions
+        _navigationState.value = _navigationState.value.copy(currentRoute = NavRoutes.DISCUSSIONS)
+    }
 
 
 }

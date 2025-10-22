@@ -6,10 +6,11 @@ data class ValidationError(
 )
 
 data class ApiResponse<T>(
-    val message: String,
-    val data: T? = null,
+    val success: Boolean,                      // ✅ <-- add this
+    val message: String? = null,               // Optional success/error message
+    val data: T? = null,                       // Generic data payload
 
-    // For error responses
+    // Optional fields for error handling
     val error: String? = null,
     val details: List<ValidationError>? = null
 )

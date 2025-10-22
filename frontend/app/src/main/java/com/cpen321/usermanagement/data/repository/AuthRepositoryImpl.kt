@@ -2,6 +2,11 @@ package com.cpen321.usermanagement.data.repository
 
 import android.content.Context
 import android.util.Log
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.GetCredentialResponse
+import androidx.credentials.exceptions.GetCredentialException
 import com.cpen321.usermanagement.BuildConfig
 import com.cpen321.usermanagement.data.local.preferences.TokenManager
 import com.cpen321.usermanagement.data.remote.api.AuthInterface
@@ -11,12 +16,9 @@ import com.cpen321.usermanagement.data.remote.dto.AuthData
 import com.cpen321.usermanagement.data.remote.dto.GoogleLoginRequest
 import com.cpen321.usermanagement.data.remote.dto.User
 import com.cpen321.usermanagement.utils.JsonUtils
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
-import com.google.android.gms.auth.api.signin.GoogleSignInClient
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -34,58 +36,53 @@ class AuthRepositoryImpl @Inject constructor(
         private const val TAG = "AuthRepositoryImpl"
     }
 
-    private val googleSignInClient: GoogleSignInClient by lazy {
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(BuildConfig.GOOGLE_WEB_CLIENT_ID) // Use Web Client ID for ID token
-            .requestEmail()
-            .requestProfile()
-            .build()
-        GoogleSignIn.getClient(context, gso)
-    }
+    private val credentialManager = CredentialManager.create(context)
+    private val signInWithGoogleOption: GetSignInWithGoogleOption =
+        GetSignInWithGoogleOption.Builder(
+            serverClientId = BuildConfig.GOOGLE_CLIENT_ID
+        ).build()
 
     override suspend fun signInWithGoogle(context: Context): Result<GoogleIdTokenCredential> {
+        val request = GetCredentialRequest.Builder()
+            .addCredentialOption(signInWithGoogleOption)
+            .build()
+
         return try {
-            val signInIntent = googleSignInClient.signInIntent
-            // Note: This method will be called from the Activity, not here
-            // We'll handle the result in the Activity and pass it to the ViewModel
-            Result.failure(Exception("This method should be called from Activity"))
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to initiate Google Sign-In", e)
+            val response = credentialManager.getCredential(context, request)
+            handleSignInWithGoogleOption(response)
+        } catch (e: GetCredentialException) {
+            Log.e(TAG, "Failed to get credential from CredentialManager", e)
             Result.failure(e)
         }
     }
 
-    override fun getGoogleSignInIntent(): android.content.Intent {
-        return googleSignInClient.signInIntent
-    }
-
-    override fun handleGoogleSignInResult(data: android.content.Intent): Result<GoogleIdTokenCredential> {
-        return try {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
-            val account = task.getResult(ApiException::class.java)
-            
-            val idToken = account.idToken
-            if (idToken != null) {
-                // Create a proper GoogleIdTokenCredential using the builder
-                val credential = GoogleIdTokenCredential.Builder()
-                    .setIdToken(idToken)
-                    .setId(account.id ?: "")
-                    .setDisplayName(account.displayName ?: "")
-                    .setFamilyName(account.familyName ?: "")
-                    .setGivenName(account.givenName ?: "")
-                    .setProfilePictureUri(account.photoUrl)
-                    .build()
-                Result.success(credential)
-            } else {
-                Log.e(TAG, "No ID token received from Google Sign-In")
-                Result.failure(Exception("No ID token received"))
+    private fun handleSignInWithGoogleOption(
+        result: GetCredentialResponse
+    ): Result<GoogleIdTokenCredential> {
+        val credential = result.credential
+        return when (credential) {
+            is CustomCredential -> {
+                if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                    try {
+                        val googleIdTokenCredential =
+                            GoogleIdTokenCredential.createFrom(credential.data)
+                        Result.success(googleIdTokenCredential)
+                    } catch (e: GoogleIdTokenParsingException) {
+                        Log.e(TAG, "Failed to parse Google ID token credential", e)
+                        Result.failure(e)
+                    }
+                } else {
+                    Log.e(TAG, "Unexpected type of credential: ${credential.type}")
+                    Result.failure(Exception("Unexpected type of credential"))
+                }
             }
-        } catch (e: ApiException) {
-            Log.e(TAG, "Google Sign-In failed", e)
-            Result.failure(e)
+
+            else -> {
+                Log.e(TAG, "Unexpected type of credential: ${credential::class.simpleName}")
+                Result.failure(Exception("Unexpected type of credential"))
+            }
         }
     }
-
 
     override suspend fun googleSignIn(tokenId: String): Result<AuthData> {
         val googleLoginReq = GoogleLoginRequest(tokenId)
@@ -160,40 +157,14 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun doesTokenExist(): Boolean {
-        // TEMPORARY BYPASS: Return true for testing features
-        if (BuildConfig.AUTH_BYPASS_ENABLED) {
-            Log.d(TAG, "Authentication bypass enabled - token exists")
-            return true
-        }
         return tokenManager.getToken().first() != null
     }
 
     override suspend fun getStoredToken(): String? {
-        // TEMPORARY BYPASS: Return test token for development
-        if (BuildConfig.AUTH_BYPASS_ENABLED) {
-            Log.d(TAG, "Authentication bypass enabled - returning test token")
-            return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZjgxZjEzOTdjNmZmMTUyYjc0OWMxNiIsImlhdCI6MTc2MTA5MTM3NSwiZXhwIjoxNzYxNjk2MTc1fQ.frWWbcYy-2vnaEPJwycxsAxgLrqpVDg-OzPcLbPz90A"
-        }
         return tokenManager.getTokenSync()
     }
 
     override suspend fun getCurrentUser(): User? {
-        // TEMPORARY BYPASS: Check BuildConfig flag for testing features
-        if (BuildConfig.AUTH_BYPASS_ENABLED) {
-            Log.d(TAG, "Authentication bypass enabled - returning mock user")
-            return User(
-                _id = "mock-user-id",
-                email = "test@example.com",
-                name = "Test User",
-                bio = "Mock user for testing",
-                profilePicture = "",
-                hobbies = emptyList(),
-                createdAt = "2024-01-01T00:00:00Z",
-                updatedAt = "2024-01-01T00:00:00Z"
-            )
-        }
-        
-        // Original authentication logic
         return try {
             val response = userInterface.getProfile("") // Auth header is handled by interceptor
             if (response.isSuccessful && response.body()?.data != null) {
@@ -221,16 +192,6 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun isUserAuthenticated(): Boolean {
-        // TEMPORARY BYPASS: Check BuildConfig flag for testing features
-        if (BuildConfig.AUTH_BYPASS_ENABLED) {
-            Log.d(TAG, "Authentication bypass enabled - returning true")
-            // Set the test token in RetrofitClient for API calls
-            val testToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZjgxZjEzOTdjNmZmMTUyYjc0OWMxNiIsImlhdCI6MTc2MTA5MTM3NSwiZXhwIjoxNzYxNjk2MTc1fQ.frWWbcYy-2vnaEPJwycxsAxgLrqpVDg-OzPcLbPz90A"
-            RetrofitClient.setAuthToken(testToken)
-            return true
-        }
-        
-        // Original authentication logic
         val isLoggedIn = doesTokenExist()
         if (isLoggedIn) {
             val token = getStoredToken()

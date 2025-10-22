@@ -12,20 +12,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.cpen321.usermanagement.R
-import com.cpen321.usermanagement.ui.navigation.NavRoutes.Places
-import com.cpen321.usermanagement.ui.screens.AuthScreen
-import com.cpen321.usermanagement.ui.screens.LoadingScreen
-import com.cpen321.usermanagement.ui.screens.MainScreen
-import com.cpen321.usermanagement.ui.screens.ManageHobbiesScreen
-import com.cpen321.usermanagement.ui.screens.ManageProfileScreen
-import com.cpen321.usermanagement.ui.screens.ProfileScreenActions
-import com.cpen321.usermanagement.ui.screens.ProfileCompletionScreen
-import com.cpen321.usermanagement.ui.screens.PlacesScreen
-import com.cpen321.usermanagement.ui.screens.ProfileScreen
-import com.cpen321.usermanagement.ui.viewmodels.AuthViewModel
-import com.cpen321.usermanagement.ui.viewmodels.MainViewModel
-import com.cpen321.usermanagement.ui.viewmodels.NavigationViewModel
-import com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel
+import com.cpen321.usermanagement.ui.screens.*
+import com.cpen321.usermanagement.ui.viewmodels.*
 
 object NavRoutes {
     const val LOADING = "loading"
@@ -35,8 +23,8 @@ object NavRoutes {
     const val MANAGE_PROFILE = "manage_profile"
     const val MANAGE_HOBBIES = "manage_hobbies"
     const val PROFILE_COMPLETION = "profile_completion"
-
-    const val Places = "find_places"
+    const val DISCUSSIONS = "discussions"
+    const val PLACES = "find_places"
 }
 
 @Composable
@@ -47,19 +35,21 @@ fun AppNavigation(
     val navigationStateManager = navigationViewModel.navigationStateManager
     val navigationEvent by navigationStateManager.navigationEvent.collectAsState()
 
-    // Initialize view models required for navigation-level scope
+    // Initialize all necessary view models for each feature
     val authViewModel: AuthViewModel = hiltViewModel()
     val profileViewModel: ProfileViewModel = hiltViewModel()
     val mainViewModel: MainViewModel = hiltViewModel()
+    val discussionViewModel: DiscussionViewModel = hiltViewModel()
 
-    // Handle navigation events from NavigationStateManager
+    // Listen for navigation events and handle them
     LaunchedEffect(navigationEvent) {
         handleNavigationEvent(
             navigationEvent,
             navController,
             navigationStateManager,
             authViewModel,
-            mainViewModel
+            mainViewModel,
+            discussionViewModel
         )
     }
 
@@ -68,6 +58,7 @@ fun AppNavigation(
         authViewModel = authViewModel,
         profileViewModel = profileViewModel,
         mainViewModel = mainViewModel,
+        discussionViewModel = discussionViewModel,
         navigationStateManager = navigationStateManager
     )
 }
@@ -77,14 +68,14 @@ private fun handleNavigationEvent(
     navController: NavHostController,
     navigationStateManager: NavigationStateManager,
     authViewModel: AuthViewModel,
-    mainViewModel: MainViewModel
+    mainViewModel: MainViewModel,
+    discussionViewModel: DiscussionViewModel
 ) {
     when (navigationEvent) {
         is NavigationEvent.NavigateToAuth -> {
             navController.navigate(NavRoutes.AUTH) {
                 popUpTo(0) { inclusive = true }
             }
-            navigationStateManager.clearNavigationEvent()
         }
 
         is NavigationEvent.NavigateToAuthWithMessage -> {
@@ -92,14 +83,12 @@ private fun handleNavigationEvent(
             navController.navigate(NavRoutes.AUTH) {
                 popUpTo(0) { inclusive = true }
             }
-            navigationStateManager.clearNavigationEvent()
         }
 
         is NavigationEvent.NavigateToMain -> {
             navController.navigate(NavRoutes.MAIN) {
                 popUpTo(0) { inclusive = true }
             }
-            navigationStateManager.clearNavigationEvent()
         }
 
         is NavigationEvent.NavigateToMainWithMessage -> {
@@ -107,52 +96,50 @@ private fun handleNavigationEvent(
             navController.navigate(NavRoutes.MAIN) {
                 popUpTo(0) { inclusive = true }
             }
-            navigationStateManager.clearNavigationEvent()
         }
 
         is NavigationEvent.NavigateToProfileCompletion -> {
             navController.navigate(NavRoutes.PROFILE_COMPLETION) {
                 popUpTo(0) { inclusive = true }
             }
-            navigationStateManager.clearNavigationEvent()
         }
 
         is NavigationEvent.NavigateToProfile -> {
             navController.navigate(NavRoutes.PROFILE)
-            navigationStateManager.clearNavigationEvent()
         }
 
         is NavigationEvent.NavigateToManageProfile -> {
             navController.navigate(NavRoutes.MANAGE_PROFILE)
-            navigationStateManager.clearNavigationEvent()
         }
 
         is NavigationEvent.NavigateToManageHobbies -> {
             navController.navigate(NavRoutes.MANAGE_HOBBIES)
-            navigationStateManager.clearNavigationEvent()
+        }
+
+        is NavigationEvent.NavigateToPlaces -> {
+            navController.navigate(NavRoutes.PLACES)
+        }
+
+        is NavigationEvent.NavigateToDiscussions -> {
+            Log.d("AppNavigation", "Navigating to Discussions screen")
+            navController.navigate(NavRoutes.DISCUSSIONS)
         }
 
         is NavigationEvent.NavigateBack -> {
             navController.popBackStack()
-            navigationStateManager.clearNavigationEvent()
         }
 
         is NavigationEvent.ClearBackStack -> {
             navController.popBackStack(navController.graph.startDestinationId, false)
-            navigationStateManager.clearNavigationEvent()
         }
 
         is NavigationEvent.NoNavigation -> {
-            // Do nothing
             mainViewModel.clearSuccessMessage()
         }
-
-        is NavigationEvent.NavigateToPlaces -> {
-            navController.navigate(NavRoutes.Places)
-            navigationStateManager.clearNavigationEvent()
-        }
-
     }
+
+    // Always clear the event after handling
+    navigationStateManager.clearNavigationEvent()
 }
 
 @Composable
@@ -161,11 +148,12 @@ private fun AppNavHost(
     authViewModel: AuthViewModel,
     profileViewModel: ProfileViewModel,
     mainViewModel: MainViewModel,
+    discussionViewModel: DiscussionViewModel,
     navigationStateManager: NavigationStateManager
 ) {
     NavHost(
         navController = navController,
-        startDestination = NavRoutes.LOADING
+        startDestination = NavRoutes.AUTH // 👈 for testing; switch to LOADING for production
     ) {
         composable(NavRoutes.LOADING) {
             LoadingScreen(message = stringResource(R.string.checking_authentication))
@@ -187,9 +175,9 @@ private fun AppNavHost(
         }
 
         composable(NavRoutes.MAIN) {
-            MainScreen(
-                mainViewModel = mainViewModel,
-                onProfileClick = { navigationStateManager.navigateToProfile() }
+            MainAppScreen(
+                authViewModel = authViewModel,
+                navigationStateManager = navigationStateManager
             )
         }
 
@@ -201,9 +189,9 @@ private fun AppNavHost(
                     onBackClick = { navigationStateManager.navigateBack() },
                     onManageProfileClick = { navigationStateManager.navigateToManageProfile() },
                     onManageHobbiesClick = { navigationStateManager.navigateToManageHobbies() },
-                    onSignOut = {navigationStateManager.handleAccountSignOut()},
+                    onSignOut = { navigationStateManager.handleAccountSignOut() },
                     onAccountDeleted = { navigationStateManager.handleAccountDeletion() },
-                    onFindPlacesClick = {navigationStateManager.navigateToPlaces()}
+                    onFindPlacesClick = { navigationStateManager.navigateBack() }
                 )
             )
         }
@@ -215,11 +203,10 @@ private fun AppNavHost(
             )
         }
 
-        composable(NavRoutes.Places) {
+        composable(NavRoutes.PLACES) {
             PlacesScreen(
                 profileViewModel = profileViewModel,
                 onBackClick = { navigationStateManager.navigateBack() }
-
             )
         }
 
@@ -227,6 +214,14 @@ private fun AppNavHost(
             ManageHobbiesScreen(
                 profileViewModel = profileViewModel,
                 onBackClick = { navigationStateManager.navigateBack() }
+            )
+        }
+
+        // ✅ Discussion screen route
+        composable(NavRoutes.DISCUSSIONS) {
+            DiscussionScreen(
+                onClose = { navigationStateManager.navigateBack()
+                    val discussionViewModel = discussionViewModel }
             )
         }
     }

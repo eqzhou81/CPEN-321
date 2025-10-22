@@ -1,6 +1,7 @@
 package com.cpen321.usermanagement.di
 
 import com.cpen321.usermanagement.data.remote.api.AuthInterface
+import com.cpen321.usermanagement.data.remote.api.DiscussionApi
 import com.cpen321.usermanagement.data.remote.api.HobbyInterface
 import com.cpen321.usermanagement.data.remote.api.ImageInterface
 import com.cpen321.usermanagement.data.remote.api.JobApiService
@@ -52,4 +53,9 @@ object NetworkModule {
     fun provideQuestionApiService(): QuestionApiService {
         return RetrofitClient.questionApiService
     }
+
+    @Provides
+    @Singleton
+    fun provideDiscussionApi(): DiscussionApi =
+        RetrofitClient.discussionApi
 }

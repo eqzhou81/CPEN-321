@@ -13,7 +13,7 @@ import com.cpen321.usermanagement.ui.screens.QuestionsDashboardScreen
 import com.cpen321.usermanagement.ui.screens.BehavioralQuestionsScreen
 import com.cpen321.usermanagement.ui.screens.TechnicalQuestionsScreen
 
-object NavRoutes {
+object JobNavRoutes  {
     const val JOB_DASHBOARD = "job_dashboard"
     const val JOB_DETAILS = "job_details/{jobId}"
     const val SIMILAR_JOBS = "similar_jobs/{jobId}"
@@ -29,9 +29,9 @@ fun JobAppNavigation(
     val context = LocalContext.current
     NavHost(
         navController = navController,
-        startDestination = NavRoutes.JOB_DASHBOARD
+        startDestination = JobNavRoutes .JOB_DASHBOARD
     ) {
-        composable(NavRoutes.JOB_DASHBOARD) {
+        composable(JobNavRoutes .JOB_DASHBOARD) {
             JobDashboardScreen(
                 onNavigateToJobDetails = { jobId ->
                     navController.navigate("job_details/$jobId")
@@ -42,7 +42,7 @@ fun JobAppNavigation(
             )
         }
         
-        composable(NavRoutes.JOB_DETAILS) { backStackEntry ->
+        composable(JobNavRoutes .JOB_DETAILS) { backStackEntry ->
             val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
             JobDetailsScreen(
                 jobId = jobId,
@@ -56,7 +56,7 @@ fun JobAppNavigation(
             )
         }
         
-        composable(NavRoutes.SIMILAR_JOBS) { backStackEntry ->
+        composable(JobNavRoutes .SIMILAR_JOBS) { backStackEntry ->
             val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
             SimilarJobsScreen(
                 jobId = jobId,
@@ -68,7 +68,7 @@ fun JobAppNavigation(
             )
         }
         
-        composable(NavRoutes.QUESTIONS_DASHBOARD) { backStackEntry ->
+        composable(JobNavRoutes .QUESTIONS_DASHBOARD) { backStackEntry ->
             val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
             QuestionsDashboardScreen(
                 jobId = jobId,
@@ -82,7 +82,7 @@ fun JobAppNavigation(
             )
         }
         
-        composable(NavRoutes.BEHAVIORAL_QUESTIONS) { backStackEntry ->
+        composable(JobNavRoutes .BEHAVIORAL_QUESTIONS) { backStackEntry ->
             val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
             BehavioralQuestionsScreen(
                 jobId = jobId,
@@ -93,7 +93,7 @@ fun JobAppNavigation(
             )
         }
         
-        composable(NavRoutes.TECHNICAL_QUESTIONS) { backStackEntry ->
+        composable(JobNavRoutes .TECHNICAL_QUESTIONS) { backStackEntry ->
             val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
             TechnicalQuestionsScreen(
                 jobId = jobId,

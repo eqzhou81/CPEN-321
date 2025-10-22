@@ -15,7 +15,7 @@ router.use('/user', authenticateToken, usersRoutes);
 
 router.use('/jobs', authenticateToken,  jobRoutes);
 
-router.use('/discussions', authenticateToken, discussionRoutes);
+router.use('/discussions',authenticateToken, discussionRoutes);
 
 router.use('/questions', authenticateToken, questionRoutes);
 
