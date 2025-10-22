@@ -4,6 +4,7 @@ import { questionModel } from '../../src/models/question.model';
 
 jest.mock('../../src/models/question.model');
 jest.mock('../../src/models/user.model');
+import { leetService } from '../../src/services/leetcode.service';
 
 // Mock JWT token for authentication
 const mockToken = 'Bearer mock-jwt-token';
@@ -12,7 +13,6 @@ const mockUserId = '507f1f77bcf86cd799439011';
 // Mock authenticateToken middleware
 jest.mock('../../src/middleware/auth.middleware', () => ({
   authenticateToken: (req: any, res: any, next: any) => {
-    console.log('authenticateToken mock CALLED');
     req.user = {
       _id: mockUserId,
       email: 'test@example.com',
@@ -37,8 +37,8 @@ describe('QuestionController', () => {
 
   describe('POST /api/question', () => {
     it('should create a question and return it', async () => {
-      const questionData = { name: 'Sample Question', link: 'http://example.com', tags: ['tag1', 'tag2'] };
-      const createdQuestion = { _id: '123', ...questionData };
+            const questionData = { name: 'Sample Question', link: 'http://example.com', url: 'http://example.com/canonical', difficulty: 'Easy', tags: ['tag1', 'tag2'] };
+            const createdQuestion = { _id: '123', ...questionData };
       (questionModel.create as jest.Mock).mockResolvedValue(createdQuestion);
 
       const response = await request(app)
@@ -51,6 +51,8 @@ describe('QuestionController', () => {
         id: createdQuestion._id,
         name: questionData.name,
         link: questionData.link,
+        url: questionData.url,
+        difficulty: questionData.difficulty,
         tags: questionData.tags,
       });
     });
@@ -109,7 +111,7 @@ describe('QuestionController', () => {
     // Add more tests for getAllUserQuestions, getQuestionsByTags, and updateQuestion as needed
 
     describe('GET /api/question/search', () => {
-        it('should return external search results for two sum', async () => {
+    it('should return external search results for two sum', async () => {
       // Search API test
       const response = await request(app)
         .get('/api/question/leetCodeSearch')
@@ -126,4 +128,56 @@ describe('QuestionController', () => {
             expect(found).toBe(true);
         });
     });
+
+  describe('GET /api/question/leetCodeSearch persistence', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('persists first external question when not in DB', async () => {
+      const external = [{ id: 'ext1', title: 'Two Sum', url: 'https://leetcode.com/problems/two-sum', difficulty: 'Easy', tags: ['array'] }];
+      jest.spyOn(leetService, 'search').mockResolvedValue(external as any);
+      jest.spyOn(leetService, 'toCreateInput').mockReturnValue({
+        name: external[0].title,
+        link: external[0].url,
+        url: external[0].url,
+        difficulty: external[0].difficulty,
+        tags: external[0].tags,
+      } as any);
+
+      (questionModel.findByUrl as jest.Mock).mockResolvedValue(null);
+      (questionModel.findByName as jest.Mock).mockResolvedValue(null);
+      (questionModel.create as jest.Mock).mockResolvedValue({ _id: 'db1', ...external[0] });
+
+      const res = await request(app)
+        .get('/api/question/leetCodeSearch')
+        .query({ query: 'two sum' });
+
+      expect(res.status).toBe(200);
+      expect(leetService.search).toHaveBeenCalledWith('two sum');
+      expect(questionModel.findByUrl).toHaveBeenCalledWith(external[0].url);
+      expect(questionModel.create).toHaveBeenCalledWith(expect.objectContaining({ name: external[0].title, url: external[0].url }));
+    });
+
+    it('does not create if url exists', async () => {
+      const external = [{ id: 'ext1', title: 'Two Sum', url: 'https://leetcode.com/problems/two-sum', difficulty: 'Easy', tags: ['array'] }];
+      jest.spyOn(leetService, 'search').mockResolvedValue(external as any);
+      jest.spyOn(leetService, 'toCreateInput').mockReturnValue({
+        name: external[0].title,
+        link: external[0].url,
+        url: external[0].url,
+        difficulty: external[0].difficulty,
+        tags: external[0].tags,
+      } as any);
+
+      (questionModel.findByUrl as jest.Mock).mockResolvedValue({ _id: 'existing' } as any);
+
+      const res = await request(app)
+        .get('/api/question/leetCodeSearch')
+        .query({ query: 'two sum' });
+
+      expect(res.status).toBe(200);
+      expect(questionModel.create).not.toHaveBeenCalled();
+    });
+  });
 });

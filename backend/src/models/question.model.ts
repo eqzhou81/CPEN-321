@@ -7,7 +7,7 @@ import {
 
 // ==================== MONGOOSE SCHEMA ====================
 
-const questionSchema = new Schema<Question>(
+const questionSchema = new Schema<Question & { url?: string; difficulty?: string }>(
   {
     name: {
       type: String,
@@ -17,6 +17,18 @@ const questionSchema = new Schema<Question>(
     link: {
       type: String,
       required: true,
+      trim: true,
+    },
+    // Optional canonical URL (external reference)
+    url: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    // Optional difficulty level (e.g. Easy, Medium, Hard)
+    difficulty: {
+      type: String,
+      required: false,
       trim: true,
     },
     tags: {
@@ -63,6 +75,13 @@ class QuestionModel {
    */
   async findByName(name: string): Promise<Question | null> {
     return await Question.findOne({ name }).exec();
+  }
+
+  /**
+   * Find question by canonical url
+   */
+  async findByUrl(url: string): Promise<Question | null> {
+    return await Question.findOne({ url }).exec();
   }
   
   /**

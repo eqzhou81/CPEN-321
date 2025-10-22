@@ -10,6 +10,10 @@ export interface Question extends Document {
   _id: string;
   name: string;
   link: string;
+  // canonical external url
+  url?: string;
+  // difficulty label
+  difficulty?: string;
   tags: string[];
 }
 
@@ -25,6 +29,8 @@ export interface UpdateQuestionRequest {
   name?: string;
   link?: string;
   tags?: string[];
+  url?: string;
+  difficulty?: string;
 }
 
 // ==================== RESPONSE TYPES ====================
@@ -34,6 +40,8 @@ export interface GetQuestionResponse {
   id: string;
   name: string;
   link: string;
+  url?: string;
+  difficulty?: string;
   tags: string[];
 }
 
@@ -52,6 +60,8 @@ export const updateQuestionSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   link: z.string().min(1).max(200).optional(),
   tags: z.array(z.string()).min(1).optional(),
+  url: z.string().url().optional(),
+  difficulty: z.string().optional(),
 }).strict(); // Reject any additional properties
 
 // Create Question Schema
@@ -61,6 +71,8 @@ export const createQuestionSchema = z.object({
   link: z.string().min(1).max(200),
   // Default to [] if not provided
   tags: z.array(z.string()).default([]),
+  url: z.string().url().optional(),
+  difficulty: z.string().optional(),
 }).strict();
 
 // ==================== TYPE EXPORTS FOR VALIDATION ====================
@@ -75,6 +87,8 @@ export interface CreateQuestionInput {
   name: string;
   link: string;
   tags: string[];
+  url?: string;
+  difficulty?: string;
 }
 
 // For updating questions in database (internal use)
@@ -82,4 +96,6 @@ export interface UpdateQuestionInput {
   name?: string;
   link?: string;
   tags?: string[];
+  url?: string;
+  difficulty?: string;
 }

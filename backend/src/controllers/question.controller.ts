@@ -27,6 +27,8 @@ export class QuestionController {
       id: question._id.toString(),
       name: question.name,
       link: question.link,
+      url: (question as any).url,
+      difficulty: (question as any).difficulty,
       tags: question.tags,
     };
   }
