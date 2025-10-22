@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- UBC Professional Theme Colors -->
+    
+    <!-- Primary Colors - UBC Navy Blue -->
+    <color name="primary">#1A365D</color>
+    <color name="primary_foreground">#FFFFFF</color>
+    <color name="primary_dark">#153047</color>
+    <color name="primary_light">#2A4A6B</color>
+    
+    <!-- Secondary Colors - UBC Gold -->
+    <color name="secondary">#FFD700</color>
+    <color name="secondary_foreground">#1A365D</color>
+    <color name="secondary_dark">#E6C200</color>
+    <color name="secondary_light">#FFE55C</color>
+    
+    <!-- Background Colors -->
+    <color name="background">#FFFFFF</color>
+    <color name="background_secondary">#F8F9FA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#F1F3F4</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#1A365D</color>
+    <color name="text_secondary">#6B7280</color>
+    <color name="text_tertiary">#9CA3AF</color>
+    <color name="text_on_primary">#FFFFFF</color>
+    <color name="text_on_secondary">#1A365D</color>
+    
+    <!-- Status Colors -->
+    <color name="success">#10B981</color>
+    <color name="success_foreground">#FFFFFF</color>
+    <color name="error">#EF4444</color>
+    <color name="error_foreground">#FFFFFF</color>
+    <color name="warning">#F59E0B</color>
+    <color name="warning_foreground">#FFFFFF</color>
+    <color name="info">#3B82F6</color>
+    <color name="info_foreground">#FFFFFF</color>
+    
+    <!-- Border Colors -->
+    <color name="border">#E5E7EB</color>
+    <color name="border_light">#F3F4F6</color>
+    <color name="border_dark">#D1D5DB</color>
+    
+    <!-- Overlay Colors -->
+    <color name="overlay">#00000080</color>
+    <color name="overlay_light">#00000040</color>
+    
+    <!-- Job Type Colors -->
+    <color name="job_type_full_time">#10B981</color>
+    <color name="job_type_part_time">#3B82F6</color>
+    <color name="job_type_contract">#F59E0B</color>
+    <color name="job_type_internship">#8B5CF6</color>
+    <color name="job_type_remote">#06B6D4</color>
+    
+    <!-- Experience Level Colors -->
+    <color name="exp_entry">#10B981</color>
+    <color name="exp_mid">#3B82F6</color>
+    <color name="exp_senior">#F59E0B</color>
+    <color name="exp_lead">#EF4444</color>
+    <color name="exp_executive">#8B5CF6</color>
+    
+    <!-- Legacy Colors (for compatibility) -->
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>

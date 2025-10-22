@@ -2,7 +2,6 @@ package com.cpen321.usermanagement.di
 
 import android.content.Context
 import com.cpen321.usermanagement.data.local.preferences.TokenManager
-import com.cpen321.usermanagement.ui.navigation.NavigationStateManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -20,11 +19,5 @@ object DataModule {
         @ApplicationContext context: Context
     ): TokenManager {
         return TokenManager(context)
-    }
-
-    @Provides
-    @Singleton
-    fun provideNavigationStateManager(): NavigationStateManager {
-        return NavigationStateManager()
     }
 }
