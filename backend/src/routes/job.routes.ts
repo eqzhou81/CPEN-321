@@ -4,8 +4,8 @@ import { authenticateToken } from '../middleware/auth.middleware';
 import { validateBody } from '../middleware/validation.middleware';
 import {
     createJobApplicationSchema,
-    jobSearchSchema,
-    updateJobApplicationSchema,
+    similarJobsSearchSchema,
+    updateJobApplicationSchema
 } from '../types/job.types';
 
 const router = Router();
@@ -85,7 +85,7 @@ router.delete('/:id', jobController.deleteJobApplication.bind(jobController));
  */
 router.post(
   '/:id/similar',
-  validateBody(jobSearchSchema),
+  validateBody(similarJobsSearchSchema),
   jobController.searchSimilarJobs.bind(jobController)
 );
 

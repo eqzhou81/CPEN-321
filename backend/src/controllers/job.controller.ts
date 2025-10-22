@@ -4,12 +4,12 @@ import mongoose from 'mongoose';
 import { jobApplicationModel } from '../models/jobApplication.model';
 import { jobSearchService } from '../services/jobSearch.service';
 import {
-    CreateJobApplicationRequest,
-    JobApplicationResponse,
-    JobApplicationsListResponse,
-    JobSearchRequest,
-    SimilarJobsResponse,
-    UpdateJobApplicationRequest,
+  CreateJobApplicationRequest,
+  JobApplicationResponse,
+  JobApplicationsListResponse,
+  JobSearchRequest,
+  SimilarJobsResponse,
+  UpdateJobApplicationRequest,
 } from '../types/job.types';
 import logger from '../utils/logger.util';
 
@@ -219,9 +219,10 @@ export class JobController {
         });
       }
       
-      // Search for similar jobs
-      const similarJobs = await jobSearchService.searchSimilarJobs(
+      // Search for similar jobs using database-based algorithm
+      const similarJobs = await jobSearchService.findSimilarJobsFromDatabase(
         jobApplication,
+        user._id.toString(),
         req.body
       );
       

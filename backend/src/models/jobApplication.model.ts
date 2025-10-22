@@ -2,9 +2,9 @@ import mongoose, { Schema } from 'mongoose';
 import { z } from 'zod';
 
 import {
-    createJobApplicationSchema,
-    IJobApplication,
-    updateJobApplicationSchema,
+  createJobApplicationSchema,
+  IJobApplication,
+  updateJobApplicationSchema,
 } from '../types/job.types';
 import logger from '../utils/logger.util';
 
@@ -30,8 +30,9 @@ const jobApplicationSchema = new Schema<IJobApplication>(
     },
     description: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
+      default: 'Job description not available',
     },
     location: {
       type: String,

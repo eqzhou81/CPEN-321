@@ -1,0 +1,4 @@
+backend/data/
+.DS_Store
+.idea/
+backend/mongodb-macos-x86_64-6.0.15/

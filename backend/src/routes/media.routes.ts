@@ -1,8 +1,8 @@
 import { Router } from 'express';
 
-import { upload } from './storage';
-import { authenticateToken } from './auth.middleware';
-import { MediaController } from './media.controller';
+import { upload } from '../config /config/storage';
+import { MediaController } from '../controllers/media.controller';
+import { authenticateToken } from '../middleware/auth.middleware';
 
 const router = Router();
 const mediaController = new MediaController();

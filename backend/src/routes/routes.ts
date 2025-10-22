@@ -13,7 +13,7 @@ router.use('/auth', authRoutes);
 
 router.use('/hobbies', authenticateToken, hobbiesRoutes);
 
-router.use('/jobs', jobRoutes);
+router.use('/jobs', authenticateToken, jobRoutes);
 
 router.use('/user', authenticateToken, usersRoutes);
 

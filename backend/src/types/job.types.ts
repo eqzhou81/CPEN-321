@@ -33,8 +33,9 @@ export interface ISimilarJob {
   experienceLevel?: string;
   distance?: number; // Distance from original job location
   isRemote?: boolean;
-  source: 'linkedin' | 'indeed' | 'glassdoor' | 'ziprecruiter' | 'monster' | 'other';
+  source: 'linkedin' | 'indeed' | 'glassdoor' | 'ziprecruiter' | 'monster' | 'other' | 'database';
   postedDate?: Date;
+  score?: number; // Similarity score for database-based matching
 }
 
 // Location interface
@@ -68,7 +69,7 @@ export interface IJobSearchParams {
 export const createJobApplicationSchema = z.object({
   title: z.string().min(1, 'Job title is required'),
   company: z.string().min(1, 'Company name is required'),
-  description: z.string().min(1, 'Job description is required'),
+  description: z.string().optional().default('Job description not available'),
   location: z.string().optional(),
   url: z.string().url().optional(),
   requirements: z.array(z.string()).optional(),
@@ -93,11 +94,22 @@ export const jobSearchSchema = z.object({
   limit: z.number().min(1).max(100).optional(),
 });
 
+export const similarJobsSearchSchema = z.object({
+  radius: z.number().min(1).max(100).optional(),
+  jobType: z.array(z.string()).optional(),
+  experienceLevel: z.array(z.string()).optional(),
+  salaryMin: z.number().min(0).optional(),
+  salaryMax: z.number().min(0).optional(),
+  remote: z.boolean().optional(),
+  limit: z.number().min(1).max(100).optional(),
+});
+
 // Request/Response types
 // ------------------------------------------------------------
 export type CreateJobApplicationRequest = z.infer<typeof createJobApplicationSchema>;
 export type UpdateJobApplicationRequest = z.infer<typeof updateJobApplicationSchema>;
 export type JobSearchRequest = z.infer<typeof jobSearchSchema>;
+export type SimilarJobsSearchRequest = z.infer<typeof similarJobsSearchSchema>;
 
 export type JobApplicationResponse = {
   message: string;

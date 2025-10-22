@@ -1,10 +1,10 @@
 import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 
-import type { AuthResult } from './auth.types';
-import type { GoogleUserInfo, IUser } from './user.types';
-import logger from './logger.util';
-import { userModel } from './user.model';
+import { userModel } from '../models/user.model';
+import type { AuthResult } from '../types/auth.types';
+import type { GoogleUserInfo, IUser } from '../types/user.types';
+import logger from '../utils/logger.util';
 
 export class AuthService {
   private googleClient: OAuth2Client;
@@ -87,6 +87,32 @@ export class AuthService {
       logger.error('Sign in failed:', error);
       throw error;
     }
+  }
+
+  // Helper method for testing
+  async createOrUpdateUser(userData: { email: string; name: string; googleId: string }): Promise<IUser> {
+    try {
+      // Check if user already exists
+      let user = await userModel.findByGoogleId(userData.googleId);
+      
+      if (!user) {
+        // Create new user
+        user = await userModel.create({
+          googleId: userData.googleId,
+          email: userData.email,
+          name: userData.name,
+        });
+      }
+
+      return user;
+    } catch (error) {
+      logger.error('Create or update user failed:', error);
+      throw error;
+    }
+  }
+
+  generateToken(user: IUser): string {
+    return this.generateAccessToken(user);
   }
 }
 
