@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 
 import { jobApplicationModel } from '../models/jobApplication.model';
 import { questionModel } from '../models/question.model';
+import { sessionModel } from '../models/session.model';
 import { openaiService } from '../services/openai.service';
 import {
   GenerateQuestionsRequest,
@@ -46,6 +47,14 @@ export class QuestionsController {
       if (!jobApplication) {
         return res.status(404).json({
           message: 'Job application not found',
+        });
+      }
+
+      // Check if there's an active session for this job
+      const activeSession = await sessionModel.findActiveByJobId(jobObjectId, user._id);
+      if (activeSession) {
+        return res.status(409).json({
+          message: 'Cannot regenerate questions while there is an active mock interview session. Please complete or cancel the session first.',
         });
       }
 

@@ -1,0 +1,488 @@
+import { Request, Response } from 'express';
+import mongoose from 'mongoose';
+
+import { sessionModel, SessionStatus } from '../models/session.model';
+import { questionModel } from '../models/question.model';
+import { jobApplicationModel } from '../models/jobApplication.model';
+import { openaiService } from '../services/openai.service';
+import {
+  CreateSessionRequest,
+  UpdateSessionStatusRequest,
+  SubmitSessionAnswerRequest,
+  SessionResponse,
+  SessionAnswerFeedback,
+  ISessionWithQuestions,
+} from '../types/sessions.types';
+import { QuestionType, QuestionStatus } from '../types/questions.types';
+import logger from '../utils/logger.util';
+
+export class SessionsController {
+  private formatSessionResponse(session: any): ISessionWithQuestions {
+    return {
+      ...session.toObject(),
+      progressPercentage: Math.round((session.answeredQuestions / session.totalQuestions) * 100),
+      currentQuestion: session.currentQuestionIndex < session.questionIds.length 
+        ? session.questionIds[session.currentQuestionIndex] 
+        : null,
+      remainingQuestions: session.totalQuestions - session.answeredQuestions,
+    };
+  }
+  async createSession(
+    req: Request<unknown, unknown, CreateSessionRequest>,
+    res: Response<SessionResponse>
+  ) {
+    try {
+      const user = req.user!;
+      const { jobId } = req.body;
+
+      if (!jobId || typeof jobId !== 'string') {
+        return res.status(400).json({
+          message: 'Job ID is required and must be a string',
+        });
+      }
+
+      let jobObjectId = new mongoose.Types.ObjectId(jobId);
+      let jobApplication = await jobApplicationModel.findById(jobObjectId, user._id);
+      if (!jobApplication) {
+        try {
+          jobApplication = await jobApplicationModel.create(user._id, {
+            title: 'Mock Interview Practice Session',
+            company: 'Practice Company',
+            description: 'This is a practice mock interview session to help you prepare for real interviews. Answer behavioral questions and receive AI-powered feedback.',
+            location: 'Remote',
+            url: 'https://example.com',
+          });
+          jobObjectId = jobApplication._id;
+        } catch (error) {
+          logger.error('Failed to create placeholder job:', error);
+          return res.status(500).json({
+            message: 'Failed to create mock interview session',
+          });
+        }
+      }
+
+      const existingSession = await sessionModel.findActiveByJobId(jobObjectId, user._id);
+      if (existingSession) {
+        return res.status(409).json({
+          message: 'An active session already exists for this job. Please complete or cancel it first.',
+          data: {
+            session: this.formatSessionResponse(existingSession),
+          },
+        });
+      }
+
+      const defaultBehavioralQuestions = [
+        "Tell me about a time when you had to resolve a conflict with a team member. How did you approach the situation, and what was the outcome?",
+        "Describe a situation where you had to work under pressure to meet a tight deadline. How did you manage your time and prioritize tasks?",
+        "Give me an example of a time when you had to learn a new skill or technology quickly. What was your approach?",
+        "Tell me about a project where you took initiative and went above and beyond what was expected. What motivated you?",
+        "Describe a situation where you received critical feedback. How did you respond and what did you learn from it?"
+      ];
+
+      const questionPromises = defaultBehavioralQuestions.map(questionText => 
+        questionModel.create(user._id, {
+          jobId: jobObjectId.toString(),
+          type: QuestionType.BEHAVIORAL,
+          title: questionText,
+          description: 'Behavioral interview question for mock interview session',
+          difficulty: 'medium',
+        })
+      );
+
+      const createdQuestions = await Promise.all(questionPromises);
+      const questionIds = createdQuestions.map(q => q._id);
+
+      const session = await sessionModel.create(user._id, jobObjectId, questionIds);
+
+      const populatedSession = await sessionModel.findById(session._id, user._id);
+
+      res.status(201).json({
+        message: 'Mock interview session created successfully',
+        data: {
+          session: this.formatSessionResponse(populatedSession),
+          currentQuestion: createdQuestions[0],
+        },
+      });
+    } catch (error) {
+      logger.error('Failed to create session:', error);
+      
+      if (error instanceof Error && error.message.includes('active session already exists')) {
+        return res.status(409).json({
+          message: error.message,
+        });
+      }
+
+      return res.status(500).json({
+        message: 'Failed to create session',
+      });
+    }
+  }
+
+  async getSession(
+    req: Request<{ sessionId: string }>,
+    res: Response<SessionResponse>
+  ) {
+    try {
+      const user = req.user!;
+      const sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
+
+      const session = await sessionModel.findById(sessionId, user._id);
+      if (!session) {
+        return res.status(404).json({
+          message: 'Session not found',
+        });
+      }
+
+      const currentQuestion = session.currentQuestionIndex < session.questionIds.length 
+        ? session.questionIds[session.currentQuestionIndex] 
+        : null;
+
+      res.status(200).json({
+        message: 'Session retrieved successfully',
+        data: {
+          session: this.formatSessionResponse(session),
+          currentQuestion: currentQuestion as any,
+        },
+      });
+    } catch (error) {
+      logger.error('Failed to get session:', error);
+      return res.status(500).json({
+        message: 'Failed to retrieve session',
+      });
+    }
+  }
+
+  async getUserSessions(
+    req: Request,
+    res: Response<SessionResponse>
+  ) {
+    try {
+      const user = req.user!;
+      const limit = parseInt(req.query.limit as string) || 20;
+
+      const sessions = await sessionModel.findByUserId(user._id, limit);
+      const stats = await sessionModel.getSessionStats(user._id);
+
+      res.status(200).json({
+        message: 'Sessions retrieved successfully',
+        data: {
+          sessions: sessions.map(session => this.formatSessionResponse(session)),
+          stats,
+        },
+      });
+    } catch (error) {
+      logger.error('Failed to get user sessions:', error);
+      return res.status(500).json({
+        message: 'Failed to retrieve sessions',
+      });
+    }
+  }
+
+  async submitSessionAnswer(
+    req: Request<unknown, unknown, SubmitSessionAnswerRequest>,
+    res: Response<SessionResponse>
+  ) {
+    try {
+      const user = req.user!;
+      const { sessionId, questionId, answer } = req.body;
+
+      if (!sessionId || typeof sessionId !== 'string') {
+        return res.status(400).json({
+          message: 'Session ID is required and must be a string',
+        });
+      }
+
+      if (!questionId || typeof questionId !== 'string') {
+        return res.status(400).json({
+          message: 'Question ID is required and must be a string',
+        });
+      }
+
+      if (!answer || typeof answer !== 'string' || answer.trim().length === 0) {
+        return res.status(400).json({
+          message: 'Answer is required and must be a non-empty string',
+        });
+      }
+
+      if (answer.length > 5000) {
+        return res.status(400).json({
+          message: 'Answer too long (max 5000 characters)',
+        });
+      }
+
+      const sessionObjectId = new mongoose.Types.ObjectId(sessionId);
+      const questionObjectId = new mongoose.Types.ObjectId(questionId);
+
+      const session = await sessionModel.findById(sessionObjectId, user._id);
+      if (!session) {
+        return res.status(404).json({
+          message: 'Session not found',
+        });
+      }
+
+      if (session.status !== SessionStatus.ACTIVE) {
+        return res.status(400).json({
+          message: 'Session is not active',
+        });
+      }
+
+      const question = await questionModel.findById(questionObjectId, user._id);
+      if (!question) {
+        return res.status(404).json({
+          message: 'Question not found',
+        });
+      }
+
+      const questionInSession = session.questionIds.some((q: any) => 
+        q._id.toString() === questionId
+      );
+      
+      if (!questionInSession) {
+        logger.error('Question verification failed:', {
+          questionId,
+          sessionQuestionIds: session.questionIds.map((q: any) => q._id.toString())
+        });
+        return res.status(400).json({
+          message: 'Question does not belong to this session',
+        });
+      }
+
+      let feedback: SessionAnswerFeedback;
+
+      if (question.type === QuestionType.BEHAVIORAL) {
+        try {
+          const aiFeedback = await openaiService.generateAnswerFeedback(
+            question.title,
+            answer,
+            'Mock interview session'
+          );
+
+          await questionModel.updateStatus(questionObjectId, user._id, QuestionStatus.COMPLETED);
+
+          feedback = {
+            feedback: aiFeedback.feedback || 'Good answer!',
+            score: aiFeedback.score || 7,
+            strengths: aiFeedback.strengths || [],
+            improvements: aiFeedback.improvements || [],
+            isLastQuestion: false,
+            sessionCompleted: false,
+          };
+        } catch (error) {
+          logger.error('Error generating AI feedback:', error);
+          feedback = {
+            feedback: 'Thank you for your answer. Due to a technical issue, detailed feedback is not available right now.',
+            score: 7,
+            strengths: ['Provided a complete response'],
+            improvements: ['Continue practicing to improve your interview skills'],
+            isLastQuestion: false,
+            sessionCompleted: false,
+          };
+        }
+      } else {
+        feedback = {
+          feedback: 'Technical question noted. Please solve this problem on the external platform and mark it as complete when done.',
+          score: 0,
+          strengths: [],
+          improvements: [],
+          isLastQuestion: false,
+          sessionCompleted: false,
+        };
+      }
+
+      const updatedSession = await sessionModel.updateProgress(
+        sessionObjectId, 
+        user._id, 
+        session.answeredQuestions + 1
+      );
+      
+      if (!updatedSession) {
+        return res.status(500).json({
+          message: 'Failed to update session progress',
+        });
+      }
+
+      const isLastQuestion = session.currentQuestionIndex >= session.totalQuestions - 1;
+      const sessionCompleted = false;
+
+      feedback.isLastQuestion = isLastQuestion;
+      feedback.sessionCompleted = sessionCompleted;
+
+      res.status(200).json({
+        message: sessionCompleted ? 'Session completed successfully' : 'Answer submitted successfully',
+        data: {
+          session: this.formatSessionResponse(updatedSession),
+          feedback,
+        },
+      });
+    } catch (error) {
+      logger.error('Failed to submit session answer:', error);
+      return res.status(500).json({
+        message: 'Failed to submit answer',
+      });
+    }
+  }
+
+  async updateSessionStatus(
+    req: Request<{ sessionId: string }, unknown, UpdateSessionStatusRequest>,
+    res: Response<SessionResponse>
+  ) {
+    try {
+      const user = req.user!;
+      const sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
+      const { status } = req.body;
+
+      if (!status || typeof status !== 'string') {
+        return res.status(400).json({
+          message: 'Status is required and must be a string',
+        });
+      }
+
+      const validStatuses = ['active', 'paused', 'cancelled', 'completed'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({
+          message: 'Invalid status. Must be one of: active, paused, cancelled, completed',
+        });
+      }
+
+      const session = await sessionModel.findById(sessionId, user._id);
+      if (!session) {
+        return res.status(404).json({
+          message: 'Session not found',
+        });
+      }
+
+      const updatedSession = await sessionModel.updateStatus(sessionId, user._id, status as SessionStatus);
+      if (!updatedSession) {
+        return res.status(500).json({
+          message: 'Failed to update session status',
+        });
+      }
+
+      res.status(200).json({
+        message: `Session ${status} successfully`,
+        data: {
+          session: this.formatSessionResponse(updatedSession),
+        },
+      });
+    } catch (error) {
+      logger.error('Failed to update session status:', error);
+      return res.status(500).json({
+        message: 'Failed to update session status',
+      });
+    }
+  }
+
+  async deleteSession(
+    req: Request<{ sessionId: string }>,
+    res: Response<SessionResponse>
+  ) {
+    try {
+      const user = req.user!;
+      const sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
+
+      const deleted = await sessionModel.delete(sessionId, user._id);
+      if (!deleted) {
+        return res.status(404).json({
+          message: 'Session not found',
+        });
+      }
+
+      res.status(200).json({
+        message: 'Session deleted successfully',
+      });
+    } catch (error) {
+      logger.error('Failed to delete session:', error);
+      return res.status(500).json({
+        message: 'Failed to delete session',
+      });
+    }
+  }
+
+  async navigateToQuestion(
+    req: Request<{ sessionId: string }, unknown, { questionIndex: number }>,
+    res: Response<SessionResponse>
+  ) {
+    try {
+      const user = req.user!;
+      const sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
+      const { questionIndex } = req.body;
+
+      if (typeof questionIndex !== 'number') {
+        return res.status(400).json({
+          message: 'Question index must be a number',
+        });
+      }
+
+      const session = await sessionModel.navigateToQuestion(sessionId, user._id, questionIndex);
+      if (!session) {
+        return res.status(404).json({
+          message: 'Session not found',
+        });
+      }
+
+      const currentQuestion = session.currentQuestionIndex < session.questionIds.length 
+        ? session.questionIds[session.currentQuestionIndex] 
+        : null;
+
+      res.status(200).json({
+        message: 'Navigation successful',
+        data: {
+          session: this.formatSessionResponse(session),
+          currentQuestion: currentQuestion as any,
+        },
+      });
+    } catch (error) {
+      logger.error('Failed to navigate to question:', error);
+      
+      if (error instanceof Error && error.message.includes('Invalid question index')) {
+        return res.status(400).json({
+          message: error.message,
+        });
+      }
+
+      return res.status(500).json({
+        message: 'Failed to navigate to question',
+      });
+    }
+  }
+
+  async getSessionProgress(
+    req: Request<{ sessionId: string }>,
+    res: Response<SessionResponse>
+  ) {
+    try {
+      const user = req.user!;
+      const sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
+
+      const session = await sessionModel.findById(sessionId, user._id);
+      if (!session) {
+        return res.status(404).json({
+          message: 'Session not found',
+        });
+      }
+
+      const progress = {
+        sessionId: session._id.toString(),
+        currentQuestionIndex: session.currentQuestionIndex,
+        totalQuestions: session.totalQuestions,
+        answeredQuestions: session.answeredQuestions,
+        progressPercentage: Math.round((session.answeredQuestions / session.totalQuestions) * 100),
+        status: session.status,
+        remainingQuestions: session.totalQuestions - session.answeredQuestions,
+        estimatedTimeRemaining: Math.max(0, (session.totalQuestions - session.answeredQuestions) * 3), // 3 minutes per question
+      };
+
+      res.status(200).json({
+        message: 'Session progress retrieved successfully',
+        data: {
+          session: progress as any,
+        },
+      });
+    } catch (error) {
+      logger.error('Failed to get session progress:', error);
+      return res.status(500).json({
+        message: 'Failed to retrieve session progress',
+      });
+    }
+  }
+}

@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "User Management"
+rootProject.name = "Crushing the Coding Interview"
 include(":app")

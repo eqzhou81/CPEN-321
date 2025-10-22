@@ -1,5 +1,4 @@
 package com.cpen321.usermanagement.ui.viewmodels
-package com.cpen321.usermanagement.ui.viewmodels
 
 import android.content.Context
 import android.util.Log

@@ -25,12 +25,16 @@ export class UserController {
     };
   }
 
-  getProfile(req: Request, res: Response<GetProfileResponse>) {
+  getProfile(req: Request, res: Response<{ data: { user: GetProfileResponse } }>) {
     const user = req.user!;
 
     const profileResponse = this.transformUserToResponse(user);
 
-    res.status(200).json(profileResponse);
+    res.status(200).json({
+      data: {
+        user: profileResponse
+      }
+    });
   }
 
   async updateProfile(

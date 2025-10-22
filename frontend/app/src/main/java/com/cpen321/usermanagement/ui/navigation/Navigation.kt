@@ -18,6 +18,7 @@ import com.cpen321.usermanagement.ui.screens.LoadingScreen
 import com.cpen321.usermanagement.ui.screens.MainScreen
 import com.cpen321.usermanagement.ui.screens.ManageHobbiesScreen
 import com.cpen321.usermanagement.ui.screens.ManageProfileScreen
+import com.cpen321.usermanagement.ui.screens.MockInterviewScreen
 import com.cpen321.usermanagement.ui.screens.ProfileScreenActions
 import com.cpen321.usermanagement.ui.screens.ProfileCompletionScreen
 import com.cpen321.usermanagement.ui.screens.PlacesScreen
@@ -35,6 +36,7 @@ object NavRoutes {
     const val MANAGE_PROFILE = "manage_profile"
     const val MANAGE_HOBBIES = "manage_hobbies"
     const val PROFILE_COMPLETION = "profile_completion"
+    const val MOCK_INTERVIEW = "mock_interview"
 
     const val Places = "find_places"
 }
@@ -187,9 +189,21 @@ private fun AppNavHost(
         }
 
         composable(NavRoutes.MAIN) {
+            val sessionCreated by mainViewModel.sessionCreated.collectAsState()
+            
+            LaunchedEffect(sessionCreated) {
+                sessionCreated?.let { sessionId ->
+                    navController.navigate("${NavRoutes.MOCK_INTERVIEW}/$sessionId")
+                    mainViewModel.clearSessionCreated()
+                }
+            }
+            
             MainScreen(
                 mainViewModel = mainViewModel,
-                onProfileClick = { navigationStateManager.navigateToProfile() }
+                onProfileClick = { navigationStateManager.navigateToProfile() },
+                onMockInterviewClick = { 
+                    mainViewModel.createMockInterviewSession()
+                }
             )
         }
 
@@ -226,6 +240,14 @@ private fun AppNavHost(
         composable(NavRoutes.MANAGE_HOBBIES) {
             ManageHobbiesScreen(
                 profileViewModel = profileViewModel,
+                onBackClick = { navigationStateManager.navigateBack() }
+            )
+        }
+
+        composable("${NavRoutes.MOCK_INTERVIEW}/{sessionId}") { backStackEntry ->
+            val sessionId = backStackEntry.arguments?.getString("sessionId") ?: ""
+            MockInterviewScreen(
+                sessionId = sessionId,
                 onBackClick = { navigationStateManager.navigateBack() }
             )
         }
