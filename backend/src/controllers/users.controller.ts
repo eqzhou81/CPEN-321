@@ -19,6 +19,7 @@ export class UserController {
       email: user.email,
       name: user.name,
       savedJobs: user.savedJobs,
+      savedQuestions: user.savedQuestions,
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
     };

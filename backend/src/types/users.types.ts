@@ -12,6 +12,7 @@ export interface IUser extends Document {
   email: string;
   name: string;
   savedJobs: string[];                 // Array of job IDs (references user's jobs collection)
+  savedQuestions: string[];            // Array of question IDs (references question collection)
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +43,7 @@ export interface GetProfileResponse {
   name: string;
   profilePicture?: string;
   savedJobs: string[];                  // Array of job IDs
+  savedQuestions: string[];             // Array of question IDs
   createdAt: string;                    // ISO date string
   updatedAt: string;                    // ISO date string
 }
@@ -123,4 +125,15 @@ export interface AddSavedJobInput {
 export interface RemoveSavedJobInput {
   userId: string;
   jobId: string;
+}
+
+// For adding/removing saved questions (internal use)
+export interface AddSavedQuestionInput {
+  userId: string;
+  questionId: string;
+}
+
+export interface RemoveSavedQuestionInput {
+  userId: string;
+  questionId: string;
 }
