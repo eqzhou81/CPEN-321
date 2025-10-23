@@ -1,12 +1,13 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import puppeteer from 'puppeteer';
+import { availableJobModel } from '../models/availableJob.model';
 import {
-    IJobSearchParams,
-    IJobSimilarityScore,
-    IScraperConfig,
-    IScraperResult,
-    ISimilarJob
+  IJobSearchParams,
+  IJobSimilarityScore,
+  IScraperConfig,
+  IScraperResult,
+  ISimilarJob
 } from '../types/jobs.types';
 import { LocationUtils } from '../utils/location.util';
 import logger from '../utils/logger.util';
@@ -68,6 +69,53 @@ export class JobSearchService {
       }
     }
   };
+
+  /**
+   * Find similar jobs using database-first approach
+   */
+  async findSimilarJobs(
+    jobId: string,
+    userId: string,
+    limit: number = 5
+  ): Promise<ISimilarJob[]> {
+    try {
+      // Get the original job to extract keywords
+      const jobApplication = await this.getJobById(jobId, userId);
+      if (!jobApplication) {
+        throw new Error('Job not found');
+      }
+
+      logger.info(`Finding similar jobs for: ${jobApplication.title} at ${jobApplication.company}`);
+
+      // Extract search keywords from the original job
+      const searchKeywords = this.extractSearchKeywords(jobApplication);
+      logger.info(`Extracted keywords: ${searchKeywords.join(', ')}`);
+
+      // First, try to find similar jobs from our database
+      const databaseJobs = await this.findSimilarJobsFromDatabase(jobApplication, limit);
+
+      if (databaseJobs.length > 0) {
+        logger.info(`Found ${databaseJobs.length} similar jobs from database`);
+        return databaseJobs.slice(0, limit);
+      }
+
+      // If no database results, fall back to web scraping
+      logger.info('No database results found, falling back to web scraping...');
+      const scrapedJobs = await this.scrapeJobsFromUnprotectedSites(searchKeywords, limit);
+
+      if (scrapedJobs.length > 0) {
+        logger.info(`Found ${scrapedJobs.length} similar jobs from web scraping`);
+        return scrapedJobs.slice(0, limit);
+      }
+
+      logger.warn('No similar jobs found from any source');
+      return [];
+
+    } catch (error) {
+      logger.error('Error in findSimilarJobs:', error);
+      return [];
+    }
+  }
 
   /**
    * Search for similar jobs based on a job application
@@ -481,13 +529,13 @@ export class JobSearchService {
       if (!title || !company) {
         return null;
       }
-      
-      return {
-        title,
-        company,
-        location,
+
+          return {
+            title,
+            company,
+            location,
         description,
-        salary,
+            salary,
         url,
         jobType: this.extractJobType(title, description),
         experienceLevel: this.extractExperienceLevel(title, description)
@@ -496,6 +544,414 @@ export class JobSearchService {
     } catch (error) {
       logger.error('Error scraping job details:', error);
       return null;
+    }
+  }
+
+  /**
+   * Get job by ID (placeholder - needs to be implemented based on your job model)
+   */
+  private async getJobById(jobId: string, userId: string): Promise<any> {
+    // This should be implemented based on your job application model
+    // For now, return a mock job for testing
+    return {
+      title: "Software Development Engineer",
+      company: "Amazon",
+      location: "Vancouver, BC, Canada",
+      description: "Software development role",
+      jobType: "full-time",
+      experienceLevel: "mid"
+    };
+  }
+
+  /**
+   * Extract search keywords from job application
+   */
+  private extractSearchKeywords(jobApplication: any): string[] {
+    const keywords: string[] = [];
+    
+    // Extract from title
+    if (jobApplication.title) {
+      keywords.push(...jobApplication.title.split(/\s+/).filter((word: string) => word.length > 2));
+    }
+    
+    // Extract from company
+    if (jobApplication.company) {
+      keywords.push(jobApplication.company);
+    }
+    
+    // Extract from description
+    if (jobApplication.description) {
+      const descWords = jobApplication.description.split(/\s+/)
+        .filter((word: string) => word.length > 3)
+        .slice(0, 10); // Limit to first 10 words
+      keywords.push(...descWords);
+    }
+    
+    return [...new Set(keywords)]; // Remove duplicates
+  }
+
+  /**
+   * Find similar jobs from database
+   */
+  private async findSimilarJobsFromDatabase(
+    jobApplication: any,
+    limit: number = 5
+  ): Promise<ISimilarJob[]> {
+    try {
+      logger.info('Finding similar jobs from available jobs database for:', jobApplication.title);
+
+      // Search for jobs with similar titles, companies, or skills
+      const searchParams = {
+        title: this.extractMainTitle(jobApplication.title), // Extract main title without extra details
+        company: this.extractMainCompany(jobApplication.company), // Extract main company name
+        jobType: jobApplication.jobType ? [jobApplication.jobType] : undefined,
+        experienceLevel: jobApplication.experienceLevel ? [jobApplication.experienceLevel] : undefined,
+        limit: limit * 3 // Get more results to filter and score
+      };
+
+      const availableJobs = await availableJobModel.searchJobs(searchParams);
+
+      let allAvailableJobs = [...availableJobs];
+
+      // If no specific matches, try broader searches based on company and location
+      if (allAvailableJobs.length === 0) {
+        logger.info('No jobs found in database matching search criteria');
+
+        // Extract company name and location for broader matching
+        const companyName = this.extractMainCompany(jobApplication.company);
+        const location = jobApplication.jobLocation || jobApplication.location || '';
+
+        logger.info(`Trying broader search for company: ${companyName}, location: ${location}`);
+
+        // Try to match by company name (case insensitive)
+        if (companyName) {
+          const companyJobs = await availableJobModel.searchJobs({
+            company: companyName,
+            limit: limit * 2
+          });
+
+          if (companyJobs.length > 0) {
+            logger.info(`Found ${companyJobs.length} jobs matching company: ${companyName}`);
+            allAvailableJobs.push(...companyJobs);
+          }
+        }
+
+        // If still no results, try Amazon/Microsoft fallback
+        if (allAvailableJobs.length === 0) {
+          logger.info('No company matches found, trying Amazon/Microsoft fallback');
+
+          // Try Amazon jobs
+          const amazonJobs = await availableJobModel.searchJobs({
+            company: 'amazon',
+            limit: limit * 2
+          });
+
+          if (amazonJobs.length > 0) {
+            logger.info(`Found ${amazonJobs.length} Amazon jobs with fallback search`);
+            allAvailableJobs.push(...amazonJobs);
+          }
+
+          // Try Microsoft jobs
+          const microsoftJobs = await availableJobModel.searchJobs({
+            company: 'microsoft',
+            limit: limit * 2
+          });
+
+          if (microsoftJobs.length > 0) {
+            logger.info(`Found ${microsoftJobs.length} Microsoft jobs with fallback search`);
+            allAvailableJobs.push(...microsoftJobs);
+          }
+        }
+      }
+
+      logger.info(`Found ${allAvailableJobs.length} potential matches in database`);
+
+      // Calculate similarity scores and convert to ISimilarJob format
+      const scoredJobs: ISimilarJob[] = [];
+
+      for (const job of allAvailableJobs) {
+        const similarityScore = this.calculateJobSimilarity(jobApplication, job);
+
+        // Only include jobs with meaningful similarity (score > 0.05)
+        if (similarityScore > 0.05) {
+          scoredJobs.push({
+            title: job.title,
+            company: job.company,
+            description: job.description,
+            location: job.jobLocation,
+            url: job.url,
+            salary: job.salary || undefined,
+            jobType: job.jobType || undefined,
+            experienceLevel: job.experienceLevel || undefined,
+            source: 'database',
+            score: similarityScore,
+            postedDate: job.postedDate || job.createdAt
+          });
+        }
+      }
+
+      // Sort by similarity score (highest first) and return top results
+      scoredJobs.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+      logger.info(`Returning ${Math.min(scoredJobs.length, limit)} similar jobs from database`);
+      return scoredJobs.slice(0, limit);
+
+    } catch (error) {
+      logger.error('Error finding similar jobs from database:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Extract main title from job title (remove extra details)
+   */
+  private extractMainTitle(title: string): string {
+    // Remove common suffixes and extra details
+    return title
+      .split(',')[0] // Take only the first part before comma
+      .split(' - ')[0] // Take only the first part before dash
+      .split(' at ')[0] // Remove "at company" part
+      .trim();
+  }
+
+  /**
+   * Extract main company name from company string
+   */
+  private extractMainCompany(company: string): string {
+    // Remove common suffixes and domains
+    const cleanCompany = company
+      .split('.')[0] // Remove domain extensions like .jobs, .com
+      .split(',')[0] // Take only the first part before comma
+      .split(' - ')[0] // Take only the first part before dash
+      .split(' at ')[0] // Remove "at company" part
+      .trim();
+
+    // Convert to lowercase for case-insensitive matching
+    const normalizedCompany = cleanCompany.toLowerCase();
+
+    // Handle common company name variations
+    if (normalizedCompany.includes('amazon')) {
+      return 'amazon';
+    }
+    if (normalizedCompany.includes('microsoft')) {
+      return 'microsoft';
+    }
+    if (normalizedCompany.includes('google')) {
+      return 'google';
+    }
+
+    return normalizedCompany;
+  }
+
+  /**
+   * Calculate similarity score between job application and available job
+   */
+  private calculateJobSimilarity(jobApplication: any, availableJob: any): number {
+    let score = 0;
+
+    // Title similarity (40% weight)
+    const titleSimilarity = this.calculateTextSimilarity(
+      this.extractMainTitle(jobApplication.title).toLowerCase(),
+      this.extractMainTitle(availableJob.title).toLowerCase()
+    );
+    score += titleSimilarity * 0.4;
+
+    // Company similarity (30% weight)
+    const companySimilarity = this.calculateTextSimilarity(
+      this.extractMainCompany(jobApplication.company).toLowerCase(),
+      this.extractMainCompany(availableJob.company).toLowerCase()
+    );
+    score += companySimilarity * 0.3;
+
+    // Location similarity (20% weight)
+    const location1 = (jobApplication.jobLocation || jobApplication.location || '').toLowerCase();
+    const location2 = (availableJob.jobLocation || '').toLowerCase();
+    if (location1 && location2) {
+      const locationSimilarity = this.calculateTextSimilarity(location1, location2);
+      score += locationSimilarity * 0.2;
+    }
+
+    // Job type match (5% weight)
+    if (jobApplication.jobType && availableJob.jobType && 
+        jobApplication.jobType === availableJob.jobType) {
+      score += 0.05;
+    }
+
+    // Experience level match (5% weight)
+    if (jobApplication.experienceLevel && availableJob.experienceLevel && 
+        jobApplication.experienceLevel === availableJob.experienceLevel) {
+      score += 0.05;
+    }
+
+    return Math.round(score * 100) / 100;
+  }
+
+  /**
+   * Scrape jobs from unprotected sites (fallback)
+   */
+  private async scrapeJobsFromUnprotectedSites(keywords: string[], limit: number): Promise<ISimilarJob[]> {
+    try {
+      logger.info('Starting web scraping with keywords:', keywords.join(', '));
+
+      const jobs: ISimilarJob[] = [];
+
+      // Try scraping from GitHub Jobs
+      try {
+        logger.info('Scraping from GitHub Jobs...');
+        const githubJobs = await this.scrapeFromGitHubJobs(keywords);
+        jobs.push(...githubJobs);
+      } catch (error) {
+        logger.warn('GitHub Jobs scraping failed:', error);
+      }
+
+      // Try scraping from RemoteOK
+      try {
+        logger.info('Scraping from RemoteOK...');
+        const remoteJobs = await this.scrapeFromRemoteOK(keywords);
+        jobs.push(...remoteJobs);
+        logger.info(`Found ${remoteJobs.length} jobs from RemoteOK`);
+      } catch (error) {
+        logger.warn('RemoteOK scraping failed:', error);
+      }
+
+      // Try scraping from Stack Overflow Jobs
+      try {
+        logger.info('Scraping from Stack Overflow Jobs...');
+        const stackJobs = await this.scrapeFromStackOverflowJobs(keywords);
+        jobs.push(...stackJobs);
+        logger.info(`Found ${stackJobs.length} jobs from Stack Overflow Jobs`);
+      } catch (error) {
+        logger.warn('Stack Overflow Jobs scraping failed:', error);
+      }
+
+      // Remove duplicates and limit results
+      const uniqueJobs = this.removeDuplicateJobs(jobs);
+      logger.info(`Returning ${uniqueJobs.length} similar jobs with scores:`);
+      
+      return uniqueJobs.slice(0, limit);
+
+    } catch (error) {
+      logger.warn('Failed to scrape from Company Career Pages:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Scrape from GitHub Jobs
+   */
+  private async scrapeFromGitHubJobs(keywords: string[]): Promise<ISimilarJob[]> {
+    try {
+      const response = await axios.get('https://jobs.github.com/positions.atom', {
+        timeout: 5000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+
+      const $ = cheerio.load(response.data);
+      const jobs: ISimilarJob[] = [];
+
+      $('entry').each((_, entry) => {
+        const title = $(entry).find('title').text().trim();
+        const company = $(entry).find('name').text().trim();
+        const location = $(entry).find('location').text().trim();
+        const description = $(entry).find('summary').text().trim();
+        const url = $(entry).find('link').attr('href') || '';
+
+        if (title && company) {
+          jobs.push({
+            title,
+            company,
+            description,
+            location,
+            url,
+            source: 'github',
+            postedDate: new Date()
+          });
+        }
+      });
+
+      return jobs.slice(0, 5); // Limit to 5 jobs
+    } catch (error) {
+      throw new Error('GitHub Jobs scraping failed');
+    }
+  }
+
+  /**
+   * Scrape from RemoteOK
+   */
+  private async scrapeFromRemoteOK(keywords: string[]): Promise<ISimilarJob[]> {
+    try {
+      const response = await axios.get('https://remoteok.io/api', {
+        timeout: 5000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+
+      const jobs: ISimilarJob[] = [];
+      const data = response.data;
+
+      if (Array.isArray(data)) {
+        data.slice(1, 11).forEach((job: any) => { // Skip first element (metadata)
+          if (job.position && job.company) {
+            jobs.push({
+              title: job.position,
+              company: job.company,
+              description: job.description || '',
+              location: 'Remote',
+              url: `https://remoteok.io/remote-jobs/${job.id}`,
+              source: 'remoteok',
+              postedDate: new Date(job.date * 1000)
+            });
+          }
+        });
+      }
+
+      return jobs;
+    } catch (error) {
+      throw new Error('RemoteOK scraping failed');
+    }
+  }
+
+  /**
+   * Scrape from Stack Overflow Jobs
+   */
+  private async scrapeFromStackOverflowJobs(keywords: string[]): Promise<ISimilarJob[]> {
+    try {
+      const response = await axios.get('https://stackoverflow.com/jobs/feed', {
+        timeout: 5000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+
+      const $ = cheerio.load(response.data);
+      const jobs: ISimilarJob[] = [];
+
+      $('item').each((_, item) => {
+        const title = $(item).find('title').text().trim();
+        const company = $(item).find('a10\\:name, name').text().trim();
+        const location = $(item).find('location').text().trim();
+        const description = $(item).find('description').text().trim();
+        const url = $(item).find('link').text().trim();
+
+        if (title && company) {
+          jobs.push({
+            title,
+            company,
+            description,
+            location,
+            url,
+            source: 'stackoverflow',
+            postedDate: new Date()
+          });
+        }
+      });
+
+      return jobs.slice(0, 5); // Limit to 5 jobs
+    } catch (error) {
+      throw new Error('Stack Overflow Jobs scraping failed');
     }
   }
 }

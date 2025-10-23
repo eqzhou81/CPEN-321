@@ -33,8 +33,9 @@ export interface ISimilarJob {
   experienceLevel?: string;
   distance?: number; // Distance from original job location
   isRemote?: boolean;
-  source: 'linkedin' | 'indeed' | 'glassdoor' | 'ziprecruiter' | 'monster' | 'other';
+  source: 'linkedin' | 'indeed' | 'glassdoor' | 'ziprecruiter' | 'monster' | 'database' | 'github' | 'remoteok' | 'stackoverflow' | 'other';
   postedDate?: Date;
+  score?: number; // Similarity score for database results
 }
 
 // Location interface
@@ -163,7 +164,7 @@ export interface IJobSimilarityScore {
 // ------------------------------------------------------------
 export const JOB_TYPES = ['full-time', 'part-time', 'contract', 'internship', 'remote'] as const;
 export const EXPERIENCE_LEVELS = ['entry', 'mid', 'senior', 'lead', 'executive'] as const;
-export const JOB_SOURCES = ['linkedin', 'indeed', 'glassdoor', 'ziprecruiter', 'monster', 'other'] as const;
+export const JOB_SOURCES = ['linkedin', 'indeed', 'glassdoor', 'ziprecruiter', 'monster', 'database', 'github', 'remoteok', 'stackoverflow', 'other'] as const;
 
 // Default search parameters
 export const DEFAULT_SEARCH_PARAMS: Partial<IJobSearchParams> = {
