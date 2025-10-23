@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.ui.components.MessageSnackbar
 import com.cpen321.usermanagement.ui.components.MessageSnackbarState
@@ -72,7 +73,7 @@ private fun MainContent(
                 successMessage = uiState.successMessage,
                 onSuccessMessageShown = onSuccessMessageShown
             )
-        }
+        } 
     ) { paddingValues ->
         MainBody(
             paddingValues = paddingValues,

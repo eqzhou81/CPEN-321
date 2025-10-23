@@ -12,13 +12,19 @@ object RetrofitClient {
     private const val BASE_URL = BuildConfig.API_BASE_URL
     private const val IMAGE_BASE_URL = BuildConfig.IMAGE_BASE_URL
 
-    private var authToken: String? = null
+    // Use a mutable holder so the lambda always gets the current value
+    private class TokenHolder {
+        @Volatile
+        var token: String? = null
+    }
+    
+    private val tokenHolder = TokenHolder()
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
-    private val authInterceptor = AuthInterceptor { authToken }
+    private val authInterceptor = AuthInterceptor { tokenHolder.token }
 
     private val httpClient = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
@@ -42,7 +48,8 @@ object RetrofitClient {
     val questionApiService: QuestionApiService by lazy { retrofit.create(QuestionApiService::class.java) }
 
     fun setAuthToken(token: String?) {
-        authToken = token
+        tokenHolder.token = token
+        android.util.Log.d("RetrofitClient", "Auth token updated: ${if (token != null) "Set (${token.length} chars)" else "Cleared"}")
     }
 
     fun getPictureUri(picturePath: String): String {

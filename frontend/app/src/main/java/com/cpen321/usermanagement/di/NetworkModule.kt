@@ -6,6 +6,7 @@ import com.cpen321.usermanagement.data.remote.api.ImageInterface
 import com.cpen321.usermanagement.data.remote.api.JobApiService
 import com.cpen321.usermanagement.data.remote.api.QuestionApiService
 import com.cpen321.usermanagement.data.remote.api.RetrofitClient
+import com.cpen321.usermanagement.data.remote.api.SessionInterface
 import com.cpen321.usermanagement.data.remote.api.UserInterface
 import dagger.Module
 import dagger.Provides

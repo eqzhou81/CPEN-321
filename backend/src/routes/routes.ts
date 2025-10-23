@@ -14,6 +14,15 @@ router.use('/jobs', authenticateToken, jobRoutes);
 
 router.use('/user', authenticateToken, usersRoutes);
 
-router.use('/media', authenticateToken, mediaRoutes);
+router.use('/jobs', authenticateToken,  jobRoutes);
+
+router.use('/discussions', authenticateToken, discussionRoutes);
+
+router.use('/questions', authenticateToken, questionRoutes);
+
+router.use('/sessions', authenticateToken, sessionRoutes);
+
+
+
 
 export default router;

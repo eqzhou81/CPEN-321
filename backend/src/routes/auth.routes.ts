@@ -9,14 +9,12 @@ const authController = new AuthController();
 
 router.post(
   '/signup',
-  validateBody<AuthenticateUserRequest>(authenticateUserSchema),
-  authController.signUp
+  authController.signUp.bind(authController)
 );
 
 router.post(
   '/signin',
-  validateBody(authenticateUserSchema),
-  authController.signIn
+  authController.signIn.bind(authController)
 );
 
 export default router;

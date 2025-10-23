@@ -70,6 +70,53 @@ export class JobSearchService {
   };
 
   /**
+   * Find similar jobs using database-first approach
+   */
+  async findSimilarJobs(
+    jobId: string,
+    userId: string,
+    limit: number = 5
+  ): Promise<ISimilarJob[]> {
+    try {
+      // Get the original job to extract keywords
+      const jobApplication = await this.getJobById(jobId, userId);
+      if (!jobApplication) {
+        throw new Error('Job not found');
+      }
+
+      logger.info(`Finding similar jobs for: ${jobApplication.title} at ${jobApplication.company}`);
+
+      // Extract search keywords from the original job
+      const searchKeywords = this.extractSearchKeywords(jobApplication);
+      logger.info(`Extracted keywords: ${searchKeywords.join(', ')}`);
+
+      // First, try to find similar jobs from our database
+      const databaseJobs = await this.findSimilarJobsFromDatabase(jobApplication, limit);
+
+      if (databaseJobs.length > 0) {
+        logger.info(`Found ${databaseJobs.length} similar jobs from database`);
+        return databaseJobs.slice(0, limit);
+      }
+
+      // If no database results, fall back to web scraping
+      logger.info('No database results found, falling back to web scraping...');
+      const scrapedJobs = await this.scrapeJobsFromUnprotectedSites(searchKeywords, limit);
+
+      if (scrapedJobs.length > 0) {
+        logger.info(`Found ${scrapedJobs.length} similar jobs from web scraping`);
+        return scrapedJobs.slice(0, limit);
+      }
+
+      logger.warn('No similar jobs found from any source');
+      return [];
+
+    } catch (error) {
+      logger.error('Error in findSimilarJobs:', error);
+      return [];
+    }
+  }
+
+  /**
    * Search for similar jobs based on a job application
    */
   async searchSimilarJobs(
