@@ -1,6 +1,5 @@
 import mongoose, { Document } from 'mongoose';
 import z from 'zod';
-import { HOBBIES } from '../config /config/hobbies';
 
 // User model
 // ------------------------------------------------------------
@@ -30,12 +29,7 @@ export const createUserSchema = z.object({
 export const updateProfileSchema = z.object({
   name: z.string().min(1).optional(),
   bio: z.string().max(500).optional(),
-  hobbies: z
-    .array(z.string())
-    .refine(val => val.length === 0 || val.every(v => HOBBIES.includes(v)), {
-      message: 'Hobby must be in the available hobbies list',
-    })
-    .optional(),
+  hobbies: z.array(z.string()).optional(),
   profilePicture: z.string().min(1).optional(),
 });
 

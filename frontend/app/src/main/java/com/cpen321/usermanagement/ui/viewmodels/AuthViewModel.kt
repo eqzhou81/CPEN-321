@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import javax.inject.Inject
 
 data class AuthUiState(
@@ -48,7 +49,29 @@ class AuthViewModel @Inject constructor(
 
     init {
         if (!_uiState.value.shouldSkipAuthCheck) {
-            checkAuthenticationStatus()
+            // TEMPORARY: Skip authentication check entirely for testing
+            if (com.cpen321.usermanagement.BuildConfig.AUTH_BYPASS_ENABLED) {
+                // Set the test token in RetrofitClient for API calls
+                val testToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZjgxZjEzOTdjNmZmMTUyYjc0OWMxNiIsImlhdCI6MTc2MTA5MTM3NSwiZXhwIjoxNzYxNjk2MTc1fQ.frWWbcYy-2vnaEPJwycxsAxgLrqpVDg-OzPcLbPz90A"
+                com.cpen321.usermanagement.data.remote.api.RetrofitClient.setAuthToken(testToken)
+                
+                _uiState.value = _uiState.value.copy(
+                    isAuthenticated = true,
+                    user = com.cpen321.usermanagement.data.remote.dto.User(
+                        _id = "68f81f1397c6ff152b749c16", // Use real user ID from token
+                        email = "test@example.com",
+                        name = "Test User",
+                        bio = "Mock user for testing",
+                        profilePicture = "",
+                        hobbies = emptyList(),
+                        createdAt = "2024-01-01T00:00:00Z",
+                        updatedAt = "2024-01-01T00:00:00Z"
+                    ),
+                    isCheckingAuth = false
+                )
+            } else {
+                checkAuthenticationStatus()
+            }
         }
     }
 
@@ -57,14 +80,28 @@ class AuthViewModel @Inject constructor(
             try {
                 _uiState.value = _uiState.value.copy(isCheckingAuth = true)
 
-                val isAuthenticated = authRepository.isUserAuthenticated()
-                val user = if (isAuthenticated) authRepository.getCurrentUser() else null
-                val needsProfileCompletion = user?.bio == null || user.bio.isBlank()
+                // Add timeout to prevent hanging
+                val isAuthenticated = withTimeout(5000) {
+                    authRepository.isUserAuthenticated()
+                }
+                val user = if (isAuthenticated) {
+                    withTimeout(5000) {
+                        authRepository.getCurrentUser()
+                    }
+                } else null
 
                 _uiState.value = _uiState.value.copy(
                     isAuthenticated = isAuthenticated,
                     user = user,
                     isCheckingAuth = false
+                )
+            } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+                Log.e(TAG, "Authentication check timed out", e)
+                _uiState.value = _uiState.value.copy(
+                    isAuthenticated = false,
+                    user = null,
+                    isCheckingAuth = false,
+                    errorMessage = "Authentication check timed out"
                 )
             } catch (e: java.net.SocketTimeoutException) {
                 handleAuthError("Network timeout. Please check your connection.", e)
@@ -72,6 +109,14 @@ class AuthViewModel @Inject constructor(
                 handleAuthError("No internet connection. Please check your network.", e)
             } catch (e: java.io.IOException) {
                 handleAuthError("Connection error. Please try again.", e)
+            } catch (e: Exception) {
+                Log.e(TAG, "Unexpected error during authentication check", e)
+                _uiState.value = _uiState.value.copy(
+                    isAuthenticated = false,
+                    user = null,
+                    isCheckingAuth = false,
+                    errorMessage = "Authentication failed: ${e.message}"
+                )
             }
         }
     }

@@ -182,7 +182,7 @@ class AuthRepositoryImpl @Inject constructor(
         if (BuildConfig.AUTH_BYPASS_ENABLED) {
             Log.d(TAG, "Authentication bypass enabled - returning mock user")
             return User(
-                _id = "mock-user-id",
+                _id = "68f81f1397c6ff152b749c16", // Use real user ID from token
                 email = "test@example.com",
                 name = "Test User",
                 bio = "Mock user for testing",
