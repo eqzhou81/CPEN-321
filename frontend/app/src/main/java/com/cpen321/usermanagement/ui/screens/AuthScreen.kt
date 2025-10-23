@@ -79,6 +79,8 @@ fun AuthScreen(
                 val result = authViewModel.signInWithGoogle(context)
                 result.onSuccess { credential ->
                     authViewModel.handleGoogleSignInResult(credential)
+                }.onFailure { error ->
+                    android.util.Log.e("AuthScreen", "Sign in failed: ${error.message}", error)
                 }
             }
         },
@@ -87,6 +89,8 @@ fun AuthScreen(
                 val result = authViewModel.signInWithGoogle(context)
                 result.onSuccess { credential ->
                     authViewModel.handleGoogleSignUpResult(credential)
+                }.onFailure { error ->
+                    android.util.Log.e("AuthScreen", "Sign up failed: ${error.message}", error)
                 }
             }
         },

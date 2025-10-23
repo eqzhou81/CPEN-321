@@ -7,14 +7,14 @@ import { validateBody } from '../middleware/validation.middleware';
 const router = Router();
 const userController = new UserController();
 
-router.get('/profile', userController.getProfile);
+router.get('/profile', userController.getProfile.bind(userController));
 
 router.post(
   '/profile',
   validateBody<UpdateProfileRequest>(updateProfileSchema),
-  userController.updateProfile
+  userController.updateProfile.bind(userController)
 );
 
-router.delete('/profile', userController.deleteProfile);
+router.delete('/profile', userController.deleteProfile.bind(userController));
 
 export default router;

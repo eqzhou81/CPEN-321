@@ -23,9 +23,11 @@ class TokenManager(private val context: Context) {
 
     suspend fun saveToken(token: String) {
         try {
+            Log.d(TAG, "Saving token (length: ${token.length})")
             context.dataStore.edit { preferences ->
                 preferences[tokenKey] = token
             }
+            Log.d(TAG, "Token saved successfully")
         } catch (e: java.io.IOException) {
             Log.e(TAG, "IO error while saving token", e)
             throw e
@@ -52,13 +54,18 @@ class TokenManager(private val context: Context) {
     suspend fun getTokenSync(): String? {
         return try {
             val token = context.dataStore.data.first()[tokenKey]
-            token
+            if (token != null) {
+                Log.d(TAG, "Retrieved token synchronously (length: ${token.length})")
+            } else {
+                Log.w(TAG, "No token found in DataStore")
+            }
+            return token  // ← FIXED: Added explicit return
         } catch (e: java.io.IOException) {
             Log.e(TAG, "IO error while getting token synchronously", e)
-            null
+            return null
         } catch (e: SecurityException) {
             Log.e(TAG, "Permission denied to get token synchronously", e)
-            null
+            return null
         }
     }
 
