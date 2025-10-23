@@ -2,18 +2,24 @@ import { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 
 import { jobApplicationModel } from '../models/jobApplication.model';
-import { jobSearchService } from '../services/jobSearch.service';
+import { JobSearchService } from '../services/jobSearch.service';
 import {
-    CreateJobApplicationRequest,
-    JobApplicationResponse,
-    JobApplicationsListResponse,
-    JobSearchRequest,
-    SimilarJobsResponse,
-    UpdateJobApplicationRequest,
+  CreateJobApplicationRequest,
+  JobApplicationResponse,
+  JobApplicationsListResponse,
+  JobSearchRequest,
+  SimilarJobsResponse,
+  UpdateJobApplicationRequest,
 } from '../types/jobs.types';
 import logger from '../utils/logger.util';
 
 export class JobController {
+  private jobSearchService: JobSearchService;
+
+  constructor() {
+    this.jobSearchService = new JobSearchService();
+  }
+
   /**
    * Create a new job application
    */
@@ -220,7 +226,7 @@ export class JobController {
       }
       
       // Search for similar jobs
-      const similarJobs = await jobSearchService.searchSimilarJobs(
+      const similarJobs = await this.jobSearchService.searchSimilarJobs(
         jobApplication,
         req.body
       );
@@ -364,7 +370,7 @@ export class JobController {
         });
       }
       
-      const jobDetails = await jobSearchService.scrapeJobDetails(url);
+      const jobDetails = await this.jobSearchService.scrapeJobDetails(url);
       
       if (!jobDetails) {
         return res.status(404).json({
