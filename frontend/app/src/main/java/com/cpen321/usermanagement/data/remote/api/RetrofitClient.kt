@@ -46,6 +46,8 @@ object RetrofitClient {
     val hobbyInterface: HobbyInterface by lazy { retrofit.create(HobbyInterface::class.java) }
     val jobApiService: JobApiService by lazy { retrofit.create(JobApiService::class.java) }
     val questionApiService: QuestionApiService by lazy { retrofit.create(QuestionApiService::class.java) }
+    val sessionInterface: SessionInterface by lazy { retrofit.create(SessionInterface::class.java) }
+    val questionInterface: QuestionInterface by lazy { retrofit.create(QuestionInterface::class.java) }
 
     fun setAuthToken(token: String?) {
         tokenHolder.token = token

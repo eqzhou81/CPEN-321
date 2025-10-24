@@ -1,13 +1,14 @@
 package com.cpen321.usermanagement.di
 
 import com.cpen321.usermanagement.data.remote.api.AuthInterface
-import com.cpen321.usermanagement.data.remote.api.HobbyInterface
 import com.cpen321.usermanagement.data.remote.api.ImageInterface
 import com.cpen321.usermanagement.data.remote.api.JobApiService
 import com.cpen321.usermanagement.data.remote.api.QuestionApiService
 import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.data.remote.api.SessionInterface
 import com.cpen321.usermanagement.data.remote.api.UserInterface
+import com.cpen321.usermanagement.data.remote.api.HobbyInterface
+import com.cpen321.usermanagement.data.remote.api.QuestionInterface
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -44,13 +45,25 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideJobApiService(): JobApiService {
-        return RetrofitClient.jobApiService
+    fun provideSessionService(): SessionInterface {
+        return RetrofitClient.sessionInterface
     }
     
     @Provides
     @Singleton
     fun provideQuestionApiService(): QuestionApiService {
         return RetrofitClient.questionApiService
+    }
+
+    @Provides
+    @Singleton
+    fun provideQuestionService(): QuestionInterface {
+        return RetrofitClient.questionInterface
+    }
+
+    @Provides
+    @Singleton
+    fun provideJobService(): JobApiService {
+        return RetrofitClient.jobApiService
     }
 }

@@ -54,42 +54,17 @@ class ProfileViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoadingProfile = true, errorMessage = null)
 
             val profileResult = profileRepository.getProfile()
-            val hobbiesResult = profileRepository.getAvailableHobbies()
 
-            if (profileResult.isSuccess && hobbiesResult.isSuccess) {
+            if (profileResult.isSuccess) {
                 val user = profileResult.getOrNull()!!
-                val availableHobbies = hobbiesResult.getOrNull()!!
-                val selectedHobbies = user.hobbies.toSet()
-
-                Log.d(TAG, "Loaded selectedHobbies: ${selectedHobbies.joinToString()}")
-
 
                 _uiState.value = _uiState.value.copy(
                     isLoadingProfile = false,
                     user = user,
-                    allHobbies = availableHobbies,
-                    selectedHobbies = selectedHobbies
+                    errorMessage = null
                 )
             } else {
-                val errorMessage = when {
-                    profileResult.isFailure -> {
-                        val error = profileResult.exceptionOrNull()
-                        Log.e(TAG, "Failed to load profile", error)
-                        error?.message ?: "Failed to load profile"
-                    }
-
-                    hobbiesResult.isFailure -> {
-                        val error = hobbiesResult.exceptionOrNull()
-                        Log.e(TAG, "Failed to load hobbies", error)
-                        error?.message ?: "Failed to load hobbies"
-                    }
-
-                    else -> {
-                        Log.e(TAG, "Failed to load data")
-                        "Failed to load data"
-                    }
-                }
-
+                val errorMessage = profileResult.exceptionOrNull()?.message ?: "Failed to load profile"
                 _uiState.value = _uiState.value.copy(
                     isLoadingProfile = false,
                     errorMessage = errorMessage

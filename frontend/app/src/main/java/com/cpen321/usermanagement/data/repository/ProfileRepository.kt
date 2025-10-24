@@ -11,7 +11,6 @@ interface ProfileRepository {
     suspend fun getProfile(): Result<User>
     suspend fun updateProfile(name: String, bio: String): Result<User>
     suspend fun updateUserHobbies(hobbies: List<String>): Result<User>
-    suspend fun getAvailableHobbies(): Result<List<String>>
 
     suspend fun uploadProfilePic(profileUri : Uri) : Result<String>
 

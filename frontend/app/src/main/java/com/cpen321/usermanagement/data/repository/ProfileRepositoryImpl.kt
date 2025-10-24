@@ -11,7 +11,6 @@ import kotlinx.coroutines.tasks.await
 import android.util.Log
 import com.cpen321.usermanagement.BuildConfig
 import com.cpen321.usermanagement.data.local.preferences.TokenManager
-import com.cpen321.usermanagement.data.remote.api.HobbyInterface
 import com.cpen321.usermanagement.data.remote.api.ImageInterface
 import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.data.remote.api.UserInterface
@@ -49,7 +48,6 @@ import kotlin.math.sqrt
 class ProfileRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val userInterface: UserInterface,
-    private val hobbyInterface: HobbyInterface,
     private val tokenManager: TokenManager,
     private val imageInterface: ImageInterface
 ) : ProfileRepository {
@@ -141,32 +139,6 @@ class ProfileRepositoryImpl @Inject constructor(
             Result.failure(e)
         } catch (e: retrofit2.HttpException) {
             Log.e(TAG, "HTTP error while updating hobbies: ${e.code()}", e)
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun getAvailableHobbies(): Result<List<String>> {
-        return try {
-            val response = hobbyInterface.getAvailableHobbies("") // Auth header is handled by interceptor
-            if (response.isSuccessful && response.body()?.data != null) {
-                Result.success(response.body()!!.data!!.hobbies)
-            } else {
-                val errorBodyString = response.errorBody()?.string()
-                val errorMessage = parseErrorMessage(errorBodyString, "Failed to fetch hobbies.")
-                Log.e(TAG, "Failed to get available hobbies: $errorMessage")
-                Result.failure(Exception(errorMessage))
-            }
-        } catch (e: java.net.SocketTimeoutException) {
-            Log.e(TAG, "Network timeout while getting available hobbies", e)
-            Result.failure(e)
-        } catch (e: java.net.UnknownHostException) {
-            Log.e(TAG, "Network connection failed while getting available hobbies", e)
-            Result.failure(e)
-        } catch (e: java.io.IOException) {
-            Log.e(TAG, "IO error while getting available hobbies", e)
-            Result.failure(e)
-        } catch (e: retrofit2.HttpException) {
-            Log.e(TAG, "HTTP error while getting available hobbies: ${e.code()}", e)
             Result.failure(e)
         }
     }
