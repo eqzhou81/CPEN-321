@@ -1,11 +1,14 @@
-import mongoose, { Schema } from 'mongoose';
-import { z } from 'zod';
+import mongoose, { Schema, Model } from 'mongoose';
 
 import {
+  AddSavedJobInput,
+  AddSavedQuestionInput,
+  CreateUserInput,
   IUser,
-  updateProfileSchema,
-} from '../types/user.types';
-import logger from '../utils/logger.util';
+  RemoveSavedJobInput,
+  RemoveSavedQuestionInput,
+  UpdateUserInput,
+} from '../types/users.types';
 
 const userSchema = new Schema<IUser>(
   {

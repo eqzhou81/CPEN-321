@@ -43,7 +43,6 @@ object RetrofitClient {
     val authInterface: AuthInterface by lazy { retrofit.create(AuthInterface::class.java) }
     val imageInterface: ImageInterface by lazy { retrofit.create(ImageInterface::class.java) }
     val userInterface: UserInterface by lazy { retrofit.create(UserInterface::class.java) }
-    val hobbyInterface: HobbyInterface by lazy { retrofit.create(HobbyInterface::class.java) }
     val jobApiService: JobApiService by lazy { retrofit.create(JobApiService::class.java) }
     val questionApiService: QuestionApiService by lazy { retrofit.create(QuestionApiService::class.java) }
     val sessionInterface: SessionInterface by lazy { retrofit.create(SessionInterface::class.java) }

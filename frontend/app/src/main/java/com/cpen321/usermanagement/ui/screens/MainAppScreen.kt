@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cpen321.usermanagement.R
-import com.cpen321.usermanagement.ui.navigation.JobAppNavigation
+import com.cpen321.usermanagement.ui.navigation.Navigation
 import com.cpen321.usermanagement.ui.viewmodels.AuthViewModel
 
 /**
@@ -94,7 +94,7 @@ fun MainAppScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            JobAppNavigation()
+            Navigation()
         }
         
         // Profile Dialog

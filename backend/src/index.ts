@@ -62,10 +62,11 @@ if (require.main === module) {
   const PORT = process.env.PORT || 3000;
 
   connectDatabase().then(() => {
-    app.listen(PORT, () => {
+    app.listen(Number(PORT), '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📡 API available at http://localhost:${PORT}/api`);
       console.log(`🌐 Frontend should connect to http://localhost:${PORT}/api`);
+      console.log(`📱 Android emulator should connect to http://10.0.2.2:${PORT}/api`);
     });
   }).catch((error) => {
     console.error('Failed to start server:', error);

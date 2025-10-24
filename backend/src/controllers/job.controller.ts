@@ -10,7 +10,7 @@ import {
   JobSearchRequest,
   SimilarJobsResponse,
   UpdateJobApplicationRequest,
-} from '../types/job.types';
+} from '../types/jobs.types';
 import logger from '../utils/logger.util';
 
 export class JobController {
@@ -25,7 +25,7 @@ export class JobController {
     try {
       const user = req.user!;
       
-      const jobApplication = await jobApplicationModel.create(user._id, req.body);
+      const jobApplication = await jobApplicationModel.create(new mongoose.Types.ObjectId(user._id), req.body);
       
       res.status(201).json({
         message: 'Job application created successfully',
@@ -59,7 +59,7 @@ export class JobController {
       const skip = (page - 1) * limit;
       
       const { jobApplications, total } = await jobApplicationModel.findByUserId(
-        user._id,
+        new mongoose.Types.ObjectId(user._id),
         limit,
         skip
       );
@@ -96,7 +96,7 @@ export class JobController {
       const user = req.user!;
       const jobId = new mongoose.Types.ObjectId(req.params.id);
       
-      const jobApplication = await jobApplicationModel.findById(jobId, user._id);
+      const jobApplication = await jobApplicationModel.findById(jobId, new mongoose.Types.ObjectId(user._id));
       
       if (!jobApplication) {
         return res.status(404).json({
@@ -135,7 +135,7 @@ export class JobController {
       
       const updatedJobApplication = await jobApplicationModel.update(
         jobId,
-        user._id,
+        new mongoose.Types.ObjectId(user._id),
         req.body
       );
       
@@ -174,7 +174,7 @@ export class JobController {
       const user = req.user!;
       const jobId = new mongoose.Types.ObjectId(req.params.id);
       
-      const deleted = await jobApplicationModel.delete(jobId, user._id);
+      const deleted = await jobApplicationModel.delete(jobId, new mongoose.Types.ObjectId(user._id));
       
       if (!deleted) {
         return res.status(404).json({
@@ -211,7 +211,7 @@ export class JobController {
       const jobId = new mongoose.Types.ObjectId(req.params.id);
       
       // Get the original job application
-      const jobApplication = await jobApplicationModel.findById(jobId, user._id);
+      const jobApplication = await jobApplicationModel.findById(jobId, new mongoose.Types.ObjectId(user._id));
       
       if (!jobApplication) {
         return res.status(404).json({
@@ -274,7 +274,7 @@ export class JobController {
       }
       
       const { jobApplications, total } = await jobApplicationModel.searchByText(
-        user._id,
+        new mongoose.Types.ObjectId(user._id),
         searchTerm,
         limit,
         skip
@@ -322,7 +322,7 @@ export class JobController {
       }
       
       const { jobApplications, total } = await jobApplicationModel.findByCompany(
-        user._id,
+        new mongoose.Types.ObjectId(user._id),
         company,
         limit,
         skip
@@ -402,10 +402,10 @@ export class JobController {
       const user = req.user!;
       
       // Get basic statistics
-      const { total } = await jobApplicationModel.findByUserId(user._id, 1, 0);
+      const { total } = await jobApplicationModel.findByUserId(new mongoose.Types.ObjectId(user._id), 1, 0);
       
       // Get company distribution
-      const { jobApplications } = await jobApplicationModel.findByUserId(user._id, 1000, 0);
+      const { jobApplications } = await jobApplicationModel.findByUserId(new mongoose.Types.ObjectId(user._id), 1000, 0);
       
       const companyStats = jobApplications.reduce((acc, job) => {
         acc[job.company] = (acc[job.company] || 0) + 1;

@@ -7,8 +7,11 @@ import com.cpen321.usermanagement.data.remote.api.QuestionApiService
 import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.data.remote.api.SessionInterface
 import com.cpen321.usermanagement.data.remote.api.UserInterface
-import com.cpen321.usermanagement.data.remote.api.HobbyInterface
 import com.cpen321.usermanagement.data.remote.api.QuestionInterface
+import com.cpen321.usermanagement.data.repository.JobRepository
+import com.cpen321.usermanagement.data.repository.SessionRepository
+import com.cpen321.usermanagement.data.repository.SessionRepositoryImpl
+import com.cpen321.usermanagement.data.local.preferences.TokenManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -39,12 +42,6 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideHobbyService(): HobbyInterface {
-        return RetrofitClient.hobbyInterface
-    }
-
-    @Provides
-    @Singleton
     fun provideSessionService(): SessionInterface {
         return RetrofitClient.sessionInterface
     }
@@ -65,5 +62,17 @@ object NetworkModule {
     @Singleton
     fun provideJobService(): JobApiService {
         return RetrofitClient.jobApiService
+    }
+
+    @Provides
+    @Singleton
+    fun provideJobRepository(jobApiService: JobApiService): JobRepository {
+        return JobRepository(jobApiService)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSessionRepository(sessionInterface: SessionInterface, tokenManager: TokenManager): SessionRepository {
+        return SessionRepositoryImpl(sessionInterface, tokenManager)
     }
 }

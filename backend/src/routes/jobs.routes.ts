@@ -3,10 +3,10 @@ import { JobController } from '../controllers/job.controller';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { validateBody } from '../middleware/validation.middleware';
 import {
-    createJobApplicationSchema,
-    similarJobsSearchSchema,
-    updateJobApplicationSchema
-} from '../types/job.types';
+  createJobApplicationSchema,
+  similarJobsSearchSchema,
+  updateJobApplicationSchema
+} from '../types/jobs.types';
 
 const router = Router();
 const jobController = new JobController();

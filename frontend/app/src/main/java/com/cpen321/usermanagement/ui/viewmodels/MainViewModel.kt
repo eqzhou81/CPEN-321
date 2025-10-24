@@ -68,6 +68,39 @@ class MainViewModel @Inject constructor(
         }
     }
     
+    fun createMockInterviewSessionForQuestion(jobId: String, questionId: String) {
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(isCreatingSession = true, errorMessage = null)
+                
+                val request = CreateSessionRequest(
+                    jobId = jobId,
+                    questionTypes = listOf("behavioral"),
+                    questionCount = 1,
+                    specificQuestionId = questionId
+                )
+                
+                val response = sessionRepository.createSession(request)
+                
+                if (response.isSuccessful && response.body()?.data != null) {
+                    val sessionId = response.body()!!.data!!.session.id
+                    _sessionCreated.value = sessionId
+                    _uiState.value = _uiState.value.copy(isCreatingSession = false)
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isCreatingSession = false,
+                        errorMessage = response.body()?.message ?: "Failed to create session"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isCreatingSession = false,
+                    errorMessage = "Network error: ${e.message}"
+                )
+            }
+        }
+    }
+    
     fun clearSessionCreated() {
         _sessionCreated.value = null
     }

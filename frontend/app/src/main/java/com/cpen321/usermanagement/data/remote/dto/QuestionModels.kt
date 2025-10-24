@@ -9,13 +9,17 @@ import com.google.gson.annotations.SerializedName
 
 data class GenerateQuestionsRequest(
     val jobId: String,
-    val questionTypes: List<QuestionType> = listOf(QuestionType.BEHAVIORAL, QuestionType.TECHNICAL)
+    @SerializedName("types") val types: List<String>,
+    val count: Int = 10
 )
 
 data class GenerateQuestionsResponse(
     val message: String,
     val data: QuestionsData? = null
 )
+
+// Alias for compatibility
+typealias QuestionsResponse = GenerateQuestionsResponse
 
 data class QuestionsData(
     val behavioralQuestions: List<BehavioralQuestion>,
@@ -28,19 +32,26 @@ data class BehavioralQuestion(
     @SerializedName("_id")
     val id: String,
     val jobId: String,
-    val question: String,
-    val category: String,
-    val difficulty: QuestionDifficulty,
-    val expectedAnswer: String? = null,
-    val tips: List<String>? = null,
-    val isCompleted: Boolean = false,
-    val userAnswer: String? = null,
-    val completedAt: String? = null,
+    val title: String,
+    val description: String,
+    val difficulty: QuestionDifficulty?,
+    val tags: List<String>? = null,
+    val status: String? = null,
     @SerializedName("createdAt")
     val createdAt: String,
     @SerializedName("updatedAt")
-    val updatedAt: String
-)
+    val updatedAt: String,
+    // Additional fields for compatibility
+    val expectedAnswer: String? = null,
+    val tips: List<String>? = null,
+    val userAnswer: String? = null,
+    val completedAt: String? = null
+) {
+    // Computed properties
+    val question: String get() = title
+    val category: String get() = tags?.firstOrNull() ?: "General"
+    val isCompleted: Boolean get() = status == "completed"
+}
 
 data class TechnicalQuestion(
     @SerializedName("_id")
@@ -48,20 +59,26 @@ data class TechnicalQuestion(
     val jobId: String,
     val title: String,
     val description: String,
-    val difficulty: QuestionDifficulty,
-    val category: String,
+    val difficulty: QuestionDifficulty?,
+    val tags: List<String>? = null,
+    val externalUrl: String? = null,
+    val status: String? = null,
+    @SerializedName("createdAt")
+    val createdAt: String,
+    @SerializedName("updatedAt")
+    val updatedAt: String,
+    // Additional fields for compatibility
     val language: String? = null,
     val hints: List<String>? = null,
     val testCases: List<TestCase>? = null,
     val expectedSolution: String? = null,
-    val isCompleted: Boolean = false,
     val userSolution: String? = null,
-    val completedAt: String? = null,
-    @SerializedName("createdAt")
-    val createdAt: String,
-    @SerializedName("updatedAt")
-    val updatedAt: String
-)
+    val completedAt: String? = null
+) {
+    // Computed properties
+    val category: String get() = tags?.firstOrNull() ?: "General"
+    val isCompleted: Boolean get() = status == "completed"
+}
 
 data class TestCase(
     val input: String,
@@ -82,16 +99,25 @@ data class QuestionProgressResponse(
     val data: QuestionProgress? = null
 )
 
+// Alias for compatibility
+typealias QuestionResponse = QuestionProgressResponse
+
 data class SubmitAnswerRequest(
     val questionId: String,
     val answer: String,
     val questionType: QuestionType
 )
 
+// Alias for compatibility
+typealias SubmitBehavioralAnswerRequest = SubmitAnswerRequest
+
 data class SubmitAnswerResponse(
     val message: String,
     val data: SubmittedAnswer? = null
 )
+
+// Alias for compatibility
+typealias BehavioralAnswerResponse = SubmitAnswerResponse
 
 data class SubmittedAnswer(
     val questionId: String,
@@ -131,3 +157,29 @@ enum class QuestionCategory(val value: String, val displayName: String) {
     BACKEND("backend", "Backend"),
     MOBILE("mobile", "Mobile Development")
 }
+
+// Jack-dev generate questions DTOs
+data class GenerateQuestionsFromDescriptionRequest(
+    val jobDescription: String,
+    val jobId: String
+)
+
+data class GenerateQuestionsFromDescriptionResponse(
+    val success: Boolean,
+    val data: List<LeetCodeTopic>? = null,
+    val message: String? = null,
+    val error: String? = null
+)
+
+data class LeetCodeTopic(
+    val topic: String,
+    val questions: List<LeetCodeQuestion>
+)
+
+data class LeetCodeQuestion(
+    val id: String,
+    val title: String,
+    val url: String,
+    val difficulty: String? = null,
+    val tags: List<String>? = null
+)

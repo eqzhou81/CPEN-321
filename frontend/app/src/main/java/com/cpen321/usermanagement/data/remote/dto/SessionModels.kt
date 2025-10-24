@@ -16,7 +16,8 @@ object SessionModels {
     data class CreateSessionRequest(
         @SerializedName("jobId") val jobId: String,
         @SerializedName("questionTypes") val questionTypes: List<String> = listOf("behavioral"),
-        @SerializedName("questionCount") val questionCount: Int = 10
+        @SerializedName("questionCount") val questionCount: Int = 10,
+        @SerializedName("specificQuestionId") val specificQuestionId: String? = null
     )
     
     data class SubmitAnswerRequest(

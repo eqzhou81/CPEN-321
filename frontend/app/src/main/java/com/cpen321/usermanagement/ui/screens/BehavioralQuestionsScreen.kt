@@ -20,6 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.data.remote.dto.*
 import com.cpen321.usermanagement.ui.viewmodels.QuestionViewModel
+import com.cpen321.usermanagement.ui.viewmodels.MainViewModel
 
 /**
  * Behavioral Questions Screen - Minimal Working Version
@@ -30,16 +31,31 @@ fun BehavioralQuestionsScreen(
     jobId: String,
     onNavigateBack: () -> Unit,
     onNavigateToQuestion: (String) -> Unit,
-    viewModel: QuestionViewModel = hiltViewModel()
+    onNavigateToMockInterview: ((String) -> Unit)? = null,
+    viewModel: QuestionViewModel = hiltViewModel(),
+    mainViewModel: MainViewModel = hiltViewModel()
 ) {
     val questions by viewModel.questions.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     
+    // MainViewModel state for session creation
+    val sessionCreated by mainViewModel.sessionCreated.collectAsStateWithLifecycle()
+    val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
+    
     val behavioralQuestions = questions?.behavioralQuestions ?: emptyList()
     
     LaunchedEffect(jobId) {
+        // Load behavioral questions for this job
         viewModel.loadQuestions(jobId, QuestionType.BEHAVIORAL)
+    }
+    
+    // Handle session creation and navigation
+    LaunchedEffect(sessionCreated) {
+        sessionCreated?.let { sessionId ->
+            onNavigateToMockInterview?.invoke(sessionId)
+            mainViewModel.clearSessionCreated()
+        }
     }
     
     Column(
@@ -159,7 +175,14 @@ fun BehavioralQuestionsScreen(
                 items(behavioralQuestions) { question ->
                     BehavioralQuestionCard(
                         question = question,
-                        onClick = { onNavigateToQuestion(question.id) }
+                        onClick = { 
+                            // Create mock interview session for this specific question
+                            // Pass the question ID to create a focused session
+                            mainViewModel.createMockInterviewSessionForQuestion(jobId, question.id)
+                        },
+                        onToggleCompletion = { 
+                            viewModel.updateQuestionCompletion(question.id, !question.isCompleted)
+                        }
                     )
                 }
             }
@@ -170,7 +193,8 @@ fun BehavioralQuestionsScreen(
 @Composable
 private fun BehavioralQuestionCard(
     question: BehavioralQuestion,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onToggleCompletion: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -189,9 +213,11 @@ private fun BehavioralQuestionCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = if (question.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                        contentDescription = null,
+                        contentDescription = if (question.isCompleted) "Mark as incomplete" else "Mark as complete",
                         tint = if (question.isCompleted) colorResource(R.color.success) else colorResource(R.color.text_tertiary),
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clickable { onToggleCompletion() }
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     
@@ -200,14 +226,16 @@ private fun BehavioralQuestionCard(
                             QuestionDifficulty.EASY -> colorResource(R.color.success).copy(alpha = 0.2f)
                             QuestionDifficulty.MEDIUM -> colorResource(R.color.warning).copy(alpha = 0.2f)
                             QuestionDifficulty.HARD -> colorResource(R.color.error).copy(alpha = 0.2f)
+                            null -> colorResource(R.color.warning).copy(alpha = 0.2f)
                         },
                         contentColor = when (question.difficulty) {
                             QuestionDifficulty.EASY -> colorResource(R.color.success)
                             QuestionDifficulty.MEDIUM -> colorResource(R.color.warning)
                             QuestionDifficulty.HARD -> colorResource(R.color.error)
+                            null -> colorResource(R.color.warning)
                         }
                     ) {
-                        Text(question.difficulty.displayName)
+                        Text(question.difficulty?.displayName ?: "MEDIUM")
                     }
                 }
                 
@@ -240,21 +268,12 @@ private fun BehavioralQuestionCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (question.isCompleted && question.completedAt != null) {
-                    Text(
-                        text = "Completed",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = colorResource(R.color.success)
-                        )
+                Text(
+                    text = if (question.isCompleted) "Completed" else "Not completed",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = if (question.isCompleted) colorResource(R.color.success) else colorResource(R.color.text_tertiary)
                     )
-                } else {
-                    Text(
-                        text = "Not completed",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = colorResource(R.color.text_tertiary)
-                        )
-                    )
-                }
+                )
                 
                 Button(
                     onClick = onClick,

@@ -61,7 +61,11 @@ export interface QuestionResponse {
   data?: {
     question?: IQuestion;
     questions?: IQuestion[];
+    behavioralQuestions?: IQuestion[];
+    technicalQuestions?: IQuestion[];
     total?: number;
+    totalQuestions?: number;
+    jobApplication?: any;
   };
 }
 

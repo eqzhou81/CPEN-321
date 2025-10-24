@@ -1,5 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
-import { ISimilarJob } from '../types/job.types';
+import mongoose, { Document, Schema } from 'mongoose';
 
 // Available Job model for storing jobs that can be searched
 // This is separate from user job applications

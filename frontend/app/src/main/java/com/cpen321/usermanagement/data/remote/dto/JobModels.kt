@@ -41,6 +41,9 @@ data class CreateJobApplicationRequest(
     val experienceLevel: ExperienceLevel? = null
 )
 
+// Alias for compatibility
+typealias JobApplicationRequest = CreateJobApplicationRequest
+
 data class UpdateJobApplicationRequest(
     val title: String? = null,
     val company: String? = null,
@@ -68,6 +71,9 @@ data class JobApplicationsListResponse(
     val data: JobApplicationsListData? = null
 )
 
+// Alias for compatibility
+typealias JobApplicationsResponse = JobApplicationsListResponse
+
 data class JobApplicationsListData(
     val jobApplications: List<JobApplication>,
     val total: Int
@@ -77,10 +83,16 @@ data class ScrapeJobRequest(
     val url: String
 )
 
+// Alias for compatibility
+typealias JobScrapeRequest = ScrapeJobRequest
+
 data class ScrapeJobResponse(
     val message: String,
     val data: ScrapeJobData? = null
 )
+
+// Alias for compatibility
+typealias JobScrapeResponse = ScrapeJobResponse
 
 data class ScrapeJobData(
     val jobDetails: ScrapedJobDetails
@@ -106,6 +118,9 @@ data class SimilarJobsRequest(
     val remote: Boolean? = null,
     val limit: Int? = null
 )
+
+// Alias for compatibility
+typealias JobSearchRequest = SimilarJobsRequest
 
 data class SimilarJobsResponse(
     val message: String,

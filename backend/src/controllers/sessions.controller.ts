@@ -1,19 +1,19 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 
-import { sessionModel, SessionStatus } from '../models/session.model';
-import { questionModel } from '../models/question.model';
 import { jobApplicationModel } from '../models/jobApplication.model';
+import { questionModel } from '../models/question.model';
+import { sessionModel, SessionStatus } from '../models/session.model';
 import { openaiService } from '../services/openai.service';
+import { IQuestion, QuestionStatus, QuestionType } from '../types/questions.types';
 import {
   CreateSessionRequest,
-  UpdateSessionStatusRequest,
-  SubmitSessionAnswerRequest,
-  SessionResponse,
-  SessionAnswerFeedback,
   ISessionWithQuestions,
+  SessionAnswerFeedback,
+  SessionResponse,
+  SubmitSessionAnswerRequest,
+  UpdateSessionStatusRequest,
 } from '../types/sessions.types';
-import { QuestionType, QuestionStatus } from '../types/questions.types';
 import logger from '../utils/logger.util';
 
 export class SessionsController {
@@ -33,7 +33,7 @@ export class SessionsController {
   ) {
     try {
       const user = req.user!;
-      const { jobId } = req.body;
+      const { jobId, specificQuestionId } = req.body;
 
       if (!jobId || typeof jobId !== 'string') {
         return res.status(400).json({
@@ -42,10 +42,10 @@ export class SessionsController {
       }
 
       let jobObjectId = new mongoose.Types.ObjectId(jobId);
-      let jobApplication = await jobApplicationModel.findById(jobObjectId, user._id);
+      let jobApplication = await jobApplicationModel.findById(jobObjectId, new mongoose.Types.ObjectId(new mongoose.Types.ObjectId(user._id)));
       if (!jobApplication) {
         try {
-          jobApplication = await jobApplicationModel.create(user._id, {
+          jobApplication = await jobApplicationModel.create(new mongoose.Types.ObjectId(new mongoose.Types.ObjectId(user._id)), {
             title: 'Mock Interview Practice Session',
             company: 'Practice Company',
             description: 'This is a practice mock interview session to help you prepare for real interviews. Answer behavioral questions and receive AI-powered feedback.',
@@ -61,46 +61,112 @@ export class SessionsController {
         }
       }
 
-      const existingSession = await sessionModel.findActiveByJobId(jobObjectId, user._id);
+      const existingSession = await sessionModel.findActiveByJobId(jobObjectId, new mongoose.Types.ObjectId(new mongoose.Types.ObjectId(user._id)));
       if (existingSession) {
-        return res.status(409).json({
-          message: 'An active session already exists for this job. Please complete or cancel it first.',
-          data: {
-            session: this.formatSessionResponse(existingSession),
-          },
-        });
+        // If creating a session for a specific question, cancel the existing session first
+        if (specificQuestionId) {
+          logger.info(`Canceling existing session ${existingSession._id} to create new session for specific question`);
+          await sessionModel.updateStatus(existingSession._id, new mongoose.Types.ObjectId(new mongoose.Types.ObjectId(user._id)), SessionStatus.CANCELLED);
+        } else {
+          return res.status(409).json({
+            message: 'An active session already exists for this job. Please complete or cancel it first.',
+            data: {
+              session: this.formatSessionResponse(existingSession),
+            },
+          });
+        }
       }
 
-      const defaultBehavioralQuestions = [
-        "Tell me about a time when you had to resolve a conflict with a team member. How did you approach the situation, and what was the outcome?",
-        "Describe a situation where you had to work under pressure to meet a tight deadline. How did you manage your time and prioritize tasks?",
-        "Give me an example of a time when you had to learn a new skill or technology quickly. What was your approach?",
-        "Tell me about a project where you took initiative and went above and beyond what was expected. What motivated you?",
-        "Describe a situation where you received critical feedback. How did you respond and what did you learn from it?"
-      ];
+      let questionIds: mongoose.Types.ObjectId[];
 
-      const questionPromises = defaultBehavioralQuestions.map(questionText => 
-        questionModel.create(user._id, {
-          jobId: jobObjectId.toString(),
-          type: QuestionType.BEHAVIORAL,
-          title: questionText,
-          description: 'Behavioral interview question for mock interview session',
-          difficulty: 'medium',
-        })
-      );
+      if (specificQuestionId) {
+        // Create session with existing questions from the job, starting with the specific question
+        logger.info(`Looking for existing questions for job: ${jobObjectId}, user: ${user._id}`);
+        const existingQuestions = await questionModel.findByJobId(jobObjectId, new mongoose.Types.ObjectId(user._id));
+        logger.info(`Found ${existingQuestions.length} existing questions`);
+        
+        const behavioralQuestions = existingQuestions.filter(q => q.type === QuestionType.BEHAVIORAL);
+        logger.info(`Found ${behavioralQuestions.length} behavioral questions`);
+        
+        if (behavioralQuestions.length === 0) {
+          logger.warn('No behavioral questions found, falling back to default questions');
+          // Fall back to default questions
+          const defaultBehavioralQuestions = [
+            "Tell me about a time when you had to resolve a conflict with a team member. How did you approach the situation, and what was the outcome?",
+            "Describe a situation where you had to work under pressure to meet a tight deadline. How did you manage your time and prioritize tasks?",
+            "Give me an example of a time when you had to learn a new skill or technology quickly. What was your approach?",
+            "Tell me about a project where you took initiative and went above and beyond what was expected. What motivated you?",
+            "Describe a situation where you received critical feedback. How did you respond and what did you learn from it?"
+          ];
 
-      const createdQuestions = await Promise.all(questionPromises);
-      const questionIds = createdQuestions.map(q => q._id);
+          const questionPromises = defaultBehavioralQuestions.map(questionText => 
+            questionModel.create(new mongoose.Types.ObjectId(new mongoose.Types.ObjectId(user._id)), {
+              jobId: jobObjectId.toString(),
+              type: QuestionType.BEHAVIORAL,
+              title: questionText,
+              description: 'Behavioral interview question for mock interview session',
+              difficulty: 'medium',
+            })
+          );
 
-      const session = await sessionModel.create(user._id, jobObjectId, questionIds);
+          const createdQuestions = await Promise.all(questionPromises);
+          questionIds = createdQuestions.map(q => q._id);
+        } else {
+          // Find the specific question and put it first
+          const specificQuestion = behavioralQuestions.find(q => q._id.toString() === specificQuestionId);
+          logger.info(`Looking for specific question: ${specificQuestionId}`);
+          logger.info(`Specific question found: ${specificQuestion ? 'YES' : 'NO'}`);
+          
+          if (specificQuestion) {
+            // Put the specific question first, then add the rest
+            const otherQuestions = behavioralQuestions.filter(q => q._id.toString() !== specificQuestionId);
+            questionIds = [specificQuestion._id, ...otherQuestions.map(q => q._id)];
+            logger.info(`Created session with specific question first: ${questionIds.length} questions`);
+          } else {
+            // If specific question not found, use all behavioral questions
+            questionIds = behavioralQuestions.map(q => q._id);
+            logger.info(`Specific question not found, using all behavioral questions: ${questionIds.length} questions`);
+          }
+        }
+      } else {
+        // Create session with default behavioral questions
+        const defaultBehavioralQuestions = [
+          "Tell me about a time when you had to resolve a conflict with a team member. How did you approach the situation, and what was the outcome?",
+          "Describe a situation where you had to work under pressure to meet a tight deadline. How did you manage your time and prioritize tasks?",
+          "Give me an example of a time when you had to learn a new skill or technology quickly. What was your approach?",
+          "Tell me about a project where you took initiative and went above and beyond what was expected. What motivated you?",
+          "Describe a situation where you received critical feedback. How did you respond and what did you learn from it?"
+        ];
 
-      const populatedSession = await sessionModel.findById(session._id, user._id);
+        const questionPromises = defaultBehavioralQuestions.map(questionText => 
+          questionModel.create(new mongoose.Types.ObjectId(new mongoose.Types.ObjectId(user._id)), {
+            jobId: jobObjectId.toString(),
+            type: QuestionType.BEHAVIORAL,
+            title: questionText,
+            description: 'Behavioral interview question for mock interview session',
+            difficulty: 'medium',
+          })
+        );
+
+        const createdQuestions = await Promise.all(questionPromises);
+        questionIds = createdQuestions.map(q => q._id);
+      }
+
+      const session = await sessionModel.create(new mongoose.Types.ObjectId(new mongoose.Types.ObjectId(user._id)), jobObjectId, questionIds);
+
+      const populatedSession = await sessionModel.findById(session._id, new mongoose.Types.ObjectId(new mongoose.Types.ObjectId(user._id)));
+
+      // Get the first question for the response
+      let currentQuestion: IQuestion | undefined = undefined;
+      if (questionIds.length > 0) {
+        currentQuestion = await questionModel.findById(questionIds[0], new mongoose.Types.ObjectId(user._id)) || undefined;
+      }
 
       res.status(201).json({
         message: 'Mock interview session created successfully',
         data: {
           session: this.formatSessionResponse(populatedSession),
-          currentQuestion: createdQuestions[0],
+          currentQuestion: currentQuestion,
         },
       });
     } catch (error) {
@@ -126,7 +192,7 @@ export class SessionsController {
       const user = req.user!;
       const sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
 
-      const session = await sessionModel.findById(sessionId, user._id);
+      const session = await sessionModel.findById(sessionId, new mongoose.Types.ObjectId(user._id));
       if (!session) {
         return res.status(404).json({
           message: 'Session not found',
@@ -160,8 +226,8 @@ export class SessionsController {
       const user = req.user!;
       const limit = parseInt(req.query.limit as string) || 20;
 
-      const sessions = await sessionModel.findByUserId(user._id, limit);
-      const stats = await sessionModel.getSessionStats(user._id);
+      const sessions = await sessionModel.findByUserId(new mongoose.Types.ObjectId(user._id), limit);
+      const stats = await sessionModel.getSessionStats(new mongoose.Types.ObjectId(user._id));
 
       res.status(200).json({
         message: 'Sessions retrieved successfully',
@@ -213,7 +279,7 @@ export class SessionsController {
       const sessionObjectId = new mongoose.Types.ObjectId(sessionId);
       const questionObjectId = new mongoose.Types.ObjectId(questionId);
 
-      const session = await sessionModel.findById(sessionObjectId, user._id);
+      const session = await sessionModel.findById(sessionObjectId, new mongoose.Types.ObjectId(user._id));
       if (!session) {
         return res.status(404).json({
           message: 'Session not found',
@@ -226,7 +292,7 @@ export class SessionsController {
         });
       }
 
-      const question = await questionModel.findById(questionObjectId, user._id);
+      const question = await questionModel.findById(questionObjectId, new mongoose.Types.ObjectId(user._id));
       if (!question) {
         return res.status(404).json({
           message: 'Question not found',
@@ -257,7 +323,7 @@ export class SessionsController {
             'Mock interview session'
           );
 
-          await questionModel.updateStatus(questionObjectId, user._id, QuestionStatus.COMPLETED);
+          await questionModel.updateStatus(questionObjectId, new mongoose.Types.ObjectId(user._id), QuestionStatus.COMPLETED);
 
           feedback = {
             feedback: aiFeedback.feedback || 'Good answer!',
@@ -291,7 +357,7 @@ export class SessionsController {
 
       const updatedSession = await sessionModel.updateProgress(
         sessionObjectId, 
-        user._id, 
+        new mongoose.Types.ObjectId(user._id), 
         session.answeredQuestions + 1
       );
       
@@ -344,14 +410,14 @@ export class SessionsController {
         });
       }
 
-      const session = await sessionModel.findById(sessionId, user._id);
+      const session = await sessionModel.findById(sessionId, new mongoose.Types.ObjectId(user._id));
       if (!session) {
         return res.status(404).json({
           message: 'Session not found',
         });
       }
 
-      const updatedSession = await sessionModel.updateStatus(sessionId, user._id, status as SessionStatus);
+      const updatedSession = await sessionModel.updateStatus(sessionId, new mongoose.Types.ObjectId(user._id), status as SessionStatus);
       if (!updatedSession) {
         return res.status(500).json({
           message: 'Failed to update session status',
@@ -380,7 +446,7 @@ export class SessionsController {
       const user = req.user!;
       const sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
 
-      const deleted = await sessionModel.delete(sessionId, user._id);
+      const deleted = await sessionModel.delete(sessionId, new mongoose.Types.ObjectId(user._id));
       if (!deleted) {
         return res.status(404).json({
           message: 'Session not found',
@@ -413,7 +479,7 @@ export class SessionsController {
         });
       }
 
-      const session = await sessionModel.navigateToQuestion(sessionId, user._id, questionIndex);
+      const session = await sessionModel.navigateToQuestion(sessionId, new mongoose.Types.ObjectId(user._id), questionIndex);
       if (!session) {
         return res.status(404).json({
           message: 'Session not found',
@@ -454,7 +520,7 @@ export class SessionsController {
       const user = req.user!;
       const sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
 
-      const session = await sessionModel.findById(sessionId, user._id);
+      const session = await sessionModel.findById(sessionId, new mongoose.Types.ObjectId(user._id));
       if (!session) {
         return res.status(404).json({
           message: 'Session not found',

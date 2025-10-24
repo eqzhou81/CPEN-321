@@ -15,16 +15,18 @@ export const authenticateToken: RequestHandler = async (
       
       // Create a mock user object
       req.user = {
-        _id: new mongoose.Types.ObjectId(process.env.MOCK_USER_ID || '507f1f77bcf86cd799439011'),
+        _id: new mongoose.Types.ObjectId(process.env.MOCK_USER_ID || '507f1f77bcf86cd799439011').toString(),
         email: process.env.MOCK_USER_EMAIL || 'test@example.com',
         name: process.env.MOCK_USER_NAME || 'Test User',
         googleId: 'mock-google-id',
         profilePicture: 'https://via.placeholder.com/150',
         bio: 'Test user for local development',
         hobbies: ['coding', 'testing'],
+        savedJobs: [],
+        savedQuestions: [],
         createdAt: new Date(),
         updatedAt: new Date()
-      };
+      } as any;
       
       next();
       return;

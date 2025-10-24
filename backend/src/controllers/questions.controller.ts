@@ -6,13 +6,13 @@ import { questionModel } from '../models/question.model';
 import { sessionModel } from '../models/session.model';
 import { openaiService } from '../services/openai.service';
 import {
-  GenerateQuestionsRequest,
-  SubmitBehavioralAnswerRequest,
-  QuestionResponse,
   BehavioralAnswerResponse,
+  GenerateQuestionsRequest,
   QuestionProgressResponse,
-  QuestionType,
+  QuestionResponse,
   QuestionStatus,
+  QuestionType,
+  SubmitBehavioralAnswerRequest,
 } from '../types/questions.types';
 import logger from '../utils/logger.util';
 
@@ -43,7 +43,7 @@ export class QuestionsController {
 
       const jobObjectId = new mongoose.Types.ObjectId(jobId);
 
-      const jobApplication = await jobApplicationModel.findById(jobObjectId, user._id);
+      const jobApplication = await jobApplicationModel.findById(jobObjectId, new mongoose.Types.ObjectId(user._id));
       if (!jobApplication) {
         return res.status(404).json({
           message: 'Job application not found',
@@ -51,14 +51,14 @@ export class QuestionsController {
       }
 
       // Check if there's an active session for this job
-      const activeSession = await sessionModel.findActiveByJobId(jobObjectId, user._id);
+      const activeSession = await sessionModel.findActiveByJobId(jobObjectId, new mongoose.Types.ObjectId(user._id));
       if (activeSession) {
         return res.status(409).json({
           message: 'Cannot regenerate questions while there is an active mock interview session. Please complete or cancel the session first.',
         });
       }
 
-      await questionModel.deleteByJobId(jobObjectId, user._id);
+      await questionModel.deleteByJobId(jobObjectId, new mongoose.Types.ObjectId(user._id));
 
       const generatedQuestions: any[] = [];
 
@@ -98,7 +98,7 @@ export class QuestionsController {
       }
 
       const savedQuestions = await questionModel.createMany(
-        user._id,
+        new mongoose.Types.ObjectId(user._id),
         jobObjectId,
         generatedQuestions
       );
@@ -127,13 +127,22 @@ export class QuestionsController {
       const jobId = new mongoose.Types.ObjectId(req.params.jobId);
       const type = req.query.type as QuestionType;
 
-      const questions = await questionModel.findByJobAndType(jobId, user._id, type);
+      const questions = await questionModel.findByJobAndType(jobId, new mongoose.Types.ObjectId(user._id), type);
+
+      // Separate questions by type
+      const behavioralQuestions = questions.filter(q => q.type === QuestionType.BEHAVIORAL);
+      const technicalQuestions = questions.filter(q => q.type === QuestionType.TECHNICAL);
+
+      // Get job application for the response
+      const jobApplication = await jobApplicationModel.findById(jobId, new mongoose.Types.ObjectId(user._id));
 
       res.status(200).json({
         message: 'Questions fetched successfully',
         data: {
-          questions,
-          total: questions.length,
+          behavioralQuestions,
+          technicalQuestions,
+          totalQuestions: questions.length,
+          jobApplication: jobApplication || null
         },
       });
     } catch (error) {
@@ -170,7 +179,7 @@ export class QuestionsController {
 
       const questionObjectId = new mongoose.Types.ObjectId(questionId);
       
-      const question = await questionModel.findById(questionObjectId, user._id);
+      const question = await questionModel.findById(questionObjectId, new mongoose.Types.ObjectId(user._id));
       if (!question) {
         return res.status(404).json({
           message: 'Question not found',
@@ -189,7 +198,7 @@ export class QuestionsController {
         `Behavioral interview question`
       );
 
-      await questionModel.updateStatus(questionObjectId, user._id, QuestionStatus.COMPLETED);
+      await questionModel.updateStatus(questionObjectId, new mongoose.Types.ObjectId(user._id), QuestionStatus.COMPLETED);
 
       res.status(200).json({
         message: 'Answer submitted successfully',
@@ -216,7 +225,7 @@ export class QuestionsController {
       const user = req.user!;
       const questionId = new mongoose.Types.ObjectId(req.params.questionId);
 
-      const currentQuestion = await questionModel.findById(questionId, user._id);
+      const currentQuestion = await questionModel.findById(questionId, new mongoose.Types.ObjectId(user._id));
       if (!currentQuestion) {
         return res.status(404).json({
           message: 'Question not found',
@@ -229,7 +238,7 @@ export class QuestionsController {
 
       const updatedQuestion = await questionModel.updateStatus(
         questionId,
-        user._id,
+        new mongoose.Types.ObjectId(user._id),
         newStatus
       );
 
@@ -261,7 +270,7 @@ export class QuestionsController {
       const user = req.user!;
       const jobId = new mongoose.Types.ObjectId(req.params.jobId);
 
-      const progress = await questionModel.getProgressByJob(jobId, user._id);
+      const progress = await questionModel.getProgressByJob(jobId, new mongoose.Types.ObjectId(user._id));
 
       res.status(200).json({
         message: 'Question progress fetched successfully',

@@ -6,6 +6,7 @@ export interface CreateSessionRequest {
   jobId: string;
   questionTypes?: ('behavioral' | 'technical')[];
   questionCount?: number;
+  specificQuestionId?: string;
 }
 
 export interface UpdateSessionStatusRequest {

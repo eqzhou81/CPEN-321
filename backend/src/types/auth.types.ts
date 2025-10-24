@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { IUser } from './users.types';
 
 // Request types
@@ -11,6 +12,12 @@ export type AuthenticateUserResponse = {
   data?: AuthResult;
 };
 
+// Zod schemas
+// ------------------------------------------------------------
+export const authenticateUserSchema = z.object({
+  idToken: z.string().min(1, 'ID token is required'),
+});
+
 // Generic types
 // ------------------------------------------------------------
 export type AuthResult = {
@@ -21,7 +28,7 @@ export type AuthResult = {
 declare global {
   namespace Express {
     interface Request {
-      users?: IUser;
+      user?: IUser;
     }
   }
 }

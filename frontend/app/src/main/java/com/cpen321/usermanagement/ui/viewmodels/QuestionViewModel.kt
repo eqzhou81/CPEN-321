@@ -72,6 +72,84 @@ class QuestionViewModel @Inject constructor(
         }
     }
     
+    // Jack-dev generate questions from description
+    fun generateQuestionsFromDescription(jobDescription: String, jobId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            
+            questionRepository.generateQuestionsFromDescription(jobDescription, jobId).fold(
+                onSuccess = { response ->
+                    if (response.success) {
+                        // Questions are now stored in the database, reload them
+                        loadQuestions(jobId, QuestionType.TECHNICAL)
+                    } else {
+                        _error.value = response.message ?: "Failed to generate questions"
+                    }
+                },
+                onFailure = { exception ->
+                    _error.value = exception.message ?: "Failed to generate questions from description"
+                }
+            )
+            
+            _isLoading.value = false
+        }
+    }
+    
+    private fun convertLeetCodeTopicsToQuestionsData(topics: List<LeetCodeTopic>): QuestionsData {
+        val technicalQuestions = mutableListOf<TechnicalQuestion>()
+        
+        topics.forEach { topic ->
+            topic.questions.forEach { question ->
+                technicalQuestions.add(
+                    TechnicalQuestion(
+                        id = question.id,
+                        jobId = "leetcode-generated", // Placeholder job ID
+                        title = question.title,
+                        description = "LeetCode problem for ${topic.topic}",
+                        difficulty = when (question.difficulty?.lowercase()) {
+                            "easy" -> QuestionDifficulty.EASY
+                            "medium" -> QuestionDifficulty.MEDIUM
+                            "hard" -> QuestionDifficulty.HARD
+                            else -> QuestionDifficulty.MEDIUM
+                        },
+                        tags = listOf(topic.topic),
+                        language = null,
+                        hints = null,
+                        testCases = null,
+                        expectedSolution = null,
+                        userSolution = null,
+                        completedAt = null,
+                        createdAt = java.time.Instant.now().toString(),
+                        updatedAt = java.time.Instant.now().toString()
+                    )
+                )
+            }
+        }
+        
+        return QuestionsData(
+            behavioralQuestions = emptyList(),
+            technicalQuestions = technicalQuestions,
+            totalQuestions = technicalQuestions.size,
+            jobApplication = JobApplication(
+                id = "leetcode-generated",
+                userId = "mock-user",
+                title = "LeetCode Generated Questions",
+                company = "LeetCode",
+                description = "AI-generated LeetCode questions",
+                location = "Remote",
+                url = null,
+                salary = null,
+                jobType = null,
+                experienceLevel = null,
+                requirements = emptyList(),
+                skills = emptyList(),
+                createdAt = java.time.Instant.now().toString(),
+                updatedAt = java.time.Instant.now().toString()
+            )
+        )
+    }
+    
     fun loadQuestions(
         jobId: String,
         type: QuestionType? = null
@@ -147,13 +225,97 @@ class QuestionViewModel @Inject constructor(
         }
     }
     
+    fun updateQuestionCompletion(questionId: String, isCompleted: Boolean) {
+        viewModelScope.launch {
+            try {
+                // Update local state immediately for UI responsiveness
+                val currentQuestions = _questions.value
+                if (currentQuestions != null) {
+                    val updatedBehavioralQuestions = currentQuestions.behavioralQuestions.map { question ->
+                        if (question.id == questionId) {
+                            question.copy(
+                                status = if (isCompleted) "completed" else "pending"
+                            )
+                        } else {
+                            question
+                        }
+                    }
+                    
+                    val updatedTechnicalQuestions = currentQuestions.technicalQuestions.map { question ->
+                        if (question.id == questionId) {
+                            question.copy(
+                                status = if (isCompleted) "completed" else "pending"
+                            )
+                        } else {
+                            question
+                        }
+                    }
+                    
+                    _questions.value = currentQuestions.copy(
+                        behavioralQuestions = updatedBehavioralQuestions,
+                        technicalQuestions = updatedTechnicalQuestions
+                    )
+                }
+                
+                // Call API to persist the change
+                questionRepository.toggleQuestionCompleted(questionId).fold(
+                    onSuccess = {
+                        // Success - local state already updated
+                        // Reload progress to ensure accuracy
+                        val currentQuestions = _questions.value
+                        currentQuestions?.let { questions ->
+                            // Extract jobId from questions data
+                            val jobId = questions.jobApplication?.id
+                            if (jobId != null) {
+                                loadQuestionProgress(jobId)
+                            }
+                        }
+                    },
+                    onFailure = { exception ->
+                        // Revert local state on API failure
+                        val currentQuestions = _questions.value
+                        if (currentQuestions != null) {
+                            val revertedBehavioralQuestions = currentQuestions.behavioralQuestions.map { question ->
+                                if (question.id == questionId) {
+                                    question.copy(
+                                        status = if (isCompleted) "pending" else "completed"
+                                    )
+                                } else {
+                                    question
+                                }
+                            }
+                            
+                            val revertedTechnicalQuestions = currentQuestions.technicalQuestions.map { question ->
+                                if (question.id == questionId) {
+                                    question.copy(
+                                        status = if (isCompleted) "pending" else "completed"
+                                    )
+                                } else {
+                                    question
+                                }
+                            }
+                            
+                            _questions.value = currentQuestions.copy(
+                                behavioralQuestions = revertedBehavioralQuestions,
+                                technicalQuestions = revertedTechnicalQuestions
+                            )
+                        }
+                        _error.value = exception.message ?: "Failed to update question completion"
+                    }
+                )
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to update question completion"
+            }
+        }
+    }
+    
     private fun updateQuestionCompletion(questionId: String, answer: String) {
         val currentQuestions = _questions.value
         if (currentQuestions != null) {
             val updatedBehavioralQuestions = currentQuestions.behavioralQuestions.map { question ->
                 if (question.id == questionId) {
                     question.copy(
-                        isCompleted = true,
+                        status = "completed",
                         userAnswer = answer,
                         completedAt = java.time.Instant.now().toString()
                     )
@@ -165,7 +327,7 @@ class QuestionViewModel @Inject constructor(
             val updatedTechnicalQuestions = currentQuestions.technicalQuestions.map { question ->
                 if (question.id == questionId) {
                     question.copy(
-                        isCompleted = true,
+                        status = "completed",
                         userSolution = answer,
                         completedAt = java.time.Instant.now().toString()
                     )

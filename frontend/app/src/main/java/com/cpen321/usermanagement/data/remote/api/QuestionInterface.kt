@@ -1,12 +1,12 @@
 package com.cpen321.usermanagement.data.remote.api
 
 import com.cpen321.usermanagement.data.remote.dto.ApiResponse
-import com.cpen321.usermanagement.data.remote.dto.QuestionModels.GenerateQuestionsRequest
-import com.cpen321.usermanagement.data.remote.dto.QuestionModels.QuestionsResponse
-import com.cpen321.usermanagement.data.remote.dto.QuestionModels.SubmitBehavioralAnswerRequest
-import com.cpen321.usermanagement.data.remote.dto.QuestionModels.BehavioralAnswerResponse
-import com.cpen321.usermanagement.data.remote.dto.QuestionModels.QuestionResponse
-import com.cpen321.usermanagement.data.remote.dto.QuestionModels.QuestionProgressResponse
+import com.cpen321.usermanagement.data.remote.dto.GenerateQuestionsRequest
+import com.cpen321.usermanagement.data.remote.dto.QuestionsResponse
+import com.cpen321.usermanagement.data.remote.dto.SubmitBehavioralAnswerRequest
+import com.cpen321.usermanagement.data.remote.dto.BehavioralAnswerResponse
+import com.cpen321.usermanagement.data.remote.dto.QuestionResponse
+import com.cpen321.usermanagement.data.remote.dto.QuestionProgressResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET

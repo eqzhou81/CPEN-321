@@ -12,19 +12,24 @@ interface QuestionApiService {
     
     // Question Generation
     
-    @POST("jobs/{jobId}/questions/generate")
+    @POST("questions/generate")
     suspend fun generateQuestions(
-        @Path("jobId") jobId: String,
         @Body request: GenerateQuestionsRequest
     ): Response<GenerateQuestionsResponse>
     
-    @GET("jobs/{jobId}/questions")
+    // Jack-dev generate questions endpoint
+    @POST("questions/generateQuestions")
+    suspend fun generateQuestionsFromDescription(
+        @Body request: GenerateQuestionsFromDescriptionRequest
+    ): Response<GenerateQuestionsFromDescriptionResponse>
+    
+    @GET("questions/job/{jobId}")
     suspend fun getQuestions(
         @Path("jobId") jobId: String,
         @Query("type") type: String? = null
     ): Response<GenerateQuestionsResponse>
     
-    @GET("jobs/{jobId}/questions/progress")
+    @GET("questions/job/{jobId}/progress")
     suspend fun getQuestionProgress(
         @Path("jobId") jobId: String
     ): Response<QuestionProgressResponse>
@@ -41,6 +46,11 @@ interface QuestionApiService {
         @Path("questionId") questionId: String,
         @Body request: SubmitAnswerRequest
     ): Response<SubmitAnswerResponse>
+    
+    @PUT("questions/{questionId}/toggle")
+    suspend fun toggleQuestionCompleted(
+        @Path("questionId") questionId: String
+    ): Response<GenerateQuestionsResponse>
     
     @DELETE("questions/{questionId}")
     suspend fun deleteQuestion(

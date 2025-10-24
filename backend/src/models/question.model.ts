@@ -197,6 +197,18 @@ export class QuestionModel {
     }
   }
 
+  async findByJobId(
+    jobId: mongoose.Types.ObjectId,
+    userId: mongoose.Types.ObjectId
+  ): Promise<IQuestion[]> {
+    try {
+      return await Question.find({ jobId, userId }).exec();
+    } catch (error) {
+      logger.error('Error finding questions by job ID:', error);
+      throw new Error('Failed to find questions by job ID');
+    }
+  }
+
   async getProgressByJob(
     jobId: mongoose.Types.ObjectId,
     userId: mongoose.Types.ObjectId

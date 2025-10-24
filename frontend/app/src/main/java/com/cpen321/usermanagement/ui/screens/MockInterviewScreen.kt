@@ -8,7 +8,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,9 +20,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.ui.viewmodels.MockInterviewViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,7 +60,7 @@ fun MockInterviewScreen(
                 )
             )
         },
-        containerColor = Color(0xFFF5F5F5)
+        containerColor = colorResource(R.color.background)
     ) { paddingValues ->
         when (val state = uiState) {
             is MockInterviewViewModel.UiState.Loading -> {
@@ -120,8 +124,9 @@ private fun MockInterviewContent(
     ) {
         Text(
             "Answer the question below to practice your interview skills",
-            fontSize = 16.sp,
-            color = Color.Gray
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = colorResource(R.color.text_secondary)
+            )
         )
         
         ProgressCard(
@@ -377,93 +382,112 @@ private fun AnswerInputCard(
 private fun FeedbackCard(feedback: com.cpen321.usermanagement.data.remote.dto.SessionModels.SessionFeedback) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.surface)),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier.padding(24.dp)
+            modifier = Modifier.padding(20.dp)
         ) {
             // AI Feedback Header
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(bottom = 16.dp)
             ) {
-        Text(
-                    "✓",
-                    fontSize = 24.sp,
-                    color = Color(0xFF4CAF50),
-                    modifier = Modifier.padding(end = 8.dp)
+                Icon(
+                    Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = colorResource(R.color.success),
+                    modifier = Modifier.size(24.dp)
                 )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     "AI Feedback",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF1A1A1A)
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = colorResource(R.color.text_primary)
+                    )
                 )
             }
             
             // Strengths Section
             if (feedback.strengths.isNotEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFE8F5E9), RoundedCornerShape(8.dp))
-                        .padding(16.dp)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = colorResource(R.color.success).copy(alpha = 0.1f)
+                    ),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    Column {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("✓", fontSize = 18.sp, color = Color(0xFF4CAF50))
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = colorResource(R.color.success),
+                                modifier = Modifier.size(18.dp)
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 "Strengths",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF2E7D32)
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = colorResource(R.color.success)
+                                )
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         feedback.strengths.forEach { strength ->
                             Text(
-                                strength,
-                                fontSize = 14.sp,
-                                color = Color(0xFF1B5E20),
-                                lineHeight = 20.sp,
+                                "• $strength",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = colorResource(R.color.success)
+                                ),
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                         }
                     }
                 }
-                
                 Spacer(modifier = Modifier.height(12.dp))
             }
             
             // Areas for Improvement Section
-        if (feedback.improvements.isNotEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFFFF3E0), RoundedCornerShape(8.dp))
-                        .padding(16.dp)
+            if (feedback.improvements.isNotEmpty()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = colorResource(R.color.warning).copy(alpha = 0.1f)
+                    ),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    Column {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("⚠", fontSize = 18.sp, color = Color(0xFFFF9800))
+                            Icon(
+                                Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = colorResource(R.color.warning),
+                                modifier = Modifier.size(18.dp)
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
-            Text(
+                            Text(
                                 "Areas for Improvement",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFFE65100)
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = colorResource(R.color.warning)
+                                )
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-            feedback.improvements.forEach { improvement ->
-                Text(
-                                improvement,
-                                fontSize = 14.sp,
-                                color = Color(0xFFBF360C),
-                                lineHeight = 20.sp,
+                        feedback.improvements.forEach { improvement ->
+                            Text(
+                                "• $improvement",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = colorResource(R.color.warning)
+                                ),
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                         }

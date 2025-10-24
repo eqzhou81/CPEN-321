@@ -26,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.data.remote.dto.*
 import com.cpen321.usermanagement.ui.viewmodels.QuestionViewModel
+import com.cpen321.usermanagement.ui.viewmodels.MainViewModel
 
 /**
  * Questions Dashboard Screen
@@ -39,12 +40,18 @@ fun QuestionsDashboardScreen(
     onNavigateBack: () -> Unit,
     onNavigateToBehavioralQuestions: (String) -> Unit,
     onNavigateToTechnicalQuestions: (String) -> Unit,
-    viewModel: QuestionViewModel = hiltViewModel()
+    onNavigateToMockInterview: ((String) -> Unit)? = null,
+    viewModel: QuestionViewModel = hiltViewModel(),
+    mainViewModel: MainViewModel = hiltViewModel()
 ) {
     val questions by viewModel.questions.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val questionProgress by viewModel.questionProgress.collectAsStateWithLifecycle()
+    
+    // MainViewModel state for session creation
+    val sessionCreated by mainViewModel.sessionCreated.collectAsStateWithLifecycle()
+    val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
     
     var showGenerateDialog by remember { mutableStateOf(false) }
     
@@ -54,11 +61,19 @@ fun QuestionsDashboardScreen(
         viewModel.loadQuestionProgress(jobId)
     }
     
+    // Handle session creation and navigation
+    LaunchedEffect(sessionCreated) {
+        sessionCreated?.let { sessionId ->
+            onNavigateToMockInterview?.invoke(sessionId)
+            mainViewModel.clearSessionCreated()
+        }
+    }
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(colorResource(R.color.background))
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         // Header
         Row(
@@ -79,7 +94,7 @@ fun QuestionsDashboardScreen(
                 Column {
                     Text(
                         text = "Interview Questions",
-                        style = MaterialTheme.typography.headlineMedium.copy(
+                        style = MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.Bold,
                             color = colorResource(R.color.text_primary)
                         )
@@ -95,21 +110,74 @@ fun QuestionsDashboardScreen(
                 }
             }
             
-            FloatingActionButton(
-                onClick = { showGenerateDialog = true },
-                containerColor = colorResource(R.color.primary),
-                contentColor = colorResource(R.color.text_on_primary)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Generate Questions")
+                // Start Mock Interview Button
+                Button(
+                    onClick = { 
+                        mainViewModel.createMockInterviewSession(jobId)
+                    },
+                    enabled = !mainUiState.isCreatingSession,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(R.color.primary),
+                        contentColor = colorResource(R.color.white)
+                    ),
+                    modifier = Modifier.height(40.dp)
+                ) {
+                    if (mainUiState.isCreatingSession) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = colorResource(R.color.white),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.PlayArrow,
+                            contentDescription = "Start Mock Interview",
+                            modifier = Modifier.size(16.dp),
+                            tint = colorResource(R.color.white)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (mainUiState.isCreatingSession) "Creating..." else "Mock Interview",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = colorResource(R.color.white)
+                    )
+                }
+                
+                Button(
+                    onClick = { showGenerateDialog = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(R.color.secondary),
+                        contentColor = colorResource(R.color.white)
+                    ),
+                    modifier = Modifier.height(40.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "Generate Questions",
+                        modifier = Modifier.size(16.dp),
+                        tint = colorResource(R.color.white)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Generate",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = colorResource(R.color.white)
+                    )
+                }
             }
         }
         
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         
         // Progress Overview Card
         questionProgress?.let { progress ->
-            ProgressOverviewCard(progress = progress)
-            Spacer(modifier = Modifier.height(24.dp))
+            ProgressOverviewCard(progress = progress, questions = questions)
+            Spacer(modifier = Modifier.height(12.dp))
         }
         
         // Error Message
@@ -179,14 +247,14 @@ fun QuestionsDashboardScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Behavioral Questions Section
-                if (questionsData.behavioralQuestions.isNotEmpty()) {
+                if (questionsData.behavioralQuestions?.isNotEmpty() == true) {
                     item {
                         QuestionTypeSection(
                             title = "Behavioral Questions",
                             icon = Icons.Default.Psychology,
-                            questions = questionsData.behavioralQuestions,
-                            completedCount = questionsData.behavioralQuestions.count { it.isCompleted },
-                            totalCount = questionsData.behavioralQuestions.size,
+                            questions = questionsData.behavioralQuestions ?: emptyList(),
+                            completedCount = questionsData.behavioralQuestions?.count { it.isCompleted } ?: 0,
+                            totalCount = questionsData.behavioralQuestions?.size ?: 0,
                             onNavigateToQuestions = { onNavigateToBehavioralQuestions(jobId) },
                             onQuestionClick = { question ->
                                 viewModel.selectBehavioralQuestion(question as BehavioralQuestion)
@@ -197,14 +265,14 @@ fun QuestionsDashboardScreen(
                 }
                 
                 // Technical Questions Section
-                if (questionsData.technicalQuestions.isNotEmpty()) {
+                if (questionsData.technicalQuestions?.isNotEmpty() == true) {
                     item {
                         QuestionTypeSection(
                             title = "Technical Questions",
                             icon = Icons.Default.Code,
-                            questions = questionsData.technicalQuestions,
-                            completedCount = questionsData.technicalQuestions.count { it.isCompleted },
-                            totalCount = questionsData.technicalQuestions.size,
+                            questions = questionsData.technicalQuestions ?: emptyList(),
+                            completedCount = questionsData.technicalQuestions?.count { it.isCompleted } ?: 0,
+                            totalCount = questionsData.technicalQuestions?.size ?: 0,
                             onNavigateToQuestions = { onNavigateToTechnicalQuestions(jobId) },
                             onQuestionClick = { question ->
                                 viewModel.selectTechnicalQuestion(question as TechnicalQuestion)
@@ -220,9 +288,14 @@ fun QuestionsDashboardScreen(
     // Generate Questions Dialog
     if (showGenerateDialog) {
         GenerateQuestionsDialog(
+            jobId = jobId,
             onDismiss = { showGenerateDialog = false },
             onGenerateQuestions = { questionTypes ->
                 viewModel.generateQuestions(jobId, questionTypes)
+                showGenerateDialog = false
+            },
+            onGenerateFromDescription = { jobDescription ->
+                viewModel.generateQuestionsFromDescription(jobDescription, jobId)
                 showGenerateDialog = false
             }
         )
@@ -230,7 +303,7 @@ fun QuestionsDashboardScreen(
 }
 
 @Composable
-private fun ProgressOverviewCard(progress: QuestionProgress) {
+private fun ProgressOverviewCard(progress: QuestionProgress, questions: QuestionsData?) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -284,7 +357,7 @@ private fun ProgressOverviewCard(progress: QuestionProgress) {
             ) {
                 ProgressStatItem(
                     label = "Total",
-                    value = progress.totalQuestions.toString(),
+                    value = "${(questions?.behavioralQuestions?.size ?: 0) + (questions?.technicalQuestions?.size ?: 0)}",
                     icon = Icons.Default.Quiz
                 )
                 ProgressStatItem(
@@ -294,12 +367,12 @@ private fun ProgressOverviewCard(progress: QuestionProgress) {
                 )
                 ProgressStatItem(
                     label = "Behavioral",
-                    value = "${progress.behavioralCompleted}/${progress.totalQuestions}",
+                    value = "${progress.behavioralCompleted}/${questions?.behavioralQuestions?.size ?: 0}",
                     icon = Icons.Default.Psychology
                 )
                 ProgressStatItem(
                     label = "Technical",
-                    value = "${progress.technicalCompleted}/${progress.totalQuestions}",
+                    value = "${progress.technicalCompleted}/${questions?.technicalQuestions?.size ?: 0}",
                     icon = Icons.Default.Code
                 )
             }
@@ -443,12 +516,19 @@ private fun QuestionTypeSection(
             // Action Button
             Button(
                 onClick = onNavigateToQuestions,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = colorResource(R.color.primary)
+                    containerColor = colorResource(R.color.primary),
+                    contentColor = colorResource(R.color.white)
                 )
             ) {
-                Text("View All Questions")
+                Text(
+                    text = "View All Questions",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colorResource(R.color.white)
+                )
             }
         }
     }
@@ -479,8 +559,8 @@ private fun QuestionPreviewCard(
             }
             
             val difficulty = when (question) {
-                is BehavioralQuestion -> question.difficulty
-                is TechnicalQuestion -> question.difficulty
+                is BehavioralQuestion -> question.difficulty ?: QuestionDifficulty.EASY
+                is TechnicalQuestion -> question.difficulty ?: QuestionDifficulty.EASY
                 else -> QuestionDifficulty.EASY
             }
             
@@ -598,10 +678,12 @@ private fun EmptyQuestionsState(
 
 @Composable
 private fun GenerateQuestionsDialog(
+    jobId: String,
     onDismiss: () -> Unit,
-    onGenerateQuestions: (List<QuestionType>) -> Unit
+    onGenerateQuestions: (List<QuestionType>) -> Unit,
+    onGenerateFromDescription: (String) -> Unit
 ) {
-    var selectedTypes by remember { mutableStateOf(setOf(QuestionType.BEHAVIORAL, QuestionType.TECHNICAL)) }
+    var selectedTypes by remember { mutableStateOf(setOf<QuestionType>()) }
     
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -617,63 +699,142 @@ private fun GenerateQuestionsDialog(
         text = {
             Column {
                 Text(
-                    text = "Select the types of questions you want to generate:",
+                    text = "Select the type(s) of questions you want to generate:",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = colorResource(R.color.text_secondary)
                     )
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                QuestionType.values().forEach { type ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                selectedTypes = if (selectedTypes.contains(type)) {
-                                    selectedTypes - type
-                                } else {
-                                    selectedTypes + type
-                                }
+                // Behavioral Questions Option
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { 
+                            selectedTypes = if (selectedTypes.contains(QuestionType.BEHAVIORAL)) {
+                                selectedTypes - QuestionType.BEHAVIORAL
+                            } else {
+                                selectedTypes + QuestionType.BEHAVIORAL
                             }
-                            .padding(vertical = 8.dp),
+                        },
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (selectedTypes.contains(QuestionType.BEHAVIORAL)) 
+                            colorResource(R.color.secondary).copy(alpha = 0.1f) 
+                        else colorResource(R.color.surface)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Checkbox(
-                            checked = selectedTypes.contains(type),
+                            checked = selectedTypes.contains(QuestionType.BEHAVIORAL),
                             onCheckedChange = { isChecked ->
                                 selectedTypes = if (isChecked) {
-                                    selectedTypes + type
+                                    selectedTypes + QuestionType.BEHAVIORAL
                                 } else {
-                                    selectedTypes - type
+                                    selectedTypes - QuestionType.BEHAVIORAL
                                 }
-                            },
-                            colors = CheckboxDefaults.colors(
-                                checkedColor = colorResource(R.color.primary)
-                            )
+                            }
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = when (type) {
-                                QuestionType.BEHAVIORAL -> "Behavioral Questions (OpenAI)"
-                                QuestionType.TECHNICAL -> "Technical Questions (LeetCode)"
-                            },
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = colorResource(R.color.text_primary)
-                            )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Icon(
+                            Icons.Default.Psychology,
+                            contentDescription = null,
+                            tint = colorResource(R.color.secondary),
+                            modifier = Modifier.size(24.dp)
                         )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Behavioral Questions",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = colorResource(R.color.text_primary)
+                                )
+                            )
+                            Text(
+                                text = "AI-generated behavioral interview questions with feedback",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = colorResource(R.color.text_secondary)
+                                )
+                            )
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // Technical Questions Option
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { 
+                            selectedTypes = if (selectedTypes.contains(QuestionType.TECHNICAL)) {
+                                selectedTypes - QuestionType.TECHNICAL
+                            } else {
+                                selectedTypes + QuestionType.TECHNICAL
+                            }
+                        },
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (selectedTypes.contains(QuestionType.TECHNICAL)) 
+                            colorResource(R.color.primary).copy(alpha = 0.1f) 
+                        else colorResource(R.color.surface)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = selectedTypes.contains(QuestionType.TECHNICAL),
+                            onCheckedChange = { isChecked ->
+                                selectedTypes = if (isChecked) {
+                                    selectedTypes + QuestionType.TECHNICAL
+                                } else {
+                                    selectedTypes - QuestionType.TECHNICAL
+                                }
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Icon(
+                            Icons.Default.Code,
+                            contentDescription = null,
+                            tint = colorResource(R.color.primary),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Technical Questions",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = colorResource(R.color.text_primary)
+                                )
+                            )
+                            Text(
+                                text = "LeetCode-style coding challenges",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = colorResource(R.color.text_secondary)
+                                )
+                            )
+                        }
                     }
                 }
             }
         },
         confirmButton = {
             Button(
-                onClick = { onGenerateQuestions(selectedTypes.toList()) },
+                onClick = { 
+                    onGenerateQuestions(selectedTypes.toList())
+                    onDismiss()
+                },
                 enabled = selectedTypes.isNotEmpty(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = colorResource(R.color.primary)
                 )
             ) {
-                Text("Generate")
+                Text("Generate Questions")
             }
         },
         dismissButton = {

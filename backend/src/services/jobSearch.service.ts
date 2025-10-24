@@ -7,7 +7,7 @@ import {
   IScraperConfig,
   IScraperResult,
   ISimilarJob
-} from '../types/job.types';
+} from '../types/jobs.types';
 import { LocationUtils } from '../utils/location.util';
 import logger from '../utils/logger.util';
 
@@ -178,53 +178,6 @@ export class JobSearchService {
     }
   }
 
-  /**
-   * Find similar jobs using web scraping from unprotected sites
-   * This implements a robust scraping strategy that targets sites with minimal anti-bot protection
-   */
-  async findSimilarJobs(
-    jobId: string,
-    userId: string,
-    limit: number = 5
-  ): Promise<ISimilarJob[]> {
-    try {
-      // Get the original job to extract keywords
-      const jobApplication = await this.getJobById(jobId, userId);
-      if (!jobApplication) {
-        throw new Error('Job not found');
-      }
-
-      logger.info(`Finding similar jobs for: ${jobApplication.title} at ${jobApplication.company}`);
-      
-      // Extract search keywords from the original job
-      const searchKeywords = this.extractSearchKeywords(jobApplication);
-      logger.info(`Extracted keywords: ${searchKeywords.join(', ')}`);
-      
-      // First, try to find similar jobs from our database
-      const databaseJobs = await this.findSimilarJobsFromDatabase(jobApplication, limit);
-      
-      if (databaseJobs.length > 0) {
-        logger.info(`Found ${databaseJobs.length} similar jobs from database`);
-        return databaseJobs.slice(0, limit);
-      }
-      
-      // If no database results, fall back to web scraping
-      logger.info('No database results found, falling back to web scraping...');
-      const scrapedJobs = await this.scrapeJobsFromUnprotectedSites(searchKeywords, limit);
-      
-      if (scrapedJobs.length > 0) {
-        logger.info(`Found ${scrapedJobs.length} similar jobs from web scraping`);
-        return scrapedJobs.slice(0, limit);
-      }
-      
-      logger.warn('No similar jobs found from any source');
-      return [];
-      
-    } catch (error) {
-      logger.error('Error in findSimilarJobs:', error);
-      return [];
-    }
-  }
 
   /**
    * Scrape jobs from unprotected sites with robust timeout handling
@@ -917,30 +870,19 @@ export class JobSearchService {
           }
         }
         
-        // If still no results, try Amazon/Microsoft fallback
-        if (allAvailableJobs.length === 0) {
-          logger.info('No company matches found, trying Amazon/Microsoft fallback');
+        // If still no results, try broader location-based search
+        if (allAvailableJobs.length === 0 && location) {
+          logger.info(`No company matches found, trying location-based search for: ${location}`);
           
-          // Try Amazon jobs
-          const amazonJobs = await availableJobModel.searchJobs({
-            company: 'amazon',
+          // Try to find jobs in the same location
+          const locationJobs = await availableJobModel.searchJobs({
+            location: location,
             limit: limit * 2
           });
           
-          if (amazonJobs.length > 0) {
-            logger.info(`Found ${amazonJobs.length} Amazon jobs with fallback search`);
-            allAvailableJobs.push(...amazonJobs);
-          }
-          
-          // Try Microsoft jobs
-          const microsoftJobs = await availableJobModel.searchJobs({
-            company: 'microsoft',
-            limit: limit * 2
-          });
-          
-          if (microsoftJobs.length > 0) {
-            logger.info(`Found ${microsoftJobs.length} Microsoft jobs with fallback search`);
-            allAvailableJobs.push(...microsoftJobs);
+          if (locationJobs.length > 0) {
+            logger.info(`Found ${locationJobs.length} jobs in location: ${location}`);
+            allAvailableJobs.push(...locationJobs);
           }
         }
       }

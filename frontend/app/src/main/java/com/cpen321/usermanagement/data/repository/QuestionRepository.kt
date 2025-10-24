@@ -21,12 +21,31 @@ class QuestionRepository @Inject constructor(
         questionTypes: List<QuestionType> = listOf(QuestionType.BEHAVIORAL, QuestionType.TECHNICAL)
     ): Result<QuestionsData> {
         return try {
-            val request = GenerateQuestionsRequest(jobId, questionTypes)
-            val response = questionApiService.generateQuestions(jobId, request)
+            val request = GenerateQuestionsRequest(
+                jobId = jobId,
+                types = questionTypes.map { it.value },
+                count = 10
+            )
+            val response = questionApiService.generateQuestions(request)
             if (response.isSuccessful && response.body()?.data != null) {
                 Result.success(response.body()!!.data!!)
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to generate questions"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    // Jack-dev generate questions endpoint
+    suspend fun generateQuestionsFromDescription(jobDescription: String, jobId: String): Result<GenerateQuestionsFromDescriptionResponse> {
+        return try {
+            val request = GenerateQuestionsFromDescriptionRequest(jobDescription, jobId)
+            val response = questionApiService.generateQuestionsFromDescription(request)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception(response.message() ?: "Failed to generate questions from description"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -89,6 +108,19 @@ class QuestionRepository @Inject constructor(
                 Result.success(response.body()!!.data!!)
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to submit answer"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun toggleQuestionCompleted(questionId: String): Result<Unit> {
+        return try {
+            val response = questionApiService.toggleQuestionCompleted(questionId)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception(response.message() ?: "Failed to toggle question completion"))
             }
         } catch (e: Exception) {
             Result.failure(e)

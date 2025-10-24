@@ -20,6 +20,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.data.remote.dto.*
 import com.cpen321.usermanagement.ui.viewmodels.QuestionViewModel
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
 
 /**
  * Technical Questions Screen - Minimal Working Version
@@ -37,8 +40,10 @@ fun TechnicalQuestionsScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     
     val technicalQuestions = questions?.technicalQuestions ?: emptyList()
+    val context = LocalContext.current
     
     LaunchedEffect(jobId) {
+        // Load technical questions for this job
         viewModel.loadQuestions(jobId, QuestionType.TECHNICAL)
     }
     
@@ -159,7 +164,15 @@ fun TechnicalQuestionsScreen(
                 items(technicalQuestions) { question ->
                     TechnicalQuestionCard(
                         question = question,
-                        onClick = { onNavigateToQuestion(question.id) }
+                        onClick = { 
+                            question.externalUrl?.let { url ->
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                context.startActivity(intent)
+                            } ?: onNavigateToQuestion(question.id)
+                        },
+                        onToggleCompletion = { 
+                            viewModel.updateQuestionCompletion(question.id, !question.isCompleted)
+                        }
                     )
                 }
             }
@@ -170,8 +183,10 @@ fun TechnicalQuestionsScreen(
 @Composable
 private fun TechnicalQuestionCard(
     question: TechnicalQuestion,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onToggleCompletion: () -> Unit
 ) {
+    val context = LocalContext.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -189,9 +204,11 @@ private fun TechnicalQuestionCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = if (question.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                        contentDescription = null,
+                        contentDescription = if (question.isCompleted) "Mark as incomplete" else "Mark as complete",
                         tint = if (question.isCompleted) colorResource(R.color.success) else colorResource(R.color.text_tertiary),
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clickable { onToggleCompletion() }
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     
@@ -200,14 +217,16 @@ private fun TechnicalQuestionCard(
                             QuestionDifficulty.EASY -> colorResource(R.color.success).copy(alpha = 0.2f)
                             QuestionDifficulty.MEDIUM -> colorResource(R.color.warning).copy(alpha = 0.2f)
                             QuestionDifficulty.HARD -> colorResource(R.color.error).copy(alpha = 0.2f)
+                            null -> colorResource(R.color.warning).copy(alpha = 0.2f)
                         },
                         contentColor = when (question.difficulty) {
                             QuestionDifficulty.EASY -> colorResource(R.color.success)
                             QuestionDifficulty.MEDIUM -> colorResource(R.color.warning)
                             QuestionDifficulty.HARD -> colorResource(R.color.error)
+                            null -> colorResource(R.color.warning)
                         }
                     ) {
-                        Text(question.difficulty.displayName)
+                        Text(question.difficulty?.displayName ?: "MEDIUM")
                     }
                 }
                 
@@ -264,27 +283,23 @@ private fun TechnicalQuestionCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (question.isCompleted && question.completedAt != null) {
-                    Text(
-                        text = "Completed",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = colorResource(R.color.success)
-                        )
+                Text(
+                    text = if (question.isCompleted) "Completed" else "Not completed",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = if (question.isCompleted) colorResource(R.color.success) else colorResource(R.color.text_tertiary)
                     )
-                } else {
-                    Text(
-                        text = "Not completed",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = colorResource(R.color.text_tertiary)
-                        )
-                    )
-                }
+                )
                 
                 Button(
-                    onClick = onClick,
+                    onClick = { 
+                        question.externalUrl?.let { url ->
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            context.startActivity(intent)
+                        } ?: onClick()
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.primary))
                 ) {
-                    Text("Solve")
+                    Text("Solve on LeetCode")
                 }
             }
         }
