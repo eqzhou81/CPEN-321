@@ -3,20 +3,18 @@ import { Router } from 'express';
 import { UserController } from '../controllers/users.controller';
 import { UpdateProfileRequest, updateProfileSchema } from '../types/users.types';
 import { validateBody } from '../middleware/validation.middleware';
-import { authenticateToken } from '../middleware/auth.middleware';
 
 const router = Router();
 const userController = new UserController();
 
-router.get('/profile', authenticateToken, userController.getProfile.bind(userController));
+router.get('/profile', userController.getProfile);
 
 router.post(
   '/profile',
-  authenticateToken,
   validateBody<UpdateProfileRequest>(updateProfileSchema),
-  userController.updateProfile.bind(userController)
+  userController.updateProfile
 );
 
-router.delete('/profile', authenticateToken, userController.deleteProfile.bind(userController));
+router.delete('/profile', userController.deleteProfile);
 
 export default router;

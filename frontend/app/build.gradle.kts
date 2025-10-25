@@ -65,7 +65,11 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-    
+
+    implementation("io.socket:socket.io-client:2.1.0") {
+        exclude (group = "org.json", module = "json")
+    }
+
     // Material Icons Extended - includes ALL Material Icons
     implementation("androidx.compose.material:material-icons-extended:1.5.4")
 

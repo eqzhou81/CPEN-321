@@ -1,7 +1,10 @@
 package com.cpen321.usermanagement.di
 
+import com.cpen321.usermanagement.data.remote.api.DiscussionApi
+import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.data.repository.AuthRepository
 import com.cpen321.usermanagement.data.repository.AuthRepositoryImpl
+import com.cpen321.usermanagement.data.repository.DiscussionRepository
 import com.cpen321.usermanagement.data.repository.JobRepository
 import com.cpen321.usermanagement.data.repository.ProfileRepository
 import com.cpen321.usermanagement.data.repository.ProfileRepositoryImpl
@@ -31,6 +34,12 @@ object RepositoryModule {
     ): ProfileRepository {
         return profileRepositoryImpl
     }
+
+    @Provides
+    @Singleton
+    fun provideDiscussionRepository(
+        discussionApi: DiscussionApi
+    ): DiscussionRepository = DiscussionRepository(discussionApi)
 
     // JobRepository and QuestionRepository are already annotated with @Singleton
     // No need to provide them here as they can be injected directly

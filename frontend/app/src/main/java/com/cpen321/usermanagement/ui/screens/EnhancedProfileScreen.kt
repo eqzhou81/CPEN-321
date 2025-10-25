@@ -147,7 +147,7 @@ fun EnhancedProfileScreen(
                 user = uiState.user,
                 onDismiss = { showEditDialog = false },
                 onSave = { updatedUser ->
-                    viewModel.updateProfile(updatedUser.name, updatedUser.bio ?: "")
+
                     showEditDialog = false
                 }
             )
@@ -172,9 +172,7 @@ private fun ProfileContent(
         
         // Profile Information
         ProfileInformation(user = user)
-        
-        // Hobbies Section
-        HobbiesSection(hobbies = user.hobbies ?: emptyList())
+
         
         // Statistics Section
         ProfileStatistics()
@@ -252,14 +250,7 @@ private fun ProfileInformation(user: User) {
                 )
             )
             
-            // Bio Section
-            if (!user.bio.isNullOrBlank()) {
-                InfoRow(
-                    icon = Icons.Default.Description,
-                    label = "Bio",
-                    value = user.bio
-                )
-            }
+
             
             // Profile Picture URL
             if (!user.profilePicture.isNullOrBlank()) {
@@ -443,8 +434,8 @@ private fun EditProfileDialog(
     onSave: (User) -> Unit
 ) {
     var name by remember { mutableStateOf(user?.name ?: "") }
-    var bio by remember { mutableStateOf(user?.bio ?: "") }
-    
+
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -466,13 +457,7 @@ private fun EditProfileDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 
-                OutlinedTextField(
-                    value = bio,
-                    onValueChange = { bio = it },
-                    label = { Text("Bio") },
-                    modifier = Modifier.fillMaxWidth(),
-                    maxLines = 3
-                )
+
             }
         },
         confirmButton = {
@@ -480,8 +465,8 @@ private fun EditProfileDialog(
                 onClick = {
                     if (user != null) {
                         val updatedUser = user.copy(
-                            name = name,
-                            bio = bio
+                            name = name
+
                         )
                         onSave(updatedUser)
                     }

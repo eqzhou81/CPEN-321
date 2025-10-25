@@ -23,9 +23,11 @@ class TokenManager(private val context: Context) {
 
     suspend fun saveToken(token: String) {
         try {
+            Log.d(TAG, "💾 Saving token to storage: ${token.take(15)}...")
             context.dataStore.edit { preferences ->
                 preferences[tokenKey] = token
             }
+            Log.d(TAG, "✅ Token saved successfully to DataStore")
         } catch (e: java.io.IOException) {
             Log.e(TAG, "IO error while saving token", e)
             throw e
@@ -51,7 +53,9 @@ class TokenManager(private val context: Context) {
 
     suspend fun getTokenSync(): String? {
         return try {
+            Log.d(TAG, "🔍 Retrieving token from storage...")
             val token = context.dataStore.data.first()[tokenKey]
+            Log.d(TAG, "📱 Token retrieved from storage: ${token?.take(15)}...")
             token
         } catch (e: java.io.IOException) {
             Log.e(TAG, "IO error while getting token synchronously", e)
@@ -64,15 +68,28 @@ class TokenManager(private val context: Context) {
 
     suspend fun clearToken() {
         try {
+            Log.d(TAG, "🗑️ Clearing token from storage")
             context.dataStore.edit { preferences ->
                 preferences.remove(tokenKey)
             }
+            Log.d(TAG, "✅ Token cleared successfully")
         } catch (e: java.io.IOException) {
             Log.e(TAG, "IO error while clearing token", e)
             throw e
         } catch (e: SecurityException) {
             Log.e(TAG, "Permission denied to clear token", e)
             throw e
+        }
+    }
+    
+    // Debug method to check token status
+    suspend fun debugTokenStatus() {
+        try {
+            val token = context.dataStore.data.first()[tokenKey]
+            Log.d(TAG, "🔍 DEBUG - Token in storage: ${token?.take(15)}...")
+            Log.d(TAG, "🔍 DEBUG - Token exists: ${token != null}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking token status", e)
         }
     }
 }

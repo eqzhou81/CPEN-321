@@ -1,100 +1,79 @@
-import dotenv from 'dotenv';
-import express from 'express';
-import cors from 'cors';
+import dotenv from "dotenv";
+import express from "express";
+import cors from "cors";
+import { Server } from "socket.io";
+import http from "http";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
 
-// CORS configuration
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// Allowed origins (for both API + sockets)
+const allowedOrigins = [
+  process.env.FRONTEND_URL || "http://localhost:5173",
+  "http://10.0.2.2:3000",
+  "http://10.0.2.2:8081",
+  "http://localhost:3000",
+];
 
+// Middleware
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 app.use(express.json());
 
-// Simple test route
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'Backend is working!' });
+// HTTP + WebSocket server
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+  },
 });
 
-// Mock auth routes for testing
-app.post('/api/auth/signup', (req, res) => {
-  res.json({ 
-    message: 'User signed up successfully',
-    data: {
-      user: { _id: '123', name: 'Test User', email: 'test@example.com' },
-      token: 'mock-token-123'
-    }
+// === Socket.IO event handlers ===
+io.on("connection", (socket) => {
+  console.log("🟢 User connected:", socket.id);
+
+  socket.on("joinDiscussion", (discussionId) => {
+    socket.join(discussionId);
+    console.log(`User ${socket.id} joined room ${discussionId}`);
+  });
+
+  socket.on("newMessage", (discussionId, message) => {
+    console.log(`💬 New message in ${discussionId}:`, message);
+    io.to(discussionId).emit("messageReceived", message);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("🔴 User disconnected:", socket.id);
   });
 });
 
-app.post('/api/auth/signin', (req, res) => {
-  res.json({ 
-    message: 'User signed in successfully',
-    data: {
-      user: { _id: '123', name: 'Test User', email: 'test@example.com' },
-      token: 'mock-token-123'
-    }
-  });
+// === Express API routes ===
+app.get("/api/test", (req, res) => {
+  res.json({ message: "Backend is working!" });
 });
 
-// Mock job routes for testing
-app.get('/api/jobs', (req, res) => {
+app.post("/api/auth/signin", (req, res) => {
   res.json({
-    message: 'Job applications fetched successfully',
+    message: "User signed in successfully",
     data: {
-      jobApplications: [
-        {
-          _id: '1',
-          title: 'Software Engineer',
-          company: 'Test Company',
-          description: 'Test job description',
-          createdAt: new Date().toISOString()
-        }
-      ],
-      total: 1
-    }
+      user: { _id: "123", name: "Test User", email: "test@example.com" },
+      token: "mock-token-123",
+    },
   });
 });
 
-app.post('/api/jobs', (req, res) => {
-  res.json({
-    message: 'Job application created successfully',
-    data: {
-      jobApplication: {
-        _id: '2',
-        ...req.body,
-        createdAt: new Date().toISOString()
-      }
-    }
-  });
-});
-
-app.delete('/api/jobs/:id', (req, res) => {
-  res.json({ message: 'Job application deleted successfully' });
-});
-
-app.post('/api/jobs/scrape', (req, res) => {
-  res.json({
-    message: 'Job details scraped successfully',
-    data: {
-      jobDetails: {
-        title: 'Scraped Job Title',
-        company: 'Scraped Company',
-        description: 'Scraped job description from URL',
-        location: 'Remote'
-      }
-    }
-  });
-});
-
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+// Start the server
+server.listen(PORT, () => {
+  console.log(`🚀 Server + Socket.IO running on port ${PORT}`);
   console.log(`📡 API available at http://localhost:${PORT}/api`);
-  console.log(`🌐 Frontend should connect to http://localhost:${PORT}/api`);
+  console.log(`🌐 Frontend can connect to ws://localhost:${PORT}`);
 });

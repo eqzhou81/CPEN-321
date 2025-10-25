@@ -1,5 +1,6 @@
 package com.cpen321.usermanagement.ui.navigation
 
+import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -12,6 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.cpen321.usermanagement.R
+import com.cpen321.usermanagement.data.remote.dto.User
 import com.cpen321.usermanagement.ui.screens.*
 import com.cpen321.usermanagement.ui.viewmodels.*
 
@@ -21,10 +23,11 @@ object NavRoutes {
     const val MAIN = "main"
     const val PROFILE = "profile"
     const val MANAGE_PROFILE = "manage_profile"
-    const val MANAGE_HOBBIES = "manage_hobbies"
     const val PROFILE_COMPLETION = "profile_completion"
     const val DISCUSSIONS = "discussions"
-    const val PLACES = "find_places"
+
+    const val DiSCUSSION_DETAILS = "discussion_details"
+
 }
 
 @Composable
@@ -48,8 +51,8 @@ fun AppNavigation(
             navController,
             navigationStateManager,
             authViewModel,
-            mainViewModel,
-            discussionViewModel
+            mainViewModel
+
         )
     }
 
@@ -68,8 +71,7 @@ private fun handleNavigationEvent(
     navController: NavHostController,
     navigationStateManager: NavigationStateManager,
     authViewModel: AuthViewModel,
-    mainViewModel: MainViewModel,
-    discussionViewModel: DiscussionViewModel
+    mainViewModel: MainViewModel
 ) {
     when (navigationEvent) {
         is NavigationEvent.NavigateToAuth -> {
@@ -112,13 +114,7 @@ private fun handleNavigationEvent(
             navController.navigate(NavRoutes.MANAGE_PROFILE)
         }
 
-        is NavigationEvent.NavigateToManageHobbies -> {
-            navController.navigate(NavRoutes.MANAGE_HOBBIES)
-        }
 
-        is NavigationEvent.NavigateToPlaces -> {
-            navController.navigate(NavRoutes.PLACES)
-        }
 
         is NavigationEvent.NavigateToDiscussions -> {
             Log.d("AppNavigation", "Navigating to Discussions screen")
@@ -188,10 +184,9 @@ private fun AppNavHost(
                 actions = ProfileScreenActions(
                     onBackClick = { navigationStateManager.navigateBack() },
                     onManageProfileClick = { navigationStateManager.navigateToManageProfile() },
-                    onManageHobbiesClick = { navigationStateManager.navigateToManageHobbies() },
                     onSignOut = { navigationStateManager.handleAccountSignOut() },
-                    onAccountDeleted = { navigationStateManager.handleAccountDeletion() },
-                    onFindPlacesClick = { navigationStateManager.navigateBack() }
+                    onAccountDeleted = { navigationStateManager.handleAccountDeletion() }
+
                 )
             )
         }
@@ -203,26 +198,41 @@ private fun AppNavHost(
             )
         }
 
-        composable(NavRoutes.PLACES) {
-            PlacesScreen(
-                profileViewModel = profileViewModel,
-                onBackClick = { navigationStateManager.navigateBack() }
-            )
-        }
 
-        composable(NavRoutes.MANAGE_HOBBIES) {
-            ManageHobbiesScreen(
-                profileViewModel = profileViewModel,
-                onBackClick = { navigationStateManager.navigateBack() }
-            )
-        }
+
+
 
         // ✅ Discussion screen route
         composable(NavRoutes.DISCUSSIONS) {
-            DiscussionScreen(
-                onClose = { navigationStateManager.navigateBack()
-                    val discussionViewModel = discussionViewModel }
+            val uiState by authViewModel.uiState.collectAsState()
+            val user = uiState.user
+           DiscussionScreen(
+               onDiscussionClick = { discussionId ->
+                   navController.navigate(
+                       "${NavRoutes.DiSCUSSION_DETAILS}/$discussionId/${user?.id}/${Uri.encode(user?.name ?: "")}"
+                   )
+               },
+               onClose = { navigationStateManager.navigateBack() },
+               discussionViewModel = discussionViewModel
+
+
+           )
+        }
+
+        composable(
+            route = "${NavRoutes.DiSCUSSION_DETAILS}/{discussionId}/{currentUserId}/{currentUserName}"
+        ) { backStackEntry ->
+            val discussionId = backStackEntry.arguments?.getString("discussionId") ?: return@composable
+            val currentUserId = backStackEntry.arguments?.getString("currentUserId") ?: ""
+            val currentUserName = backStackEntry.arguments?.getString("currentUserName") ?: ""
+
+            DiscussionDetailScreen(
+                discussionId = discussionId,
+                currentUserId = currentUserId,
+                currentUserName = currentUserName,
+                onBack = { navController.popBackStack() }
             )
         }
+
     }
 }

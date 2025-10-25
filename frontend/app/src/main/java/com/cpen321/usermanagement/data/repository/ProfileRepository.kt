@@ -9,17 +9,11 @@ import com.google.android.libraries.places.api.model.Place
 
 interface ProfileRepository {
     suspend fun getProfile(): Result<User>
-    suspend fun updateProfile(name: String, bio: String): Result<User>
-    suspend fun updateUserHobbies(hobbies: List<String>): Result<User>
-    suspend fun getAvailableHobbies(): Result<List<String>>
 
-    suspend fun uploadProfilePic(profileUri : Uri) : Result<String>
 
-    suspend fun getCurrentLocation(): Result<MyLocation>
 
-    suspend fun getNearbyPlaces(
-        location: MyLocation,
-        hobbies: Set<String>
-    ): Result<List<Place>>
+
+
+
 
 }

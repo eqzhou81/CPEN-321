@@ -2,7 +2,6 @@ package com.cpen321.usermanagement.di
 
 import com.cpen321.usermanagement.data.remote.api.AuthInterface
 import com.cpen321.usermanagement.data.remote.api.DiscussionApi
-import com.cpen321.usermanagement.data.remote.api.HobbyInterface
 import com.cpen321.usermanagement.data.remote.api.ImageInterface
 import com.cpen321.usermanagement.data.remote.api.JobApiService
 import com.cpen321.usermanagement.data.remote.api.QuestionApiService
@@ -30,24 +29,14 @@ object NetworkModule {
         return RetrofitClient.userInterface
     }
 
-    @Provides
-    @Singleton
-    fun provideMediaService(): ImageInterface {
-        return RetrofitClient.imageInterface
-    }
 
-    @Provides
-    @Singleton
-    fun provideHobbyService(): HobbyInterface {
-        return RetrofitClient.hobbyInterface
-    }
 
     @Provides
     @Singleton
     fun provideJobApiService(): JobApiService {
         return RetrofitClient.jobApiService
     }
-    
+
     @Provides
     @Singleton
     fun provideQuestionApiService(): QuestionApiService {
@@ -56,6 +45,15 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideDiscussionApi(): DiscussionApi =
-        RetrofitClient.discussionApi
+    fun provideDiscussionApi(): DiscussionApi {
+        return RetrofitClient.discussionApi
+    }
+
+    @Provides
+    @Singleton
+    fun provideImageApi(): ImageInterface {
+        return RetrofitClient.imageInterface
+    }
+
+
 }

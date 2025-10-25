@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.data.remote.dto.AuthData
 import com.cpen321.usermanagement.data.remote.dto.User
 import com.cpen321.usermanagement.data.repository.AuthRepository
@@ -63,7 +64,7 @@ class AuthViewModel @Inject constructor(
 
                 val isAuthenticated = authRepository.isUserAuthenticated()
                 val user = if (isAuthenticated) authRepository.getCurrentUser() else null
-                val needsProfileCompletion = user?.bio == null || user.bio.isBlank()
+
 
                 _uiState.value = _uiState.value.copy(
                     isAuthenticated = isAuthenticated,
@@ -73,7 +74,6 @@ class AuthViewModel @Inject constructor(
 
                 updateNavigationState(
                     isAuthenticated = isAuthenticated,
-                    needsProfileCompletion = needsProfileCompletion,
                     isLoading = false
                 )
             } catch (e: java.net.SocketTimeoutException) {
@@ -86,11 +86,20 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    private fun updateNavigationState(
+    suspend private fun updateNavigationState(
         isAuthenticated: Boolean = false,
         needsProfileCompletion: Boolean = false,
         isLoading: Boolean = false
     ) {
+        // Set token in RetrofitClient when user is authenticated
+        if (isAuthenticated) {
+            val token = authRepository.getStoredToken()
+            if (token != null) {
+                RetrofitClient.setAuthToken(token)
+                Log.d("AuthViewModel", "✅ Token set in RetrofitClient during navigation: ${token.take(15)}...")
+            }
+        }
+        
         navigationStateManager.updateAuthenticationState(
             isAuthenticated = isAuthenticated,
             needsProfileCompletion = needsProfileCompletion,
@@ -99,7 +108,7 @@ class AuthViewModel @Inject constructor(
         )
     }
 
-    private fun handleAuthError(errorMessage: String, exception: Exception) {
+    suspend private fun handleAuthError(errorMessage: String, exception: Exception) {
         Log.e(TAG, "Authentication check failed: $errorMessage", exception)
         _uiState.value = _uiState.value.copy(
             isCheckingAuth = false,
@@ -127,8 +136,7 @@ class AuthViewModel @Inject constructor(
 
             authOperation(credential.idToken)
                 .onSuccess { authData ->
-                    val needsProfileCompletion =
-                        authData.user.bio == null || authData.user.bio.isBlank()
+
 
                     _uiState.value = _uiState.value.copy(
                         isSigningIn = false,
@@ -138,10 +146,17 @@ class AuthViewModel @Inject constructor(
                         errorMessage = null
                     )
 
+                    // Set token in RetrofitClient immediately after successful auth
+                    val token = authRepository.getStoredToken()
+                    if (token != null) {
+                        RetrofitClient.setAuthToken(token)
+                        Log.d("AuthViewModel", "✅ Token set in RetrofitClient after sign in: ${token.take(15)}...")
+                    }
+
                     // Trigger navigation through NavigationStateManager
                     navigationStateManager.updateAuthenticationState(
                         isAuthenticated = true,
-                        needsProfileCompletion = needsProfileCompletion,
+                        needsProfileCompletion = false,
                         isLoading = false,
                         currentRoute = NavRoutes.AUTH
                     )

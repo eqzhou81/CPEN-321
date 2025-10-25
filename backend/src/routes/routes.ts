@@ -11,7 +11,7 @@ const router = Router();
 
 router.use('/auth', authRoutes);
 
-router.use('/user', authenticateToken, usersRoutes);
+router.use('/user', usersRoutes);
 
 router.use('/jobs', authenticateToken,  jobRoutes);
 

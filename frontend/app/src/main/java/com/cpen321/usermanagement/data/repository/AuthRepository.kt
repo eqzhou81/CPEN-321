@@ -8,7 +8,6 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 interface AuthRepository {
     suspend fun signInWithGoogle(context: Context): Result<GoogleIdTokenCredential>
 
-
     suspend fun googleSignIn(tokenId: String): Result<AuthData>
     suspend fun googleSignUp(tokenId: String): Result<AuthData>
     suspend fun clearToken(): Result<Unit>

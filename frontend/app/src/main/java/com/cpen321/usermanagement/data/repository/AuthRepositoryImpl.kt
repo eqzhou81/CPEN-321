@@ -166,13 +166,23 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun getCurrentUser(): User? {
         return try {
-            val response = userInterface.getProfile("") // Auth header is handled by interceptor
-            if (response.isSuccessful && response.body()?.data != null) {
-                response.body()!!.data!!.user
+            val response = userInterface.getProfile() // Auth header is handled by interceptor
+            if (response.isSuccessful && response.body() != null) {
+                // Backend returns user data directly, not wrapped in ApiResponse
+                val profileData = response.body()!!
+                User(
+                    id = profileData.id,
+                    email = profileData.email,
+                    name = profileData.name,
+                    savedJobs = profileData.savedJobs,
+                    profilePicture = profileData.profilePicture ?: "",
+                    createdAt = profileData.createdAt,
+                    updatedAt = profileData.updatedAt
+                )
             } else {
                 Log.e(
                     TAG,
-                    "Failed to get current user: ${response.body()?.message ?: "Unknown error"}"
+                    "Failed to get current user: ${response.errorBody() ?: "Unknown error"}"
                 )
                 null
             }
@@ -195,7 +205,8 @@ class AuthRepositoryImpl @Inject constructor(
         val isLoggedIn = doesTokenExist()
         if (isLoggedIn) {
             val token = getStoredToken()
-            token?.let { RetrofitClient.setAuthToken(it) }
+            token?.let { RetrofitClient.setAuthToken(it)
+                android.util.Log.i("AuthRepository", "✅ Token set in RetrofitClient")}
             // Verify token is still valid by trying to get user profile
             return getCurrentUser() != null
         }

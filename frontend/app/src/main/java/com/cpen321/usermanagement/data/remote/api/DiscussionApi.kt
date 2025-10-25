@@ -52,7 +52,6 @@ data class PostMessageRequest(
 )
 
 interface DiscussionApi {
-
     @GET("discussions")
     suspend fun getAllDiscussions(
         @Query("search") search: String? = null,
@@ -69,11 +68,13 @@ interface DiscussionApi {
     @POST("discussions")
     suspend fun createDiscussion(
         @Body request: CreateDiscussionRequest
-    ): Response<CreateDiscussionResponse>
+    ): Response<CreateDiscussionResponse>  // flat
 
     @POST("discussions/{id}/messages")
     suspend fun postMessage(
         @Path("id") id: String,
         @Body request: PostMessageRequest
-    ): Response<PostMessageResponse>
+    ): Response<PostMessageResponse>  // flat
 }
+
+

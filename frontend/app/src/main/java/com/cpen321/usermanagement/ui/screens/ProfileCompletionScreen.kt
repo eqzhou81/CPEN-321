@@ -88,13 +88,7 @@ fun ProfileCompletionScreen(
         }
     }
 
-    LaunchedEffect(uiState.user) {
-        uiState.user?.let { user ->
-            if (user.bio != null && user.bio.isNotBlank() && !formState.hasSavedBio) {
-                onProfileCompleted()
-            }
-        }
-    }
+
 
     ProfileCompletionContent(
         data = ProfileCompletionScreenContentData(
@@ -104,16 +98,7 @@ fun ProfileCompletionScreen(
             onBioChange = { formState = formState.copy(bioText = it) },
             onSkipClick = onProfileCompleted,
             onSaveClick = {
-                if (formState.bioText.isNotBlank()) {
-                    formState = formState.copy(hasSavedBio = true)
-                    profileViewModel.updateProfile(
-                        name = uiState.user?.name ?: "",
-                        bio = formState.bioText,
-                        onSuccess = {
-                            onProfileCompletedWithMessage(successfulBioUpdateMessage)
-                        }
-                    )
-                }
+
             },
             onErrorMessageShown = profileViewModel::clearError
         )

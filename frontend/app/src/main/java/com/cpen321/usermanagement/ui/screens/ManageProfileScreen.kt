@@ -142,9 +142,7 @@ fun ManageProfileScreen(
             formState = ProfileFormState(
                 name = user.name,
                 email = user.email,
-                bio = user.bio ?: "",
-                originalName = user.name,
-                originalBio = user.bio ?: ""
+                originalName = user.name
             )
         }
     }
@@ -155,12 +153,11 @@ fun ManageProfileScreen(
         onBioChange = { formState = formState.copy(bio = it) },
         onEditPictureClick = { showImagePickerDialog = true },
         onSaveClick = {
-            profileViewModel.updateProfile(formState.name, formState.bio)
+
         },
         onImagePickerDismiss = { showImagePickerDialog = false },
         onImageSelected = { uri ->
             showImagePickerDialog = false
-            profileViewModel.uploadProfilePicture(uri)
         },
         onLoadingPhotoChange = profileViewModel::setLoadingPhoto,
         onSuccessMessageShown = profileViewModel::clearSuccessMessage,
@@ -305,12 +302,6 @@ private fun ProfileForm(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(spacing.large)
     ) {
-        ProfilePictureCard(
-            profilePicture = data.user.profilePicture,
-            isLoadingPhoto = data.isLoadingPhoto,
-            onEditClick = data.onEditPictureClick,
-            onLoadingChange = data.onLoadingPhotoChange
-        )
 
         ProfileFields(
             data = ProfileFieldsData(

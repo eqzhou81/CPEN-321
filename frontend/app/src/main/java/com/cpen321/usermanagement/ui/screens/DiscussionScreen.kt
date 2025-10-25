@@ -19,12 +19,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.ui.viewmodels.DiscussionViewModel
 import com.cpen321.usermanagement.data.remote.api.DiscussionListResponse
+import com.cpen321.usermanagement.ui.navigation.NavigationStateManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiscussionScreen(
+    onDiscussionClick: (String) -> Unit,
     onClose: () -> Unit,
     discussionViewModel: DiscussionViewModel = hiltViewModel()
+
 ) {
     val uiState by discussionViewModel.uiState.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
@@ -70,17 +73,18 @@ fun DiscussionScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(16.dp),
+                        contentPadding = PaddingValues(bottom = 80.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(uiState.discussions) { discussion ->
-                            DiscussionItem(discussion)
+                            DiscussionItem(discussion, onDiscussionClick)
                         }
                     }
                 }
             }
         }
 
-        // ✅ New Discussion dialog
+        // New Discussion dialog
         if (showDialog) {
             AlertDialog(
                 onDismissRequest = { showDialog = false },
@@ -120,11 +124,13 @@ fun DiscussionScreen(
 
 
 @Composable
-fun DiscussionItem(discussion: DiscussionListResponse) {
+fun DiscussionItem(
+    discussion: DiscussionListResponse,
+    onClick: (String) -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { /* TODO: navigate to DiscussionDetailScreen */ },
+            .clickable { onClick(discussion.id) },
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(Modifier.padding(16.dp)) {
