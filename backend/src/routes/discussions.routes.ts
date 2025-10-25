@@ -1,10 +1,15 @@
 import { Router } from 'express';
+import { DiscussionsController } from '../controllers/discussions.controller';
+import { authenticateToken } from '../middleware/auth.middleware';
 
 const router = Router();
+const controller = new DiscussionsController();
 
-// TODO: Add your discussion routes here
-// router.get('/', discussionController.getAll);
-// router.post('/', discussionController.create);
-// etc.
+
+router.get('/', controller.getDiscussions.bind(controller));
+router.get('/:id', controller.getDiscussionById.bind(controller));
+router.post('/', controller.createDiscussion.bind(controller));
+router.post('/:id/messages', controller.postMessage.bind(controller));
+router.get('/my/discussions', controller.getMyDiscussions.bind(controller)); //maybe not in mvp
 
 export default router;
