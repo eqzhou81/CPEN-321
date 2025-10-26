@@ -203,9 +203,9 @@ class DiscussionViewModel @Inject constructor(
 
     fun sendMessage(discussionId: String, content: String, userName: String, userId: String) {
         // 1️⃣ Send to backend to persist
-        viewModelScope.launch {
-            repository.postMessage(discussionId, content)
-        }
+//        viewModelScope.launch {
+//            repository.postMessage(discussionId, content)
+//        }
 
         // 2️⃣ Send via socket for real-time broadcast
         val messageData = JSONObject().apply {

@@ -37,8 +37,13 @@ fun DiscussionDetailScreen(
     val coroutineScope = rememberCoroutineScope()
 
     // Combine backend messages + new socket messages (prevent duplicates)
-    val stored = uiState.selectedDiscussion?.messages ?: emptyList()
-    val allMessages = if (stored.isNotEmpty()) stored else liveMessages
+    val storedMessages = uiState.selectedDiscussion?.messages ?: emptyList()
+
+    // 2. Combine the stored messages with the new live messages from the socket.
+    //    Use a Set to automatically handle duplicates based on message ID.
+    val allMessages = remember(storedMessages, liveMessages) {
+        (storedMessages + liveMessages).distinctBy { it.id }
+    }
 
     DisposableEffect(Unit) {
         onDispose {
