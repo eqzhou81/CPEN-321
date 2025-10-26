@@ -5,6 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cpen321.usermanagement.BuildConfig
 import com.cpen321.usermanagement.data.remote.api.DiscussionDetailResponse
 import com.cpen321.usermanagement.data.remote.api.DiscussionListResponse
 import com.cpen321.usermanagement.data.remote.api.MessageResponse
@@ -52,7 +53,7 @@ class DiscussionViewModel @Inject constructor(
 
     fun connectToSocket(discussionId: String? = null) {
         try {
-            socket = IO.socket("http://10.0.2.2:3000")
+            socket = IO.socket(BuildConfig.IMAGE_BASE_URL)
             socket?.connect()
 
             socket?.on(Socket.EVENT_CONNECT) {

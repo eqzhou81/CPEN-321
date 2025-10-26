@@ -12,8 +12,6 @@ export interface IUser extends Document {
   email: string;
   name: string;
   profilePicture?: string;             // Optional profile picture URL
-  bio?: string;                       // Optional bio
-  hobbies?: string[];                 // Optional hobbies array
   savedJobs: string[];                 // Array of job IDs (references user's jobs collection)
   savedQuestions: string[];            // Array of question IDs (references question collection)
   createdAt: Date;
