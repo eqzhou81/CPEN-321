@@ -37,7 +37,30 @@ fun MainAppScreen(
     var showProfileDialog by remember { mutableStateOf(false) }
     var showDiscussionsDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
-    
+    val authState by authViewModel.uiState.collectAsState()
+    val snackBarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(authState.isAuthenticated, authState.errorMessage) {
+        if (!authState.isAuthenticated) {
+
+            if(authState.isSigningOut){
+                navigationStateManager.handleAccountSignOut()
+            }
+            else{
+                navigationStateManager.handleAccountDeletion()
+            }
+
+        } else if (authState.errorMessage != null) {
+            // Show error message
+            val errorMsg = authState.errorMessage
+            if(errorMsg != null){
+                snackBarHostState.showSnackbar(errorMsg)
+                authViewModel.clearError()
+            }
+
+
+        }
+    }
     Scaffold(
         topBar = {
             TopAppBar(
