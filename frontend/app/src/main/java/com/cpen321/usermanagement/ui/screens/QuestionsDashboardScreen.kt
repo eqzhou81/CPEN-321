@@ -109,67 +109,6 @@ fun QuestionsDashboardScreen(
                     }
                 }
             }
-            
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Start Mock Interview Button
-                Button(
-                    onClick = { 
-                        mainViewModel.createMockInterviewSession(jobId)
-                    },
-                    enabled = !mainUiState.isCreatingSession,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = colorResource(R.color.primary),
-                        contentColor = colorResource(R.color.white)
-                    ),
-                    modifier = Modifier.height(40.dp)
-                ) {
-                    if (mainUiState.isCreatingSession) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            color = colorResource(R.color.white),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(
-                            Icons.Default.PlayArrow,
-                            contentDescription = "Start Mock Interview",
-                            modifier = Modifier.size(16.dp),
-                            tint = colorResource(R.color.white)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (mainUiState.isCreatingSession) "Creating..." else "Mock Interview",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = colorResource(R.color.white)
-                    )
-                }
-                
-                Button(
-                    onClick = { showGenerateDialog = true },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = colorResource(R.color.secondary),
-                        contentColor = colorResource(R.color.white)
-                    ),
-                    modifier = Modifier.height(40.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Generate Questions",
-                        modifier = Modifier.size(16.dp),
-                        tint = colorResource(R.color.white)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Generate",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = colorResource(R.color.white)
-                    )
-                }
-            }
         }
         
         Spacer(modifier = Modifier.height(8.dp))
@@ -281,6 +220,78 @@ fun QuestionsDashboardScreen(
                         )
                     }
                 }
+            }
+        }
+        
+        // Bottom Action Buttons
+        Spacer(modifier = Modifier.weight(1f))
+        
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Generate Questions Button
+            Button(
+                onClick = { showGenerateDialog = true },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(R.color.secondary),
+                    contentColor = colorResource(R.color.white)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            ) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Generate Questions",
+                    modifier = Modifier.size(20.dp),
+                    tint = colorResource(R.color.white)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Generate Questions",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = colorResource(R.color.white)
+                    )
+                )
+            }
+            
+            // Mock Interview Button
+            Button(
+                onClick = { 
+                    mainViewModel.createMockInterviewSession(jobId)
+                },
+                enabled = !mainUiState.isCreatingSession,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(R.color.primary),
+                    contentColor = colorResource(R.color.white)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            ) {
+                if (mainUiState.isCreatingSession) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = colorResource(R.color.white),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Icon(
+                        Icons.Default.PlayArrow,
+                        contentDescription = "Start Mock Interview",
+                        modifier = Modifier.size(20.dp),
+                        tint = colorResource(R.color.white)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = if (mainUiState.isCreatingSession) "Creating Session..." else "Start Mock Interview",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = colorResource(R.color.white)
+                    )
+                )
             }
         }
     }
