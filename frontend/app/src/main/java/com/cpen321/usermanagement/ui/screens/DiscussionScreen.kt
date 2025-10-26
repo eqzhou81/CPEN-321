@@ -5,12 +5,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.lifecycle.LiveData
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.ui.viewmodels.DiscussionViewModel
 import com.cpen321.usermanagement.data.remote.api.DiscussionListResponse
-import com.cpen321.usermanagement.ui.navigation.NavigationStateManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,18 +28,37 @@ fun DiscussionScreen(
     onDiscussionClick: (String) -> Unit,
     onClose: () -> Unit,
     discussionViewModel: DiscussionViewModel = hiltViewModel()
-
 ) {
     val uiState by discussionViewModel.uiState.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     var topic by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+    val snackbarHostState = remember { SnackbarHostState() }
 
+    // ✅ 1️⃣ Connect to socket + load discussions once when entering the screen
     LaunchedEffect(Unit) {
-        discussionViewModel.loadDiscussions()
+        discussionViewModel.connectToSocket()   // establish socket connection globally
+        discussionViewModel.loadDiscussions()   // initial fetch
     }
 
+    // ✅ 2️⃣ Handle backend or socket error/success messages using snackbars
+    LaunchedEffect(uiState.error, uiState.successMessage) {
+        uiState.error?.let {
+            snackbarHostState.showSnackbar(it)
+            discussionViewModel.clearError()
+        }
+        uiState.successMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            discussionViewModel.clearSuccessMessage()
+        }
+    }
+
+    val allDiscussions = uiState.discussions
+
+
+    // ✅ 4️⃣ Scaffold with snackbar host
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Community Discussions") },
@@ -62,29 +82,25 @@ fun DiscussionScreen(
                 .background(MaterialTheme.colorScheme.background)
         ) {
             when {
-                uiState.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                uiState.error != null -> Text(
-                    text = uiState.error!!,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        contentPadding = PaddingValues(bottom = 80.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(uiState.discussions) { discussion ->
-                            DiscussionItem(discussion, onDiscussionClick)
-                        }
+                uiState.isLoading && allDiscussions.isEmpty() ->
+                    CircularProgressIndicator(Modifier.align(Alignment.Center))
+
+                else -> LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentPadding = PaddingValues(bottom = 80.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // ✅ Now it displays live updates — socket pushes new discussions here
+                    items(allDiscussions) { discussion ->
+                        DiscussionItem(discussion, onDiscussionClick)
                     }
                 }
             }
         }
 
-        // New Discussion dialog
+        // ✅ 5️⃣ New Discussion dialog
         if (showDialog) {
             AlertDialog(
                 onDismissRequest = { showDialog = false },
@@ -106,7 +122,9 @@ fun DiscussionScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = {
-                        discussionViewModel.createDiscussion(topic, description.ifBlank { null })
+                        discussionViewModel.createDiscussion(topic, description)
+                        topic = ""
+                        description = ""
                         showDialog = false
                     }) {
                         Text("Create")
@@ -122,11 +140,11 @@ fun DiscussionScreen(
     }
 }
 
-
 @Composable
 fun DiscussionItem(
     discussion: DiscussionListResponse,
-    onClick: (String) -> Unit) {
+    onClick: (String) -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()

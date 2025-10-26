@@ -9,6 +9,7 @@ import com.cpen321.usermanagement.data.remote.api.DiscussionDetailResponse
 import com.cpen321.usermanagement.data.remote.api.DiscussionListResponse
 import com.cpen321.usermanagement.data.remote.api.MessageResponse
 import com.cpen321.usermanagement.data.remote.api.RetrofitClient
+import com.cpen321.usermanagement.data.remote.dto.Discussion
 import com.cpen321.usermanagement.data.repository.AuthRepository
 import com.cpen321.usermanagement.data.repository.DiscussionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,29 +38,38 @@ class DiscussionViewModel @Inject constructor(
 ) : ViewModel() {
 
 
-
-
     private var socket: Socket? = null
 
     private val _messages = MutableStateFlow<List<MessageResponse>>(emptyList())
     val messages: StateFlow<List<MessageResponse>> = _messages
 
-    fun connectToSocket(discussionId: String) {
+    private val _uiState = MutableStateFlow(DiscussionUiState())
+    val uiState: StateFlow<DiscussionUiState> = _uiState
+
+    // Remove this separate LiveData and use uiState instead
+    // private val _discussions = MutableLiveData<List<DiscussionListResponse>>(emptyList())
+    // val discussions: LiveData<List<DiscussionListResponse>> = _discussions
+
+    fun connectToSocket(discussionId: String? = null) {
         try {
-            socket = IO.socket("http://10.0.2.2:3000") // use your backend IP
+            socket = IO.socket("http://10.0.2.2:3000")
             socket?.connect()
 
             socket?.on(Socket.EVENT_CONNECT) {
-                Log.d("SocketIO", "Connected to server")
-                socket?.emit("joinDiscussion", discussionId)
+                Log.d("SocketIO", "✅ Connected to server")
+                discussionId?.let {
+                    socket?.emit("joinDiscussion", it)
+                    Log.d("SocketIO", "Joined discussion room $it")
+                }
             }
 
+            // Listen for new messages
             socket?.on("messageReceived") { args ->
                 if (args.isNotEmpty()) {
                     try {
                         val data = args[0] as JSONObject
                         val message = MessageResponse(
-                            id = data.optString("id", data.optString("_id", "")), // handles either id/_id
+                            id = data.optString("id", data.optString("_id", "")),
                             userId = data.getString("userId"),
                             userName = data.getString("userName"),
                             content = data.getString("content"),
@@ -68,32 +78,58 @@ class DiscussionViewModel @Inject constructor(
                         )
 
                         viewModelScope.launch {
-                            // only add if not already there
                             val exists = _messages.value.any { it.id == message.id }
                             if (!exists) {
                                 _messages.value = _messages.value + message
                             }
                         }
                     } catch (e: Exception) {
-                        Log.e("SocketIO", "Error parsing message: ${e.message}")
+                        Log.e("SocketIO", "❌ Error parsing message: ${e.message}")
+                    }
+                }
+            }
+
+            // Listen for new discussions - UPDATE UI STATE
+            socket?.on("newDiscussion") { args ->
+                if (args.isNotEmpty()) {
+                    try {
+                        val data = args[0] as JSONObject
+                        val discussion = DiscussionListResponse(
+                            id = data.optString("id", data.optString("_id", "")),
+                            topic = data.getString("topic"),
+                            description = data.optString("description", ""),
+                            creatorId = data.getString("creatorId"),
+                            creatorName = data.getString("creatorName"),
+                            messageCount = data.optInt("messageCount", 0),
+                            participantCount = data.optInt("participantCount", 0),
+                            lastActivityAt = data.optString("lastActivityAt", ""),
+                            createdAt = data.optString("createdAt", "")
+                        )
+
+                        viewModelScope.launch {
+                            val currentList = _uiState.value.discussions
+                            val exists = currentList.any { it.id == discussion.id }
+                            if (!exists) {
+                                val updatedList = listOf(discussion) + currentList
+                                _uiState.value = _uiState.value.copy(
+                                    discussions = updatedList
+                                )
+                                Log.d("SocketIO", "🆕 New discussion received: ${discussion.topic}")
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("SocketIO", "❌ Error parsing newDiscussion: ${e.message}")
                     }
                 }
             }
 
         } catch (e: Exception) {
-            Log.e("SocketIO", "Error connecting: ${e.message}")
+            Log.e("SocketIO", "❌ Error connecting socket: ${e.message}")
         }
     }
 
 
-    private val _uiState = MutableStateFlow(DiscussionUiState())
-    val uiState: StateFlow<DiscussionUiState> = _uiState
 
-    private val _discussions = MutableLiveData<List<DiscussionListResponse>>()
-    val discussions: LiveData<List<DiscussionListResponse>> = _discussions
-
-    private val _error = MutableLiveData<String?>()
-    val error: LiveData<String?> = _error
 
     /**
      * Fetch all discussions from the backend
@@ -128,7 +164,7 @@ class DiscussionViewModel @Inject constructor(
     /**
      * Create a new discussion
      */
-    fun createDiscussion(topic: String, description: String?) {
+    fun createDiscussion(topic: String, description: String) {
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null, successMessage = null)
@@ -142,27 +178,25 @@ class DiscussionViewModel @Inject constructor(
                     Log.w("DiscussionViewModel", "No token available for createDiscussion")
                 }
 
-                val result = repository.createDiscussion(topic, description)
-
-                result
-                    .onSuccess { response ->
+                viewModelScope.launch {
+                    _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+                    val result = repository.createDiscussion(topic, description)
+                    result.onSuccess {
+                        _uiState.value = _uiState.value.copy(isLoading = false, successMessage = "Discussion created!")
+                    }.onFailure { e ->
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            successMessage = response.message // from CreateDiscussionResponse
-                        )
-                        loadDiscussions() // refresh after creation
-                    }
-                    .onFailure { e ->
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            error = e.localizedMessage ?: "Failed to create discussion"
+                            error = e.message ?: "An unexpected error occurred",
+                            discussions = _uiState.value.discussions
                         )
                     }
+                }
             } catch (e: Exception) {
                 Log.e("DiscussionViewModel", "Error in createDiscussion", e)
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = e.message ?: "Failed to create discussion"
+                    error = e.message ?: "Failed to create discussion",
+                    discussions = _uiState.value.discussions
                 )
             }
         }
@@ -184,38 +218,27 @@ class DiscussionViewModel @Inject constructor(
         }
     }
 
-//    fun postMessage(discussionId: String, content: String) {
-//        viewModelScope.launch {
-//            repository.postMessage(discussionId, content)
-//                .onSuccess {
-//                    // Refresh discussion after posting
-//                    loadDiscussionById(discussionId)
-//                }
-//                .onFailure {
-//                    _uiState.value = _uiState.value.copy(error = it.message)
-//                }
-//        }
-//    }
 
-    //for real time updates
+
 
 
 
     fun sendMessage(discussionId: String, content: String, userName: String, userId: String) {
         // 1️⃣ Send to backend to persist
-//        viewModelScope.launch {
-//            repository.postMessage(discussionId, content)
-//        }
+        viewModelScope.launch {
+            val result = repository.postMessage(discussionId, content)
+            result.onSuccess {
 
-        // 2️⃣ Send via socket for real-time broadcast
-        val messageData = JSONObject().apply {
-            put("discussionId", discussionId)
-            put("userId", userId)
-            put("userName", userName)
-            put("content", content)
-            put("createdAt", System.currentTimeMillis().toString())
+            }.onFailure { e ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = e.message ?: "An unexpected error occurred",
+                    discussions = _uiState.value.discussions
+                )
+            }
         }
-        socket?.emit("newMessage", discussionId, messageData)
+
+
     }
 
 
@@ -233,6 +256,24 @@ class DiscussionViewModel @Inject constructor(
 
     fun clearSelectedDiscussion() {
         _uiState.value = _uiState.value.copy(selectedDiscussion = null)
+    }
+
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    fun clearSuccessMessage() {
+        _uiState.value = _uiState.value.copy(successMessage = null)
+    }
+
+    private fun parseErrorMessage(errorBody: String?): String {
+        return try {
+            if (errorBody.isNullOrBlank()) return "Unknown error"
+            val json = JSONObject(errorBody)
+            json.optString("message", "Unknown error")
+        } catch (e: Exception) {
+            "Unknown error"
+        }
     }
 
 

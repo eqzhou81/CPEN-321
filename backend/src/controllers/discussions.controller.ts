@@ -131,80 +131,132 @@ export class DiscussionsController {
    * POST /api/discussions
    * Requires authentication
    */
-  async createDiscussion(
-    req: Request<unknown, unknown, CreateDiscussionRequest>,
-    res: Response,
-    next: NextFunction
-  ) {
+ async createDiscussion(
+  req: Request<unknown, unknown, CreateDiscussionRequest>,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const user = req.user!;
+    const { topic, description } = req.body;
+
+    // ✅ Validate input safely with Zod schema
     try {
-      const user = req.user!;
-      const { topic, description } = req.body;
+      createDiscussionSchema.parse({ topic, description });
+    } catch (validationError: any) {
+      console.error("❌ Validation failed:", validationError);
 
-      // Validate input using Zod schema
-      try {
-        createDiscussionSchema.parse({ topic, description });
-      } catch (validationError: any) {
-        const errorMessage = validationError.errors[0].message;
-        
-        if (errorMessage.includes('required')) {
-          throw new EmptyTopicException();
-        }
-        if (errorMessage.includes('100 characters')) {
-          throw new TopicTooLongException();
-        }
-        if (errorMessage.includes('500 characters')) {
-          throw new DescriptionTooLongException();
-        }
-        
-        throw validationError;
-      }
+      // ✅ Defensive parsing of Zod errors
+      const firstError =
+        Array.isArray(validationError.errors) && validationError.errors.length > 0
+          ? validationError.errors[0]
+          : null;
 
-      // Create discussion
-      const discussion = await discussionModel.create(
-        user._id.toString(),
-        user.name,
-        topic.trim(),
-        description?.trim()
-      );
+      const errorMessage = firstError?.message || "Invalid input data.";
 
-      logger.info(`Discussion created: ${discussion._id} by user ${user._id}`);
-
-      const response: CreateDiscussionResponse = {
-        success: true,
-        discussionId: discussion._id.toString(),
-        message: 'Discussion created successfully',
-      };
-
-      res.status(201).json(response);
-    } catch (error) {
-      if (error instanceof EmptyTopicException) {
+      // ✅ Custom, readable error messages
+      if (errorMessage.includes("required") || !topic?.trim()) {
         return res.status(400).json({
           success: false,
-          message: error.message,
-          error: 'EmptyTopicException',
+          message: "Topic cannot be empty.",
+          error: "EmptyTopicException",
         });
       }
 
-      if (error instanceof TopicTooLongException) {
+      if (errorMessage.includes("100 characters")) {
         return res.status(400).json({
           success: false,
-          message: error.message,
-          error: 'TopicTooLongException',
+          message: "Topic cannot exceed 100 characters.",
+          error: "TopicTooLongException",
         });
       }
 
-      if (error instanceof DescriptionTooLongException) {
+      if (errorMessage.includes("500 characters")) {
         return res.status(400).json({
           success: false,
-          message: error.message,
-          error: 'DescriptionTooLongException',
+          message: "Description cannot exceed 500 characters.",
+          error: "DescriptionTooLongException",
         });
       }
 
-      logger.error('Failed to create discussion:', error);
-      next(error);
+      // ✅ Fallback for any other validation issue
+      return res.status(400).json({
+        success: false,
+        message: errorMessage,
+        error: "ValidationError",
+      });
     }
+
+    // ✅ Create discussion if validation passed
+    const discussion = await discussionModel.create(
+      user._id.toString(),
+      user.name,
+      topic.trim(),
+      description?.trim()
+    );
+
+    logger.info(`Discussion created: ${discussion._id} by user ${user._id}`);
+
+    //emit discussion to socket 
+    const io = req.app.get('io');
+      if (io) {
+        io.emit('newDiscussion', {
+          id: discussion._id.toString(),
+          topic: discussion.topic,
+          description: discussion.description,
+          creatorId: discussion.userId,
+          creatorName: user.name,
+          messageCount: discussion.messageCount,
+          participantCount: discussion.participantCount,
+          lastActivityAt: discussion.lastActivityAt.toISOString(),
+          createdAt: discussion.createdAt.toISOString(),
+        });
+      }
+    console.log("   discussion._id.toString():", discussion._id?.toString());
+
+    const response: CreateDiscussionResponse = {
+      success: true,
+      discussionId: discussion._id.toString(),
+      message: "Discussion created successfully",
+    };
+
+    res.status(201).json(response);
+  } catch (error) {
+    // ✅ Handle known custom exceptions
+    if (error instanceof EmptyTopicException) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+        error: "EmptyTopicException",
+      });
+    }
+
+    if (error instanceof TopicTooLongException) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+        error: "TopicTooLongException",
+      });
+    }
+
+    if (error instanceof DescriptionTooLongException) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+        error: "DescriptionTooLongException",
+      });
+    }
+
+    // ✅ Fallback for unhandled server errors
+    logger.error("Failed to create discussion:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error while creating discussion.",
+      error: "InternalServerError",
+    });
   }
+}
+
 
   /**
    * Post a message to a discussion
@@ -266,6 +318,9 @@ export class DiscussionsController {
         success: true,
         message: messageResponse,
       };
+
+      const io = req.app.get('io');
+      io?.to(id).emit('messageReceived', messageResponse);
 
       res.status(201).json(response);
     } catch (error) {

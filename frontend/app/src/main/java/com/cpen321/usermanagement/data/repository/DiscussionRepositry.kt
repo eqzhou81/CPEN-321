@@ -10,6 +10,7 @@ import com.cpen321.usermanagement.data.remote.api.DiscussionListResponse
 import com.cpen321.usermanagement.data.remote.api.PostMessageRequest
 import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.data.remote.dto.ApiResponse
+import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 import retrofit2.Response
@@ -49,14 +50,35 @@ data class DiscussionRepository @Inject constructor(
         }
     }
 
-    suspend fun createDiscussion(topic: String, description: String? = null): Result<CreateDiscussionResponse> {
+    private fun parseErrorMessage(errorBody: String?): String {
         return try {
-            Log.d(TAG, "Making createDiscussion API call")
-            val response = discussionApi.createDiscussion(CreateDiscussionRequest(topic, description))
-            Log.d(TAG, "createDiscussion response code: ${response.code()}")
-            handleRawResponse(response, "Failed to create discussion")
+            if (errorBody.isNullOrBlank()) return "Unknown error"
+            val json = JSONObject(errorBody)
+            json.optString("message", "Unknown error")
         } catch (e: Exception) {
-            Log.e(TAG, "Error creating discussion", e)
+            Log.e(TAG, "Failed to parse error body", e)
+            "Unknown error"
+        }
+    }
+
+    /**
+     * ✅ Create new discussion
+     */
+     suspend fun createDiscussion(topic: String, description: String): Result<Unit> {
+        return try {
+            val response = discussionApi.createDiscussion(
+                CreateDiscussionRequest(topic, description)
+            )
+
+            if (response.isSuccessful && response.body()?.success == true) {
+                Result.success(Unit)
+            } else {
+                val errorMsg = parseErrorMessage(response.errorBody()?.string())
+                Log.e(TAG, "❌ Failed to create discussion: $errorMsg")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Exception in createDiscussion", e)
             Result.failure(e)
         }
     }

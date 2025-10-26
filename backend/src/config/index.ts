@@ -35,56 +35,98 @@ const io = new Server(server, {
 });
 
 // Handle socket connections
+// io.on('connection', (socket) => {
+//   console.log('User connected:', socket.id);
+
+//   socket.on('joinDiscussion', (discussionId) => {
+//     socket.join(discussionId);
+//     console.log(`User ${socket.id} joined room ${discussionId}`);
+//   });
+
+//  socket.on('newMessage', async (discussionId, messageData) => {
+//   try {
+//     console.log(' Broadcasting new message:', messageData);
+
+//     const discussion = await discussionModel.findById(discussionId);
+//       if (!discussion) return;
+
+//       const newMessage = {
+//         _id: new mongoose.Types.ObjectId().toString(), // generate if not from Mongo
+//         userId: messageData.userId,
+//         userName: messageData.userName,
+//         content: messageData.content,
+//         createdAt: new Date(),
+//         updatedAt: new Date(),
+//       };
+
+//       discussion.messages.push(newMessage);
+//       discussion.messageCount = discussion.messages.length;
+//       discussion.lastActivityAt = new Date();
+
+//       await discussion.save();
+
+//     io.to(discussionId).emit('messageReceived', {
+//       // 👇 this ensures "id" is always present
+//       id: messageData._id || messageData.id || new Date().getTime().toString(),
+//       userId: messageData.userId,
+//       userName: messageData.userName,
+//       content: messageData.content,
+//       createdAt: messageData.createdAt ?? new Date(),
+//       updatedAt: messageData.updatedAt ?? new Date(),
+//     });
+
+//     console.log(` Message broadcasted to discussion ${discussionId}`);
+//   } catch (err) {
+//     console.error('Failed to broadcast message:', err);
+//   }
+// });
+
+// socket.on('newDiscussion', async (discussionData) => {
+//     try {
+//       console.log('📢 Creating new discussion via socket:', discussionData);
+
+//       const newDiscussion = await discussionModel.create(
+//         discussionData.creatorId,
+//         discussionData.creatorName,
+//         discussionData.topic.trim(),
+//         discussionData.description?.trim() || ""
+//       );
+
+//       // Broadcast the new discussion to everyone
+//       io.emit('newDiscussion', {
+//         id: newDiscussion._id.toString(),
+//         topic: newDiscussion.topic,
+//         description: newDiscussion.description,
+//         creatorId: newDiscussion.userId,
+//         creatorName: discussionData.creatorName,
+//         messageCount: newDiscussion.messageCount,
+//         participantCount: newDiscussion.participantCount,
+//         lastActivityAt: newDiscussion.lastActivityAt.toISOString(),
+//         createdAt: newDiscussion.createdAt.toISOString(),
+//       });
+
+//       console.log('✅ New discussion broadcasted to all clients');
+//     } catch (err) {
+//       console.error('❌ Failed to create discussion via socket:', err);
+//       socket.emit('error', { message: 'Failed to create discussion' });
+//     }
+//   });
+
+//   socket.on('disconnect', () => {
+//     console.log(' User disconnected:', socket.id);
+//   });
+
+// });
+
+app.set('io', io); // <── important line
+
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-
-  socket.on('joinDiscussion', (discussionId) => {
+  console.log('🟢 User connected:', socket.id);
+  socket.on('joinDiscussion', (discussionId: string) => {
     socket.join(discussionId);
-    console.log(`User ${socket.id} joined room ${discussionId}`);
+    console.log(`📥 ${socket.id} joined ${discussionId}`);
   });
-
- socket.on('newMessage', async (discussionId, messageData) => {
-  try {
-    console.log(' Broadcasting new message:', messageData);
-
-    const discussion = await discussionModel.findById(discussionId);
-      if (!discussion) return;
-
-      const newMessage = {
-        _id: new mongoose.Types.ObjectId().toString(), // generate if not from Mongo
-        userId: messageData.userId,
-        userName: messageData.userName,
-        content: messageData.content,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      discussion.messages.push(newMessage);
-      discussion.messageCount = discussion.messages.length;
-      discussion.lastActivityAt = new Date();
-
-      await discussion.save();
-
-    io.to(discussionId).emit('messageReceived', {
-      // 👇 this ensures "id" is always present
-      id: messageData._id || messageData.id || new Date().getTime().toString(),
-      userId: messageData.userId,
-      userName: messageData.userName,
-      content: messageData.content,
-      createdAt: messageData.createdAt ?? new Date(),
-      updatedAt: messageData.updatedAt ?? new Date(),
-    });
-
-    console.log(` Message broadcasted to discussion ${discussionId}`);
-  } catch (err) {
-    console.error('Failed to broadcast message:', err);
-  }
-});
-
-  socket.on('disconnect', () => {
-    console.log(' User disconnected:', socket.id);
-  });
-
+  socket.on('disconnect', () => console.log('🔴 User disconnected:', socket.id));
 });
 
 
@@ -126,3 +168,8 @@ process.on('SIGINT', () => {
     process.exit(0);
   });
 });
+
+
+
+
+
