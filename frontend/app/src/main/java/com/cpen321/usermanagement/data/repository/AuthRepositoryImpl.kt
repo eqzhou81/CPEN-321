@@ -178,47 +178,37 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCurrentUser(): User? {
-        // TEMPORARY BYPASS: Check BuildConfig flag for testing features
-        if (BuildConfig.AUTH_BYPASS_ENABLED) {
-            Log.d(TAG, "Authentication bypass enabled - returning mock user")
-            return User(
-                _id = "68f81f1397c6ff152b749c16", // Use real user ID from token
-                email = "test@example.com",
-                name = "Test User",
-                bio = "Mock user for testing",
-                profilePicture = "",
-                hobbies = emptyList(),
-                createdAt = "2024-01-01T00:00:00Z",
-                updatedAt = "2024-01-01T00:00:00Z"
-            )
-        }
-        
-        // Original authentication logic
         return try {
-            val response = userInterface.getProfile("") // Auth header is handled by interceptor
-            if (response.isSuccessful && response.body()?.data != null) {
-                response.body()!!.data!!.user
+            val response = userInterface.getProfile()
+
+            if (response.isSuccessful && response.body()?.data?.user != null) {
+                val user = response.body()!!.data.user
+                Log.d("AuthRepository", "✅ Loaded user: ${user.name} (${user.id})")
+                user
             } else {
-                Log.e(
-                    TAG,
-                    "Failed to get current user: ${response.body()?.message ?: "Unknown error"}"
-                )
+                val errorMsg = response.errorBody()?.string()
+                Log.e("AuthRepository", "❌ Failed to get current user: $errorMsg")
                 null
             }
         } catch (e: java.net.SocketTimeoutException) {
-            Log.e(TAG, "Network timeout while getting current user", e)
+            Log.e("AuthRepository", "⏱ Network timeout while getting current user", e)
             null
         } catch (e: java.net.UnknownHostException) {
-            Log.e(TAG, "Network connection failed while getting current user", e)
+            Log.e("AuthRepository", "🌐 Network connection failed while getting current user", e)
             null
         } catch (e: java.io.IOException) {
-            Log.e(TAG, "IO error while getting current user", e)
+            Log.e("AuthRepository", "💾 IO error while getting current user", e)
             null
         } catch (e: retrofit2.HttpException) {
-            Log.e(TAG, "HTTP error while getting current user: ${e.code()}", e)
+            Log.e("AuthRepository", "HTTP error while getting current user: ${e.code()}", e)
+            null
+        } catch (e: Exception) {
+            Log.e("AuthRepository", "Unexpected error while getting current user", e)
             null
         }
     }
+
+
 
     override suspend fun isUserAuthenticated(): Boolean {
         // TEMPORARY BYPASS: Check BuildConfig flag for testing features

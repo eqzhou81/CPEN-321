@@ -28,158 +28,158 @@ import com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel
  * Enhanced Profile Screen
  * Displays user information with Lovable design system
  */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun EnhancedProfileScreen(
-    onNavigateBack: () -> Unit,
-    viewModel: ProfileViewModel = hiltViewModel()
-) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    
-    var showEditDialog by remember { mutableStateOf(false) }
-    
-    // Load profile when screen is displayed
-    LaunchedEffect(Unit) {
-        viewModel.loadProfile()
-    }
-    
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Profile",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = colorResource(R.color.text_primary)
-                        )
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = colorResource(R.color.text_primary)
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showEditDialog = true }) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = "Edit Profile",
-                            tint = colorResource(R.color.text_secondary)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorResource(R.color.surface),
-                    titleContentColor = colorResource(R.color.text_primary)
-                )
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(colorResource(R.color.background))
-        ) {
-            when {
-                uiState.isLoadingProfile -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            color = colorResource(R.color.primary)
-                        )
-                    }
-                }
-                
-                uiState.errorMessage != null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Error,
-                                contentDescription = "Error",
-                                modifier = Modifier.size(48.dp),
-                                tint = colorResource(R.color.error)
-                            )
-                            Text(
-                                text = uiState.errorMessage ?: "Unknown error",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = colorResource(R.color.error)
-                                ),
-                                textAlign = TextAlign.Center
-                            )
-                            Button(
-                                onClick = { viewModel.loadProfile() },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = colorResource(R.color.primary)
-                                )
-                            ) {
-                                Text("Retry")
-                            }
-                        }
-                    }
-                }
-                
-                uiState.user != null -> {
-                    ProfileContent(
-                        user = uiState.user!!,
-                        onEditClick = { showEditDialog = true }
-                    )
-                }
-            }
-        }
-        
-        // Edit Profile Dialog
-        if (showEditDialog) {
-            EditProfileDialog(
-                user = uiState.user,
-                onDismiss = { showEditDialog = false },
-                onSave = { updatedUser ->
-                    viewModel.updateProfile(updatedUser.name, updatedUser.bio ?: "")
-                    showEditDialog = false
-                }
-            )
-        }
-    }
-}
+//@OptIn(ExperimentalMaterial3Api::class)
+//@Composable
+//fun EnhancedProfileScreen(
+//    onNavigateBack: () -> Unit,
+//    viewModel: ProfileViewModel = hiltViewModel()
+//) {
+//    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+//
+//    var showEditDialog by remember { mutableStateOf(false) }
+//
+//    // Load profile when screen is displayed
+//    LaunchedEffect(Unit) {
+//        viewModel.loadProfile()
+//    }
+//
+//    Scaffold(
+//        topBar = {
+//            TopAppBar(
+//                title = {
+//                    Text(
+//                        text = "Profile",
+//                        style = MaterialTheme.typography.titleLarge.copy(
+//                            fontWeight = FontWeight.Bold,
+//                            color = colorResource(R.color.text_primary)
+//                        )
+//                    )
+//                },
+//                navigationIcon = {
+//                    IconButton(onClick = onNavigateBack) {
+//                        Icon(
+//                            Icons.Default.ArrowBack,
+//                            contentDescription = "Back",
+//                            tint = colorResource(R.color.text_primary)
+//                        )
+//                    }
+//                },
+//                actions = {
+//                    IconButton(onClick = { showEditDialog = true }) {
+//                        Icon(
+//                            Icons.Default.Edit,
+//                            contentDescription = "Edit Profile",
+//                            tint = colorResource(R.color.text_secondary)
+//                        )
+//                    }
+//                },
+//                colors = TopAppBarDefaults.topAppBarColors(
+//                    containerColor = colorResource(R.color.surface),
+//                    titleContentColor = colorResource(R.color.text_primary)
+//                )
+//            )
+//        }
+//    ) { paddingValues ->
+//        Box(
+//            modifier = Modifier
+//                .fillMaxSize()
+//                .padding(paddingValues)
+//                .background(colorResource(R.color.background))
+//        ) {
+//            when {
+//                uiState.isLoadingProfile -> {
+//                    Box(
+//                        modifier = Modifier.fillMaxSize(),
+//                        contentAlignment = Alignment.Center
+//                    ) {
+//                        CircularProgressIndicator(
+//                            color = colorResource(R.color.primary)
+//                        )
+//                    }
+//                }
+//
+//                uiState.errorMessage != null -> {
+//                    Box(
+//                        modifier = Modifier.fillMaxSize(),
+//                        contentAlignment = Alignment.Center
+//                    ) {
+//                        Column(
+//                            horizontalAlignment = Alignment.CenterHorizontally,
+//                            verticalArrangement = Arrangement.spacedBy(16.dp)
+//                        ) {
+//                            Icon(
+//                                Icons.Default.Error,
+//                                contentDescription = "Error",
+//                                modifier = Modifier.size(48.dp),
+//                                tint = colorResource(R.color.error)
+//                            )
+//                            Text(
+//                                text = uiState.errorMessage ?: "Unknown error",
+//                                style = MaterialTheme.typography.bodyMedium.copy(
+//                                    color = colorResource(R.color.error)
+//                                ),
+//                                textAlign = TextAlign.Center
+//                            )
+//                            Button(
+//                                onClick = { viewModel.loadProfile() },
+//                                colors = ButtonDefaults.buttonColors(
+//                                    containerColor = colorResource(R.color.primary)
+//                                )
+//                            ) {
+//                                Text("Retry")
+//                            }
+//                        }
+//                    }
+//                }
+//
+//                uiState.user != null -> {
+//                    ProfileContent(
+//                        user = uiState.user!!,
+//                        onEditClick = { showEditDialog = true }
+//                    )
+//                }
+//            }
+//        }
+//
+//        // Edit Profile Dialog
+//        if (showEditDialog) {
+//            EditProfileDialog(
+//                user = uiState.user,
+//                onDismiss = { showEditDialog = false },
+//                onSave = { updatedUser ->
+//                    viewModel.updateProfile(updatedUser.name, updatedUser.bio ?: "")
+//                    showEditDialog = false
+//                }
+//            )
+//        }
+//    }
+//}
 
-@Composable
-private fun ProfileContent(
-    user: User,
-    onEditClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
-    ) {
-        // Profile Header
-        ProfileHeader(user = user)
-        
-        // Profile Information
-        ProfileInformation(user = user)
-        
-        // Hobbies Section
-        HobbiesSection(hobbies = user.hobbies ?: emptyList())
-        
-        // Statistics Section
-        ProfileStatistics()
-    }
-}
+//@Composable
+//private fun ProfileContent(
+//    user: User,
+//    onEditClick: () -> Unit
+//) {
+//    Column(
+//        modifier = Modifier
+//            .fillMaxSize()
+//            .verticalScroll(rememberScrollState())
+//            .padding(16.dp),
+//        verticalArrangement = Arrangement.spacedBy(24.dp)
+//    ) {
+//        // Profile Header
+//        ProfileHeader(user = user)
+//
+//        // Profile Information
+//        ProfileInformation(user = user)
+//
+//        // Hobbies Section
+//        HobbiesSection(hobbies = user.hobbies ?: emptyList())
+//
+//        // Statistics Section
+//        ProfileStatistics()
+//    }
+//}
 
 @Composable
 private fun ProfileHeader(user: User) {
@@ -231,47 +231,47 @@ private fun ProfileHeader(user: User) {
     }
 }
 
-@Composable
-private fun ProfileInformation(user: User) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = colorResource(R.color.surface)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = "Profile Information",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = colorResource(R.color.text_primary)
-                )
-            )
-            
-            // Bio Section
-            if (!user.bio.isNullOrBlank()) {
-                InfoRow(
-                    icon = Icons.Default.Description,
-                    label = "Bio",
-                    value = user.bio
-                )
-            }
-            
-            // Profile Picture URL
-            if (!user.profilePicture.isNullOrBlank()) {
-                InfoRow(
-                    icon = Icons.Default.Image,
-                    label = "Profile Picture",
-                    value = user.profilePicture
-                )
-            }
-        }
-    }
-}
+//@Composable
+//private fun ProfileInformation(user: User) {
+//    Card(
+//        modifier = Modifier.fillMaxWidth(),
+//        colors = CardDefaults.cardColors(
+//            containerColor = colorResource(R.color.surface)
+//        ),
+//        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+//    ) {
+//        Column(
+//            modifier = Modifier.padding(20.dp),
+//            verticalArrangement = Arrangement.spacedBy(16.dp)
+//        ) {
+//            Text(
+//                text = "Profile Information",
+//                style = MaterialTheme.typography.titleMedium.copy(
+//                    fontWeight = FontWeight.Bold,
+//                    color = colorResource(R.color.text_primary)
+//                )
+//            )
+//
+//            // Bio Section
+//            if (!user.bio.isNullOrBlank()) {
+//                InfoRow(
+//                    icon = Icons.Default.Description,
+//                    label = "Bio",
+//                    value = user.bio
+//                )
+//            }
+//
+//            // Profile Picture URL
+//            if (!user.profilePicture.isNullOrBlank()) {
+//                InfoRow(
+//                    icon = Icons.Default.Image,
+//                    label = "Profile Picture",
+//                    value = user.profilePicture
+//                )
+//            }
+//        }
+//    }
+//}
 
 @Composable
 private fun HobbiesSection(hobbies: List<String>) {
@@ -436,67 +436,67 @@ private fun StatItem(
     }
 }
 
-@Composable
-private fun EditProfileDialog(
-    user: User?,
-    onDismiss: () -> Unit,
-    onSave: (User) -> Unit
-) {
-    var name by remember { mutableStateOf(user?.name ?: "") }
-    var bio by remember { mutableStateOf(user?.bio ?: "") }
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "Edit Profile",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold
-                )
-            )
-        },
-        text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Name") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                
-                OutlinedTextField(
-                    value = bio,
-                    onValueChange = { bio = it },
-                    label = { Text("Bio") },
-                    modifier = Modifier.fillMaxWidth(),
-                    maxLines = 3
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (user != null) {
-                        val updatedUser = user.copy(
-                            name = name,
-                            bio = bio
-                        )
-                        onSave(updatedUser)
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = colorResource(R.color.primary)
-                )
-            ) {
-                Text("Save")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
+//@Composable
+//private fun EditProfileDialog(
+//    user: User?,
+//    onDismiss: () -> Unit,
+//    onSave: (User) -> Unit
+//) {
+//    var name by remember { mutableStateOf(user?.name ?: "") }
+//    var bio by remember { mutableStateOf(user?.bio ?: "") }
+//
+//    AlertDialog(
+//        onDismissRequest = onDismiss,
+//        title = {
+//            Text(
+//                text = "Edit Profile",
+//                style = MaterialTheme.typography.titleLarge.copy(
+//                    fontWeight = FontWeight.Bold
+//                )
+//            )
+//        },
+//        text = {
+//            Column(
+//                verticalArrangement = Arrangement.spacedBy(16.dp)
+//            ) {
+//                OutlinedTextField(
+//                    value = name,
+//                    onValueChange = { name = it },
+//                    label = { Text("Name") },
+//                    modifier = Modifier.fillMaxWidth()
+//                )
+//
+//                OutlinedTextField(
+//                    value = bio,
+//                    onValueChange = { bio = it },
+//                    label = { Text("Bio") },
+//                    modifier = Modifier.fillMaxWidth(),
+//                    maxLines = 3
+//                )
+//            }
+//        },
+//        confirmButton = {
+//            Button(
+//                onClick = {
+//                    if (user != null) {
+//                        val updatedUser = user.copy(
+//                            name = name,
+//                            bio = bio
+//                        )
+//                        onSave(updatedUser)
+//                    }
+//                },
+//                colors = ButtonDefaults.buttonColors(
+//                    containerColor = colorResource(R.color.primary)
+//                )
+//            ) {
+//                Text("Save")
+//            }
+//        },
+//        dismissButton = {
+//            TextButton(onClick = onDismiss) {
+//                Text("Cancel")
+//            }
+//        }
+//    )
+//}

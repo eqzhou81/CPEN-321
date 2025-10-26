@@ -1,5 +1,6 @@
 package com.cpen321.usermanagement.data.remote.api
 
+import android.util.Log
 import com.cpen321.usermanagement.BuildConfig
 import com.cpen321.usermanagement.data.remote.interceptors.AuthInterceptor
 import okhttp3.OkHttpClient
@@ -48,6 +49,9 @@ object RetrofitClient {
     val sessionInterface: SessionInterface by lazy { retrofit.create(SessionInterface::class.java) }
     val questionInterface: QuestionInterface by lazy { retrofit.create(QuestionInterface::class.java) }
 
+    val discussionApi: DiscussionApi by lazy {
+        retrofit.create(DiscussionApi::class.java)
+    }
     fun setAuthToken(token: String?) {
         tokenHolder.token = token
         android.util.Log.d("RetrofitClient", "Auth token updated: ${if (token != null) "Set (${token.length} chars)" else "Cleared"}")

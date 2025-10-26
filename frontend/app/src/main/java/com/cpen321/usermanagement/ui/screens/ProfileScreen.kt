@@ -88,18 +88,12 @@ private data class ProfileDialogState(
 
 data class ProfileScreenActions(
     val onBackClick: () -> Unit,
-    val onManageProfileClick: () -> Unit,
-    val onManageHobbiesClick: () -> Unit,
-    val onFindPlacesClick: () -> Unit,
     val onAccountDeleted: () -> Unit,
     val onSignOut: () -> Unit
 )
 
 private data class ProfileScreenCallbacks(
     val onBackClick: () -> Unit,
-    val onManageProfileClick: () -> Unit,
-    val onManageHobbiesClick: () -> Unit,
-    val onFindPlacesClick: () -> Unit,
     val onSignOutAccountClick: () -> Unit,
     val onSignOutDialogDismiss: () -> Unit,
     val onSignOutDialogConfirm: () -> Unit,
@@ -131,20 +125,7 @@ fun ProfileScreen(
 
     val authState by authViewModel.uiState.collectAsState()
 
-    // Permission handler
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            actions.onFindPlacesClick()
-        } else {
-            scope.launch {
-                snackBarHostState.showSnackbar(
-                    "Location permission is required to find nearby places"
-                )
-            }
-        }
-    }
+
 
 
 
@@ -186,8 +167,7 @@ fun ProfileScreen(
         snackBarHostState = snackBarHostState,
         callbacks = ProfileScreenCallbacks(
             onBackClick = actions.onBackClick,
-            onManageProfileClick = actions.onManageProfileClick,
-            onManageHobbiesClick = actions.onManageHobbiesClick,
+
             onSignOutAccountClick = {
                 dialogState = dialogState.copy(showSignOutDialog = true)
             },
@@ -208,13 +188,6 @@ fun ProfileScreen(
                 dialogState = dialogState.copy(showDeleteDialog = false)
                 authViewModel.handleAccountDeletion()
             },
-            onFindPlacesClick = {
-                permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-//                profileViewModel.clearPlacesState()
-//                actions.onFindPlacesClick(),
-            },
-
-
 
             onSuccessMessageShown = profileViewModel::clearSuccessMessage,
             onErrorMessageShown = profileViewModel::clearError
@@ -252,11 +225,9 @@ private fun ProfileContent(
             uiState = uiState,
             paddingValues = paddingValues,
             isLoading = uiState.isLoadingProfile,
-            onManageProfileClick = callbacks.onManageProfileClick,
-            onManageHobbiesClick = callbacks.onManageHobbiesClick,
             onDeleteAccountClick = callbacks.onDeleteAccountClick,
-            onSignOutClick = callbacks.onSignOutAccountClick,
-            onFindPlaces = callbacks.onFindPlacesClick
+            onSignOutClick = callbacks.onSignOutAccountClick
+
         )
     }
 
@@ -307,11 +278,8 @@ private fun ProfileBody(
     uiState: ProfileUiState,
     paddingValues: PaddingValues,
     isLoading: Boolean,
-    onManageProfileClick: () -> Unit,
-    onManageHobbiesClick: () -> Unit,
     onDeleteAccountClick: () -> Unit,
     onSignOutClick: () -> Unit,
-    onFindPlaces: () -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -330,11 +298,9 @@ private fun ProfileBody(
             else -> {
 
                 ProfileMenuItems(
-                    onManageProfileClick = onManageProfileClick,
-                    onManageHobbiesClick = onManageHobbiesClick,
                     onDeleteAccountClick = onDeleteAccountClick,
-                    onSignOutClick  = onSignOutClick,
-                    onFindPlaces = onFindPlaces
+                    onSignOutClick  = onSignOutClick
+
 
                 )
             }
@@ -344,11 +310,8 @@ private fun ProfileBody(
 
 @Composable
 private fun ProfileMenuItems(
-    onManageProfileClick: () -> Unit,
-    onManageHobbiesClick: () -> Unit,
     onDeleteAccountClick: () -> Unit,
     onSignOutClick: () -> Unit,
-    onFindPlaces: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val spacing = LocalSpacing.current
@@ -362,11 +325,9 @@ private fun ProfileMenuItems(
         verticalArrangement = Arrangement.spacedBy(spacing.medium)
     ) {
         ProfileSection(
-            onManageProfileClick = onManageProfileClick,
-            onManageHobbiesClick = onManageHobbiesClick,
-            onFindPlaces = onFindPlaces
 
-        )
+
+            )
 
         AccountSection(
             onDeleteAccountClick = onDeleteAccountClick,
@@ -377,18 +338,15 @@ private fun ProfileMenuItems(
 
 @Composable
 private fun ProfileSection(
-    onManageProfileClick: () -> Unit,
-    onManageHobbiesClick: () -> Unit,
-    onFindPlaces: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(LocalSpacing.current.medium)
     ) {
-        ManageProfileButton(onClick = onManageProfileClick)
-        ManageHobbiesButton(onClick = onManageHobbiesClick)
-        FindPlacesButton (onClick = onFindPlaces)
+
+
+
     }
 }
 
@@ -604,59 +562,6 @@ private fun SignOutDialogDismissButton(
     }
 }
 
-@Composable
-private fun FindPlacesButton(
-    onClick: () -> Unit,
-){
-    MenuButtonItem(
-        text = stringResource(R.string.hobbies_location),
-        iconRes = R.drawable.ic_hobby_location,
-        onClick = onClick,
-    )
-}
-
-//@Composable
-//fun MapViewScreen(places: List<Place>, currentLocation: MyLocation) {
-//    val context = LocalContext.current
-//    val mapView = remember { MapView(context) }
-//
-//    // Make sure to call onCreate / onStart / onResume
-//    DisposableEffect(Unit) {
-//        mapView.onCreate(null)
-//        mapView.onStart()
-//        mapView.onResume()
-//        onDispose {
-//            mapView.onPause()
-//            mapView.onStop()
-//            mapView.onDestroy()
-//        }
-//    }
-//
-////    AndroidView(factory = { mapView }) { map ->
-////        map.getMapAsync { googleMap ->
-////            // Move camera to current location
-////            val latLng = LatLng(currentLocation.latitude, currentLocation.longitude)
-////            googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 14f))
-////
-////            // Add marker for current location
-////            googleMap.addMarker(
-////                MarkerOptions().position(latLng).title("You are here")
-////            )
-////
-////            // Add markers for places
-////            places.forEach { place ->
-////                place.latLng?.let { placeLatLng ->
-////                    googleMap.addMarker(
-////                        MarkerOptions().position(placeLatLng).title(place.name)
-////                    )
-////                }
-////            }
-////
-////            googleMap.mapType = GoogleMap.MAP_TYPE_NORMAL
-////        }
-////    }
-//
-//}
 
 
 

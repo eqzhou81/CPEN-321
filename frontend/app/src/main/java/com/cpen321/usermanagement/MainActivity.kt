@@ -17,10 +17,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cpen321.usermanagement.ui.navigation.AppNavigation
 import com.cpen321.usermanagement.ui.navigation.Navigation
 import com.cpen321.usermanagement.ui.screens.AuthScreen
 import com.cpen321.usermanagement.ui.screens.LoadingScreen
 import com.cpen321.usermanagement.ui.screens.MainAppScreen
+import com.cpen321.usermanagement.ui.theme.ProvideFontSizes
+import com.cpen321.usermanagement.ui.theme.ProvideSpacing
 import com.cpen321.usermanagement.ui.theme.UserManagementTheme
 import com.cpen321.usermanagement.ui.viewmodels.AuthViewModel
 import com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel
@@ -68,47 +71,21 @@ class MainActivity : ComponentActivity() {
         
         setContent {
             UserManagementTheme {
-                JobApp()
+                UserManagementApp()
             }
         }
     }
 }
 
 @Composable
-fun JobApp(
-    authViewModel: AuthViewModel = hiltViewModel(),
-    profileViewModel: ProfileViewModel = hiltViewModel()
-) {
-    val authUiState by authViewModel.uiState.collectAsState()
-    
-    // Set up callback to handle Google Sign-In results
-    LaunchedEffect(Unit) {
-        MainActivity.setResultCallback { result ->
-            result?.let { intent ->
-                authViewModel.handleGoogleSignInResult(intent)
-            }
-        }
-    }
-    
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        when {
-            authUiState.isCheckingAuth -> {
-                LoadingScreen()
-            }
-            authUiState.isAuthenticated -> {
-                MainAppScreen()
-            }
-            else -> {
-                AuthScreen(
-                    authViewModel = authViewModel,
-                    profileViewModel = profileViewModel,
-                    onGoogleSignInRequest = { intent ->
-                        MainActivity.launchGoogleSignIn(intent)
-                    }
-                )
+fun UserManagementApp() {
+    ProvideSpacing {
+        ProvideFontSizes {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background
+            ) {
+                AppNavigation()
             }
         }
     }

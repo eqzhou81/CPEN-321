@@ -22,19 +22,15 @@ data class ProfileUiState(
     val isLoadingProfile: Boolean = false,
     val isSavingProfile: Boolean = false,
     val isLoadingPhoto: Boolean = false,
-    val PutMap: Boolean = false,
 
     // Data states
     val user: User? = null,
-    val allHobbies: List<String> = emptyList(),
-    val selectedHobbies: Set<String> = emptySet(),
+
 
     // Message states
     val errorMessage: String? = null,
-    val successMessage: String? = null,
+    val successMessage: String? = null
 
-    val nearbyPlaces: List<Place> = emptyList(),
-    val location: MyLocation? = null
 )
 
 @HiltViewModel
@@ -55,16 +51,30 @@ class ProfileViewModel @Inject constructor(
 
             val profileResult = profileRepository.getProfile()
 
-            if (profileResult.isSuccess) {
+
+            if (profileResult.isSuccess ) {
                 val user = profileResult.getOrNull()!!
+
 
                 _uiState.value = _uiState.value.copy(
                     isLoadingProfile = false,
                     user = user,
-                    errorMessage = null
                 )
             } else {
-                val errorMessage = profileResult.exceptionOrNull()?.message ?: "Failed to load profile"
+                val errorMessage = when {
+                    profileResult.isFailure -> {
+                        val error = profileResult.exceptionOrNull()
+                        Log.e(TAG, "Failed to load profile", error)
+                        error?.message ?: "Failed to load profile"
+                    }
+
+
+                    else -> {
+                        Log.e(TAG, "Failed to load data")
+                        "Failed to load data"
+                    }
+                }
+
                 _uiState.value = _uiState.value.copy(
                     isLoadingProfile = false,
                     errorMessage = errorMessage
@@ -73,52 +83,7 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    fun toggleHobby(hobby: String) {
-        val currentSelected = _uiState.value.selectedHobbies.toMutableSet()
-        if (currentSelected.contains(hobby)) {
-            currentSelected.remove(hobby)
-        } else {
-            currentSelected.add(hobby)
-        }
-        _uiState.value = _uiState.value.copy(selectedHobbies = currentSelected)
-    }
 
-    fun saveHobbies() {
-        viewModelScope.launch {
-            val originalHobbies = _uiState.value.user?.hobbies?.toSet() ?: emptySet()
-
-            _uiState.value =
-                _uiState.value.copy(
-                    isSavingProfile = true,
-                    errorMessage = null,
-                    successMessage = null
-                )
-
-            val selectedHobbiesList = _uiState.value.selectedHobbies.toList()
-            val result = profileRepository.updateUserHobbies(selectedHobbiesList)
-
-            if (result.isSuccess) {
-                val updatedUser = result.getOrNull()!!
-                _uiState.value = _uiState.value.copy(
-                    isSavingProfile = false,
-                    user = updatedUser,
-                    successMessage = "Hobbies updated successfully!"
-                )
-            } else {
-                // Revert to original hobbies on failure
-                val error = result.exceptionOrNull()
-                Log.d(TAG, "error: $error")
-                Log.e(TAG, "Failed to update hobbies", error)
-                val errorMessage = error?.message ?: "Failed to update hobbies"
-
-                _uiState.value = _uiState.value.copy(
-                    isSavingProfile = false,
-                    selectedHobbies = originalHobbies, // Revert the selected hobbies
-                    errorMessage = errorMessage
-                )
-            }
-        }
-    }
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
@@ -132,128 +97,9 @@ class ProfileViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(isLoadingPhoto = isLoading)
     }
 
-    fun uploadProfilePicture(pictureUri: Uri) {
-        viewModelScope.launch {
-            try {
-                setLoadingPhoto(true)
 
-                val result = profileRepository.uploadProfilePic(pictureUri)
 
-                result.onSuccess { uploadedUrl ->
-                    _uiState.value = _uiState.value.copy(
-                        user = _uiState.value.user?.copy(profilePicture = uploadedUrl),
-                        successMessage = "Profile picture updated successfully"
-                    )
-                }.onFailure { error ->
-                    _uiState.value = _uiState.value.copy(
-                        errorMessage = error.message ?: "Unexpected error"
-                    )
-                }
 
-            } catch(e: Exception){
-                _uiState.value = _uiState.value.copy(
-                    errorMessage = e.message ?: "Unexpected error"
-                )
-
-            } finally {
-                setLoadingPhoto(false)
-            }
-        }
-    }
-
-    fun updateProfile(name: String, bio: String, onSuccess: () -> Unit = {}) {
-        viewModelScope.launch {
-            _uiState.value =
-                _uiState.value.copy(
-                    isSavingProfile = true,
-                    errorMessage = null,
-                    successMessage = null
-                )
-
-            val result = profileRepository.updateProfile(name, bio)
-            if (result.isSuccess) {
-                val updatedUser = result.getOrNull()!!
-                _uiState.value = _uiState.value.copy(
-                    isSavingProfile = false,
-                    user = updatedUser,
-                    successMessage = "Profile updated successfully!"
-                )
-                onSuccess()
-            } else {
-                val error = result.exceptionOrNull()
-                Log.e(TAG, "Failed to update profile", error)
-                val errorMessage = error?.message ?: "Failed to update profile"
-                _uiState.value = _uiState.value.copy(
-                    isSavingProfile = false,
-                    errorMessage = errorMessage
-                )
-            }
-        }
-    }
-    fun onFindPlacesClicked() {
-        viewModelScope.launch {
-            _uiState.update { current ->
-                current.copy(
-                    isLoadingProfile = true,
-                    errorMessage = null // reset error if needed
-                )
-            }
-
-//            if (_uiState.value.user == null) {
-//                loadProfile()
-//            }
-            val hobbies = _uiState.value.user?.hobbies?.toSet() ?: emptySet()
-            if (hobbies.isEmpty()) {
-                _uiState.value = _uiState.value.copy(errorMessage = "Please select your preferred hobbies first!")
-            }
-
-            val locationResult = profileRepository.getCurrentLocation()
-            locationResult.fold(
-                onSuccess = { myLocation ->
-                    Log.d("ProfileViewModel", "Current location: lat=${myLocation.latitude}, lng=${myLocation.longitude}")
-
-                    val placesResult = profileRepository.getNearbyPlaces(myLocation, hobbies)
-
-                    placesResult.fold(
-                        onSuccess = { places ->
-                            Log.d("ProfileViewModel", "Nearby places count: ${places.size}")
-                            places.forEach { place ->
-                                Log.d("ProfileViewModel", "Place: ${place.name}, latLng=${place.latLng}")
-                            }
-
-                            _uiState.value = _uiState.value.copy(
-                                isLoadingProfile = false,
-                                nearbyPlaces = places,
-                                location = myLocation,
-                                PutMap = true
-                            )
-                        },
-                        onFailure = { e ->
-                            Log.e("ProfileViewModel", "Failed to fetch places", e)
-                            _uiState.value = _uiState.value.copy(
-                                isLoadingProfile = false,
-                                errorMessage = "Failed to fetch places: ${e.message}"
-                            )
-                        }
-                    )
-                },
-                onFailure = { e ->
-                    Log.e("ProfileViewModel", "Could not get location", e)
-                    _uiState.value = _uiState.value.copy(
-                        isLoadingProfile = false,
-                        errorMessage = "Could not get location: ${e.message}"
-                    )
-                }
-            )
-        }
-    }
-
-    fun clearPlacesState(){
-        _uiState.value = _uiState.value.copy(
-            nearbyPlaces = emptyList(),
-            location = null
-        )
-    }
 
 
 }

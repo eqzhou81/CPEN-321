@@ -12,6 +12,7 @@ import com.cpen321.usermanagement.data.repository.JobRepository
 import com.cpen321.usermanagement.data.repository.SessionRepository
 import com.cpen321.usermanagement.data.repository.SessionRepositoryImpl
 import com.cpen321.usermanagement.data.local.preferences.TokenManager
+import com.cpen321.usermanagement.data.remote.api.DiscussionApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -74,5 +75,11 @@ object NetworkModule {
     @Singleton
     fun provideSessionRepository(sessionInterface: SessionInterface, tokenManager: TokenManager): SessionRepository {
         return SessionRepositoryImpl(sessionInterface, tokenManager)
+    }
+
+    @Provides
+    @Singleton
+    fun provideDiscussionApi(): DiscussionApi {
+        return RetrofitClient.discussionApi
     }
 }

@@ -20,6 +20,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.ui.navigation.Navigation
+import com.cpen321.usermanagement.ui.navigation.NavigationStateManager
 import com.cpen321.usermanagement.ui.viewmodels.AuthViewModel
 
 /**
@@ -29,7 +30,8 @@ import com.cpen321.usermanagement.ui.viewmodels.AuthViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainAppScreen(
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
+    navigationStateManager: NavigationStateManager
 ) {
     val context = LocalContext.current
     var showProfileDialog by remember { mutableStateOf(false) }
@@ -73,7 +75,7 @@ fun MainAppScreen(
                     
                     // Discussions Button
                     IconButton(
-                        onClick = { showDiscussionsDialog = true }
+                        onClick = { navigationStateManager.navigateToDiscussions() }
                     ) {
                         Icon(
                             Icons.Default.Chat,
