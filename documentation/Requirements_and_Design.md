@@ -67,8 +67,6 @@ Any user can browse a list of active discussions and find discussions relevant t
     
 *   **Community LeetCode API (non-active actor):** External service that supplies technical coding and system design questions relevant to specific job postings.
     
-*   **Job Search API (non-active actor):** External service used to search and fetch similar job postings from the internet.
-
 
 ### **3.4. Use Case Description**
 **Feature 1: Authentication**
@@ -525,7 +523,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 #### **Use Case 4: Find Similar and Close-by jobs **
 ![System Diagram](./images/sequence_uc4.png)
 #### **Use Case 5: Create Discussion**
-![System Diagram](./images/sequence_uc5.png)
+![System Diagram](./images/final_usecase5.png)
 
 
 

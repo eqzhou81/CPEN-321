@@ -31,8 +31,8 @@ android {
 //    buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"228280808099-9v5feggkb4sag0ij88mk3o4j39j22bv8.apps.googleusercontent.com\"")
 
         buildConfigField("String", "API_KEY", "\"${project.findProperty("API_KEY") ?: ""}\"")
-        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000/api/\"")
-        buildConfigField("String", "IMAGE_BASE_URL", "\"http://10.0.2.2:3000\"")
+        buildConfigField("String", "API_BASE_URL", "\"http://20.9.137.129:3000/api/\"")
+        buildConfigField("String", "IMAGE_BASE_URL", "\"http://20.9.137.129:3000\"")
         buildConfigField("String", "GOOGLE_CLIENT_ID", "\"228280808099-q9229bfrdhgt9rjor3uv66vdaomhup7t.apps.googleusercontent.com\"")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"228280808099-9v5feggkb4sag0ij88mk3o4j39j22bv8.apps.googleusercontent.com\"")
     buildConfigField("boolean", "AUTH_BYPASS_ENABLED", "false")
