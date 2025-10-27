@@ -296,8 +296,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 - User can view job details and save interesting positions to their saved job applications
 
 **Main Success Scenario:**
-1. User selects a saved job application, which has a "Fine Similar Jobs" button on the bottom of the screen
-2. User clicks on "Find Similar Jobs" button
+1. User clicks on "Find Similar Jobs" button for their selected job
 3. System retrieves saved job title, key requirements, and location from the selected application
 4. System searches external job sites for similar positions
 5. System filters results for opportunities near the original job location or remote positions
@@ -365,13 +364,6 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 ---
 
-<!-- ### **3.6. Screen Mock-ups**
-
-<img width="975" height="789" alt="Screenshot 2025-09-26 at 10 46 29 PM" src="https://github.com/user-attachments/assets/87c59d73-f14f-481e-a9d7-e2141818c2d4" />
-<img width="746" height="484" alt="Screenshot 2025-09-26 at 10 46 52 PM" src="https://github.com/user-attachments/assets/6fb789cd-5a74-4c98-abfe-054f054adbca" />
-<img width="1024" height="780" alt="Screenshot 2025-09-26 at 10 47 12 PM" src="https://github.com/user-attachments/assets/60b9ec54-250a-4b50-b393-f7577b1c8ec5" />
-<img width="976" height="717" alt="Screenshot 2025-09-26 at 10 47 28 PM" src="https://github.com/user-attachments/assets/ba21b031-9a9f-4316-9824-e927ee1f4ff1" /> -->
-
 
 
 
@@ -421,10 +413,23 @@ Any user can browse a list of active discussions and find discussions relevant t
 - **Interface:**
 
 **Discussions**
-- **Purpose:** Handle discussion room creation, management, and user participation
+- **Purpose:** Handle discussion discussion creation, management, and user participation
 - **Rationale:** Manages community features separate from individual practice components
 - **Interface:** 
                 
+
+**Sessions**
+- **Purpose:** Handle mock interview session lifecycle, including creation, question navigation, answer submission, and session state management
+- **Rationale:** Manages interview practice sessions separate from question generation, tracking user progress through behavioral questions and coordinating with OpenAI for real-time feedback
+- **Interface:** 
+  - `createSession(CreateSessionRequest{jobId})` - Initialize new mock interview session
+  - `getSession(sessionId)` - Retrieve active session details
+  - `getUserSessions(limit)` - Get user's session history
+  - `submitAnswer(SubmitAnswerRequest)` - Submit answer for current question and get AI feedback
+  - `navigateToQuestion(sessionId, NavigateRequest)` - Move to next/previous question
+  - `updateSessionStatus(sessionId, UpdateStatusRequest)` - Update session state (active/completed/cancelled)
+  - `getSessionProgress(sessionId)` - Get current progress (questions answered, score, etc.)
+  - `deleteSession(sessionId)` - Delete/cancel session
     
     * * *
     
@@ -437,36 +442,28 @@ Any user can browse a list of active discussions and find discussions relevant t
         
     
     Collections:
-    
+
     1. **users**
-        
-        *   **Purpose:** Store user authentication info, profile data, and ownership of content.
-            
-    2. **jobs**
-        
-        *   **Purpose:** Contain uploaded job postings, including title, company, description, tags.
-            
+        - **Purpose:** Store user authentication info, profile data, and ownership of content.
+
+    2. **jobApplications** (or **jobs**)
+        - **Purpose:** Store user's saved job applications, including title, company, location, description, skills, status, and application dates.
+
     3. **questions**
-        
-        *   **Purpose:** Store technical/system design/behavioral questions, with status (pending, completed).
-            
+        - **Purpose:** Store generated technical and behavioral questions for each job, with status (pending, completed), difficulty, tags, and external URLs.
+
     4. **sessions**
-        
-        *   **Purpose:** Track active mock interview sessions and their state.
-            
-    5. **answers**
-        
-        *   **Purpose:** Store user-submitted answers and AI-generated feedback.
-            
-    6. **discussions**
-        
-        *   **Purpose:** Contain discussion room metadata.
-            
-    7. **messages**
-        
-        *   **Purpose:** Store chat content (user messages inside discussions).
-            
+        - **Purpose:** Track active mock interview sessions, including current question index, answers, progress, and session state (active/completed/cancelled).
+
+    5. **discussions**
+        - **Purpose:** Contain discussion metadata (topic, description, creator) AND embedded messages array (not a separate collection).
+        - **Structure:** Each discussion document contains `messages[]` subdocuments with userId, userName, content, timestamps.
     
+
+    6. **availableJobs**
+        - **Purpose:** Store scraped job postings from external sources (Indeed, LinkedIn, etc.) for similar job search functionality.
+     
+
     * * *
     
     ### 4.3. External Modules
@@ -484,6 +481,11 @@ Any user can browse a list of active discussions and find discussions relevant t
     3. **OpenAI API**
         
         *   **Purpose:** Generate behavioral interview questions from job descriptions and provide feedback on user answers.
+
+    4. **Websocket**
+
+        *   **Purpose:** Enable real-time communication for discussion forums, broadcasting new discussion creation and real-time message delivery to connected users in discussion rooms.
+
             
             
     
@@ -508,6 +510,9 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 ### **4.5. Dependencies Diagram**
 
+**Note:**
+- currenlty for the mvp each job is owned or stored by a user as a job model requires a user id; hence the dependency. However for scalability we might be changing that in later milestones.
+
 
 ![System Diagram](./images/M2_dependecy.png)
 
@@ -517,11 +522,11 @@ Any user can browse a list of active discussions and find discussions relevant t
 #### **Use Case 1: Generate Questions for a Saved Job**
 ![System Diagram](./images/sequence_uc1.png)
 #### **Use Case 2: Solve a Technical Question**
-![System Diagram](./images/sequence_usecase2.png)
+![System Diagram](./images/final_usecase2.png)
 #### **Use Case 3: Start Mock Interview**
-![System Diagram](./images/seqence_uc3.png)
-#### **Use Case 4: Find Similar and Close-by jobs **
-![System Diagram](./images/sequence_uc4.png)
+![System Diagram](./images/final_usecase3.png)
+#### **Use Case 4: Find Similar and Close-by jobs**
+![System Diagram](./images/final_usecase4.png)
 #### **Use Case 5: Create Discussion**
 ![System Diagram](./images/final_usecase5.png)
 
