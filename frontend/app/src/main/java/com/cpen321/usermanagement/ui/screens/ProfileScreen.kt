@@ -125,11 +125,6 @@ fun ProfileScreen(
 
     val authState by authViewModel.uiState.collectAsState()
 
-
-
-
-
-
     LaunchedEffect(authState.isAuthenticated, authState.errorMessage) {
         if (!authState.isAuthenticated) {
 

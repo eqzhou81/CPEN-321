@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
 import { UserController } from '../controllers/users.controller';
-import { UpdateProfileRequest, updateProfileSchema } from '../types/users.types';
+import { DeleteProfileRequest, UpdateProfileRequest, deleteProfileSchema, updateProfileSchema } from '../types/users.types';
 import { validateBody } from '../middleware/validation.middleware';
 
 const router = Router();
@@ -15,6 +15,10 @@ router.post(
   userController.updateProfile.bind(userController)
 );
 
-router.delete('/profile', userController.deleteProfile.bind(userController));
+router.delete(
+  '/profile',
+  validateBody<DeleteProfileRequest>(deleteProfileSchema),
+  userController.deleteProfile.bind(userController)
+);
 
 export default router;

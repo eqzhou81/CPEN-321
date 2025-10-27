@@ -34,7 +34,6 @@ fun MainAppScreen(
     navigationStateManager: NavigationStateManager
 ) {
     val context = LocalContext.current
-    var showProfileDialog by remember { mutableStateOf(false) }
     var showDiscussionsDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
     val authState by authViewModel.uiState.collectAsState()
@@ -87,7 +86,7 @@ fun MainAppScreen(
                     
                     // Profile Button
                     IconButton(
-                        onClick = { showProfileDialog = true }
+                        onClick = { navigationStateManager.navigateToProfile() }
                     ) {
                         Icon(
                             Icons.Default.Person,
@@ -122,13 +121,6 @@ fun MainAppScreen(
             Navigation()
         }
         
-        // Profile Dialog
-        if (showProfileDialog) {
-            ProfileDialog(
-                onDismiss = { showProfileDialog = false }
-            )
-        }
-        
         // Discussions Dialog
         if (showDiscussionsDialog) {
             DiscussionsDialog(
@@ -147,63 +139,6 @@ fun MainAppScreen(
             )
         }
     }
-}
-
-@Composable
-private fun ProfileDialog(
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "Profile",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold
-                )
-            )
-        },
-        text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Profile Picture Placeholder
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
-                        .background(colorResource(R.color.primary).copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = "Profile Picture",
-                        modifier = Modifier.size(40.dp),
-                        tint = colorResource(R.color.primary)
-                    )
-                }
-                
-                Text(
-                    text = "User Profile",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Medium
-                    )
-                )
-                
-                Text(
-                    text = "Profile functionality will be implemented here. This will show user information, settings, and preferences.",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = colorResource(R.color.text_secondary)
-                    )
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close")
-            }
-        }
-    )
 }
 
 @Composable

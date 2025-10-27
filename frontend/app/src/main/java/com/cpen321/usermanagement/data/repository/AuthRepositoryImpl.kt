@@ -13,6 +13,7 @@ import com.cpen321.usermanagement.data.remote.api.AuthInterface
 import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.data.remote.api.UserInterface
 import com.cpen321.usermanagement.data.remote.dto.AuthData
+import com.cpen321.usermanagement.data.remote.dto.DeleteProfileRequest
 import com.cpen321.usermanagement.data.remote.dto.GoogleLoginRequest
 import com.cpen321.usermanagement.data.remote.dto.User
 import com.cpen321.usermanagement.utils.JsonUtils
@@ -242,8 +243,9 @@ class AuthRepositoryImpl @Inject constructor(
         RetrofitClient.setAuthToken(token)
 
         return try {
-            // Send the authenticated DELETE request to the server
-            val response = userInterface.deleteAccount()
+            // Send the authenticated DELETE request to the server with confirmation
+            val deleteRequest = DeleteProfileRequest(confirmDelete = true)
+            val response = userInterface.deleteAccount(deleteRequest)
 
             if (response.isSuccessful) {
                 Result.success(Unit) // Indicate success

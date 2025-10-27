@@ -23,7 +23,9 @@ interface UserInterface {
     ): Response<UpdateProfileResponse>
 
     @HTTP(method = "DELETE", path = "user/profile", hasBody = true)
-    suspend fun deleteAccount(): Response<DeleteProfileResponse>
+    suspend fun deleteAccount(
+        @Body request: DeleteProfileRequest
+    ): Response<DeleteProfileResponse>
 }
 
 interface ImageInterface{}
