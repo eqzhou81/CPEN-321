@@ -22,49 +22,59 @@ class OpenAIService {
   }
 
   async generateBehavioralQuestions(
-    jobApplication: IJobApplication,
-    count: number = 10
-  ): Promise<OpenAIBehavioralQuestion[]> {
-    try {
-      const prompt = this.createBehavioralQuestionsPrompt(jobApplication, count);
+  jobApplication: IJobApplication,
+  count: number = 10
+): Promise<OpenAIBehavioralQuestion[]> {
+  try {
+    const title = this.sanitizeText(jobApplication.title);
+    const company = this.sanitizeText(jobApplication.company);
+    const description = this.sanitizeText(jobApplication.description);
+    const skills = jobApplication.skills?.map(s => this.sanitizeText(s)).join(', ') || 'Not specified';
+    const experienceLevel = this.sanitizeText(jobApplication.experienceLevel) || 'Not specified';
 
-      const completion = await this.openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+    const prompt = `Generate ${count} behavioral interview questions for:
+    Job Title: ${title}
+    Company: ${company}
+    Job Description: ${description}
+    Skills: ${skills}
+    Experience Level: ${experienceLevel}
+
+    Return as JSON array: [{"question": "...", "context": "...", "tips": [...]}]`;
+
+    // Use axios instead of OpenAI SDK
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-4o-mini',
         messages: [
-          {
-            role: 'system',
-            content: 'You are an expert HR interviewer who creates tailored behavioral interview questions based on job descriptions. Always respond with valid JSON format.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
+          { role: 'system', content: 'You are an expert HR interviewer. Always return valid JSON.' },
+          { role: 'user', content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: 2000,
-      });
-
-      const response = completion.choices[0]?.message?.content;
-      if (!response) {
-        throw new Error('No response from OpenAI');
+        max_tokens: 2000
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
       }
+    );
 
-      const questions = JSON.parse(response);
-      
-      if (!Array.isArray(questions)) {
-        throw new Error('Invalid response format from OpenAI');
-      }
+    const content = response.data.choices[0]?.message?.content;
+    if (!content) throw new Error('No response from OpenAI');
 
-      return questions.map((q: any) => ({
-        question: q.question || q.title || '',
-        context: q.context || '',
-        tips: q.tips || [],
-      }));
-    } catch (error) {
-      logger.error('Error generating behavioral questions:', error);
-      throw error;
-    }
+    const questions = JSON.parse(content);
+    return questions.map((q: any) => ({
+      question: q.question || q.title || '',
+      context: q.context || '',
+      tips: q.tips || []
+    }));
+  } catch (error) {
+    logger.error('Error generating behavioral questions:', error);
+    throw error;
   }
+}
 
   async generateAnswerFeedback(
     question: string,
@@ -75,7 +85,7 @@ class OpenAIService {
       const prompt = this.createFeedbackPrompt(question, answer, jobContext);
 
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',

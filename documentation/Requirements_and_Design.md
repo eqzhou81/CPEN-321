@@ -4,7 +4,8 @@
 
 | **Change Date**   | **Modified Sections** | **Rationale** |
 | ----------------- | --------------------- | ------------- |
-| . October 9th 2025| usecase diagram, usecase descriptions. formal use case specifications, backend components, high level design
+| . October 9th 2025| usecase diagram, usecase descriptions. formal use case specifications, backend components, high level design| Changed the use case diagram and the use cases to not have a step by step approach like discussed in lab. Changed the backend components based on separation of concerns and the high level design based on reviewed depdencies with the TA.
+| .October 27th 2025| High level design, backend components, NFRs,external modules, features| Added the session component as it simplified coding and provided a better separation of concern. Adding websocket and webscraper to extenrnal modules and to the high level design. Removed the overall progress tracker as it was redundant.
 
 ---
 
