@@ -103,11 +103,17 @@ export class QuestionsController {
         generatedQuestions
       );
 
+      // Separate questions by type
+      const behavioralQuestions = savedQuestions.filter(q => q.type === QuestionType.BEHAVIORAL);
+      const technicalQuestions = savedQuestions.filter(q => q.type === QuestionType.TECHNICAL);
+
       res.status(201).json({
         message: 'Questions generated successfully',
         data: {
-          questions: savedQuestions,
-          total: savedQuestions.length,
+          behavioralQuestions,
+          technicalQuestions,
+          totalQuestions: savedQuestions.length,
+          jobApplication: jobApplication || null
         },
       });
     } catch (error) {

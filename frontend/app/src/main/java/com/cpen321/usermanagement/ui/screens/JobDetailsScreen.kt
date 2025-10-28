@@ -2,7 +2,9 @@ package com.cpen321.usermanagement.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -44,6 +46,7 @@ fun JobDetailsScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(colorResource(R.color.background))
+            .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
         // Header
@@ -78,7 +81,8 @@ fun JobDetailsScreen(
                     Icon(
                         Icons.Default.Search,
                         contentDescription = "Find Similar Jobs",
-                        tint = colorResource(R.color.primary)
+                        tint = colorResource(R.color.primary),
+                        modifier = Modifier.size(32.dp)
                     )
                 }
             }

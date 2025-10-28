@@ -101,7 +101,8 @@ fun MockInterviewScreen(
                 MockInterviewContent(
                     state = state,
                     viewModel = viewModel,
-                    paddingValues = paddingValues
+                    paddingValues = paddingValues,
+                    onBackClick = onBackClick
                 )
             }
         }
@@ -112,7 +113,8 @@ fun MockInterviewScreen(
 private fun MockInterviewContent(
     state: MockInterviewViewModel.UiState.Success,
     viewModel: MockInterviewViewModel,
-    paddingValues: PaddingValues
+    paddingValues: PaddingValues,
+    onBackClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -236,7 +238,7 @@ private fun MockInterviewContent(
         STARMethodTip()
         
         OutlinedButton(
-            onClick = { /* End session */ },
+            onClick = onBackClick,
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.outlinedButtonColors(
                 contentColor = Color(0xFF666666)

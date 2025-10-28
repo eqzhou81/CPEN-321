@@ -90,7 +90,7 @@ export class JobSearchService {
       const searchKeywords = this.extractSearchKeywords(jobApplication);
       logger.info(`Extracted keywords: ${searchKeywords.join(', ')}`);
 
-      // First, try to find similar jobs from our database
+      // Search for similar jobs from our database only
       const databaseJobs = await this.findSimilarJobsFromDatabase(jobApplication, limit);
 
       if (databaseJobs.length > 0) {
@@ -98,16 +98,8 @@ export class JobSearchService {
         return databaseJobs.slice(0, limit);
       }
 
-      // If no database results, fall back to web scraping
-      logger.info('No database results found, falling back to web scraping...');
-      const scrapedJobs = await this.scrapeJobsFromUnprotectedSites(searchKeywords, limit);
-
-      if (scrapedJobs.length > 0) {
-        logger.info(`Found ${scrapedJobs.length} similar jobs from web scraping`);
-        return scrapedJobs.slice(0, limit);
-      }
-
-      logger.warn('No similar jobs found from any source');
+      // No results found in database
+      logger.warn('No similar jobs found in database');
       return [];
 
     } catch (error) {
@@ -832,95 +824,33 @@ export class JobSearchService {
     limit: number = 5
   ): Promise<ISimilarJob[]> {
     try {
-      logger.info('Finding similar jobs from available jobs database for:', jobApplication.title);
+      logger.info('Finding similar jobs for:', jobApplication.title);
       
-      // Search for jobs with similar titles, companies, or skills
-      const searchParams = {
-        title: this.extractMainTitle(jobApplication.title), // Extract main title without extra details
-        company: this.extractMainCompany(jobApplication.company), // Extract main company name
-        jobType: jobApplication.jobType ? [jobApplication.jobType] : undefined,
-        experienceLevel: jobApplication.experienceLevel ? [jobApplication.experienceLevel] : undefined,
-        limit: limit * 3 // Get more results to filter and score
-      };
+      // Get all available jobs (with reasonable limit)
+      const availableJobs = await this.fetchCandidateJobs(jobApplication);
       
-      const availableJobs = await availableJobModel.searchJobs(searchParams);
-      
-      let allAvailableJobs = [...availableJobs];
-      
-      // If no specific matches, try broader searches based on company and location
-      if (allAvailableJobs.length === 0) {
-        logger.info('No jobs found in database matching search criteria');
-        
-        // Extract company name and location for broader matching
-        const companyName = this.extractMainCompany(jobApplication.company);
-        const location = jobApplication.jobLocation || jobApplication.location || '';
-        
-        logger.info(`Trying broader search for company: ${companyName}, location: ${location}`);
-        
-        // Try to match by company name (case insensitive)
-        if (companyName) {
-          const companyJobs = await availableJobModel.searchJobs({
-            company: companyName,
-            limit: limit * 2
-          });
-          
-          if (companyJobs.length > 0) {
-            logger.info(`Found ${companyJobs.length} jobs matching company: ${companyName}`);
-            allAvailableJobs.push(...companyJobs);
-          }
-        }
-        
-        // If still no results, try broader location-based search
-        if (allAvailableJobs.length === 0 && location) {
-          logger.info(`No company matches found, trying location-based search for: ${location}`);
-          
-          // Try to find jobs in the same location
-          const locationJobs = await availableJobModel.searchJobs({
-            location: location,
-            limit: limit * 2
-          });
-          
-          if (locationJobs.length > 0) {
-            logger.info(`Found ${locationJobs.length} jobs in location: ${location}`);
-            allAvailableJobs.push(...locationJobs);
-          }
-        }
+      if (availableJobs.length === 0) {
+        logger.warn('No jobs found in database');
+        return [];
       }
       
-      logger.info(`Found ${allAvailableJobs.length} potential matches in database`);
+      logger.info(`Scoring ${availableJobs.length} candidate jobs`);
       
-      // Calculate similarity scores and convert to ISimilarJob format
-      const scoredJobs: ISimilarJob[] = [];
+      // Score and filter jobs
+      const scoredJobs = availableJobs
+        .map(job => ({
+          ...this.convertToSimilarJob(job),
+          score: this.calculateJobSimilarity(jobApplication, job)
+        }))
+        .filter(job => job.score > 0.1) // Minimum meaningful similarity
+        .sort((a, b) => b.score - a.score)
+        .slice(0, limit);
       
-      for (const job of allAvailableJobs) {
-        const similarityScore = this.calculateJobSimilarity(jobApplication, job);
-        
-        // Only include jobs with meaningful similarity (score > 0.05)
-        if (similarityScore > 0.05) {
-          scoredJobs.push({
-            title: job.title,
-            company: job.company,
-            description: job.description,
-            location: job.jobLocation,
-            url: job.url,
-            salary: job.salary || undefined,
-            jobType: job.jobType || undefined,
-            experienceLevel: job.experienceLevel || undefined,
-            source: 'database',
-            score: similarityScore,
-            postedDate: job.postedDate || job.createdAt
-          });
-        }
-      }
-      
-      // Sort by similarity score (highest first) and return top results
-      scoredJobs.sort((a, b) => (b.score || 0) - (a.score || 0));
-      
-      logger.info(`Returning ${Math.min(scoredJobs.length, limit)} similar jobs from database`);
-      return scoredJobs.slice(0, limit);
+      logger.info(`Returning ${scoredJobs.length} similar jobs (scores: ${scoredJobs.map(j => j.score.toFixed(2)).join(', ')})`);
+      return scoredJobs;
       
     } catch (error) {
-      logger.error('Error finding similar jobs from database:', error);
+      logger.error('Error finding similar jobs:', error);
       return [];
     }
   }
@@ -941,44 +871,28 @@ export class JobSearchService {
     let totalScore = 0;
     
     // Title similarity (using keyword matching)
-    const titleScore = this.calculateTextSimilarity(job1.title, job2.title);
+    const titleScore = this.compareTitles(job1.title, job2.title);
     totalScore += titleScore * weights.title;
     
     // Company similarity
-    const companyScore = this.calculateTextSimilarity(job1.company, job2.company);
+    const companyScore = this.compareCompanies(job1.company, job2.company);
     totalScore += companyScore * weights.company;
     
     // Description similarity (using keyword extraction)
-    const descriptionScore = this.calculateDescriptionSimilarity(job1.description, job2.description);
+    const descriptionScore = this.compareDescriptions(job1.description, job2.description);
     totalScore += descriptionScore * weights.description;
     
     // Location similarity
-    const locationScore = this.calculateLocationSimilarity(job1.location, job2.location);
+    const locationScore = this.compareLocations(job1.location, job2.location);
     totalScore += locationScore * weights.location;
     
     // Skills similarity (if available)
-    const skillsScore = this.calculateSkillsSimilarity(job1.skills, job2.skills);
+    const skillsScore = this.compareSkills(job1.skills, job2.skills);
     totalScore += skillsScore * weights.skills;
     
     return Math.min(totalScore, 1.0); // Cap at 1.0
   }
 
-  /**
-   * Calculate text similarity using keyword matching
-   */
-  private calculateTextSimilarity(text1: string, text2: string): number {
-    if (!text1 || !text2) return 0;
-    
-    const words1 = this.extractKeywords(text1.toLowerCase());
-    const words2 = this.extractKeywords(text2.toLowerCase());
-    
-    if (words1.length === 0 || words2.length === 0) return 0;
-    
-    const commonWords = words1.filter(word => words2.includes(word));
-    const totalWords = new Set([...words1, ...words2]).size;
-    
-    return commonWords.length / totalWords;
-  }
 
   /**
    * Extract meaningful keywords from text
@@ -1016,67 +930,7 @@ export class JobSearchService {
     return commonKeywords.length / totalKeywords;
   }
 
-  /**
-   * Extract technical keywords from job descriptions
-   */
-  private extractTechnicalKeywords(description: string): string[] {
-    const technicalTerms = [
-      'javascript', 'python', 'java', 'react', 'angular', 'vue', 'node', 'typescript',
-      'sql', 'mongodb', 'postgresql', 'mysql', 'redis', 'docker', 'kubernetes',
-      'aws', 'azure', 'gcp', 'machine learning', 'ai', 'data science', 'analytics',
-      'frontend', 'backend', 'full stack', 'devops', 'ci/cd', 'api', 'rest', 'graphql',
-      'microservices', 'agile', 'scrum', 'testing', 'tdd', 'bdd', 'git', 'github',
-      'linux', 'unix', 'cloud', 'serverless', 'lambda', 'terraform', 'ansible'
-    ];
-    
-    const lowerDesc = description.toLowerCase();
-    return technicalTerms.filter(term => lowerDesc.includes(term));
-  }
 
-  /**
-   * Calculate location similarity
-   */
-  private calculateLocationSimilarity(loc1: string, loc2: string): number {
-    if (!loc1 || !loc2) return 0;
-    
-    const loc1Lower = loc1.toLowerCase();
-    const loc2Lower = loc2.toLowerCase();
-    
-    // Exact match
-    if (loc1Lower === loc2Lower) return 1.0;
-    
-    // Same city
-    const city1 = loc1Lower.split(',')[0].trim();
-    const city2 = loc2Lower.split(',')[0].trim();
-    if (city1 === city2) return 0.8;
-    
-    // Same country/region
-    const country1 = loc1Lower.split(',').pop()?.trim();
-    const country2 = loc2Lower.split(',').pop()?.trim();
-    if (country1 === country2) return 0.5;
-    
-    // Remote vs non-remote
-    const isRemote1 = loc1Lower.includes('remote') || loc1Lower.includes('anywhere');
-    const isRemote2 = loc2Lower.includes('remote') || loc2Lower.includes('anywhere');
-    if (isRemote1 && isRemote2) return 0.6;
-    
-    return 0;
-  }
-
-  /**
-   * Calculate skills similarity
-   */
-  private calculateSkillsSimilarity(skills1: string[], skills2: string[]): number {
-    if (!skills1 || !skills2 || skills1.length === 0 || skills2.length === 0) return 0;
-    
-    const skills1Lower = skills1.map(s => s.toLowerCase());
-    const skills2Lower = skills2.map(s => s.toLowerCase());
-    
-    const commonSkills = skills1Lower.filter(skill => skills2Lower.includes(skill));
-    const totalSkills = new Set([...skills1Lower, ...skills2Lower]).size;
-    
-    return commonSkills.length / totalSkills;
-  }
 
   /**
    * Scrape a specific job site
@@ -1738,6 +1592,264 @@ export class JobSearchService {
     }
     
     return normalizedCompany;
+  }
+
+  /**
+   * Fetch candidate jobs from database using smart search strategy
+   */
+  private async fetchCandidateJobs(jobApplication: any): Promise<any[]> {
+    const searches = [];
+    
+    // Extract search terms
+    const titleKeywords = this.extractMainKeywords(jobApplication.title);
+    const companyName = this.normalizeCompanyName(jobApplication.company);
+    const location = this.normalizeLocation(jobApplication.jobLocation || jobApplication.location);
+    
+    // Strategy 1: Search by job title keywords
+    if (titleKeywords) {
+      searches.push(
+        availableJobModel.searchJobs({ title: titleKeywords, limit: 100 })
+      );
+    }
+    
+    // Strategy 2: Search by company
+    if (companyName) {
+      searches.push(
+        availableJobModel.searchJobs({ company: companyName, limit: 100 })
+      );
+    }
+    
+    // Strategy 3: Search by location
+    if (location) {
+      searches.push(
+        availableJobModel.searchJobs({ location: location, limit: 100 })
+      );
+    }
+    
+    // Execute all searches in parallel
+    const results = await Promise.all(searches);
+    
+    // Combine and deduplicate
+    const allJobs = results.flat();
+    const uniqueJobs = Array.from(
+      new Map(allJobs.map(job => [job._id.toString(), job])).values()
+    );
+    
+    return uniqueJobs;
+  }
+
+  /**
+   * Convert database job to ISimilarJob format
+   */
+  private convertToSimilarJob(job: any): ISimilarJob {
+    return {
+      title: job.title,
+      company: job.company,
+      description: job.description,
+      location: job.jobLocation,
+      url: job.url,
+      salary: job.salary || undefined,
+      jobType: job.jobType || undefined,
+      experienceLevel: job.experienceLevel || undefined,
+      source: 'database',
+      score: 0, // Will be set later
+      postedDate: job.postedDate || job.createdAt
+    };
+  }
+
+  /**
+   * Compare job titles with role-specific matching
+   */
+  private compareTitles(title1: string, title2: string): number {
+    if (!title1 || !title2) return 0;
+    
+    const t1 = this.normalizeTitle(title1);
+    const t2 = this.normalizeTitle(title2);
+    
+    // Exact match
+    if (t1 === t2) return 1.0;
+    
+    // Extract role type (engineer, developer, manager, etc.)
+    const role1 = this.extractRole(t1);
+    const role2 = this.extractRole(t2);
+    
+    // Same role type gets high score
+    if (role1 && role2 && role1 === role2) {
+      return 0.8;
+    }
+    
+    // Calculate keyword overlap
+    return this.calculateTextSimilarity(t1, t2);
+  }
+
+  /**
+   * Compare companies
+   */
+  private compareCompanies(company1: string, company2: string): number {
+    if (!company1 || !company2) return 0;
+    
+    const c1 = this.normalizeCompanyName(company1);
+    const c2 = this.normalizeCompanyName(company2);
+    
+    return c1 === c2 ? 1.0 : 0;
+  }
+
+  /**
+   * Compare job descriptions using technical keyword matching
+   */
+  private compareDescriptions(desc1: string, desc2: string): number {
+    if (!desc1 || !desc2) return 0;
+    
+    const keywords1 = this.extractTechnicalKeywords(desc1);
+    const keywords2 = this.extractTechnicalKeywords(desc2);
+    
+    if (keywords1.length === 0 || keywords2.length === 0) return 0;
+    
+    const commonKeywords = keywords1.filter(k => keywords2.includes(k));
+    const totalKeywords = new Set([...keywords1, ...keywords2]).size;
+    
+    return commonKeywords.length / totalKeywords;
+  }
+
+  /**
+   * Compare locations
+   */
+  private compareLocations(loc1: string, loc2: string): number {
+    if (!loc1 || !loc2) return 0;
+    
+    const l1 = this.normalizeLocation(loc1);
+    const l2 = this.normalizeLocation(loc2);
+    
+    // Exact match
+    if (l1 === l2) return 1.0;
+    
+    // Check for remote
+    const isRemote1 = l1.includes('remote');
+    const isRemote2 = l2.includes('remote');
+    if (isRemote1 && isRemote2) return 0.9;
+    
+    // Same city
+    const city1 = l1.split(',')[0].trim();
+    const city2 = l2.split(',')[0].trim();
+    if (city1 === city2) return 0.8;
+    
+    // Same region/country
+    if (l1.includes('vancouver') && l2.includes('vancouver')) return 0.7;
+    if (l1.includes('canada') && l2.includes('canada')) return 0.5;
+    
+    return 0;
+  }
+
+  /**
+   * Compare skills arrays
+   */
+  private compareSkills(skills1: string[], skills2: string[]): number {
+    if (!skills1?.length || !skills2?.length) return 0;
+    
+    const s1 = new Set(skills1.map(s => s.toLowerCase()));
+    const s2 = new Set(skills2.map(s => s.toLowerCase()));
+    
+    const intersection = [...s1].filter(s => s2.has(s)).length;
+    const union = new Set([...s1, ...s2]).size;
+    
+    return intersection / union;
+  }
+
+  /**
+   * Normalize job title
+   */
+  private normalizeTitle(title: string): string {
+    return title
+      .toLowerCase()
+      .replace(/\b(sr|senior|jr|junior)\b\.?/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /**
+   * Extract role from job title
+   */
+  private extractRole(title: string): string | null {
+    const roles = [
+      'engineer', 'developer', 'programmer', 'architect',
+      'manager', 'director', 'lead', 'principal',
+      'analyst', 'scientist', 'designer', 'researcher'
+    ];
+    
+    const titleLower = title.toLowerCase();
+    return roles.find(role => titleLower.includes(role)) || null;
+  }
+
+  /**
+   * Extract main keywords from title (for search)
+   */
+  private extractMainKeywords(title: string): string {
+    const normalized = this.normalizeTitle(title);
+    const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'at', 'in', 'for']);
+    
+    return normalized
+      .split(' ')
+      .filter(word => word.length > 2 && !stopWords.has(word))
+      .slice(0, 3) // First 3 meaningful words
+      .join(' ');
+  }
+
+  /**
+   * Normalize location
+   */
+  private normalizeLocation(location: string): string {
+    if (!location) return '';
+    
+    return location
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /**
+   * Normalize company name
+   */
+  private normalizeCompanyName(company: string): string {
+    if (!company) return '';
+    
+    return company
+      .toLowerCase()
+      .replace(/\b(inc|corp|ltd|llc|limited)\b\.?/gi, '')
+      .replace(/[^\w\s]/g, '')
+      .trim();
+  }
+
+  /**
+   * Extract technical keywords from description
+   */
+  private extractTechnicalKeywords(description: string): string[] {
+    const techKeywords = [
+      'javascript', 'typescript', 'python', 'java', 'c++', 'c#', 'go', 'rust', 'swift', 'kotlin',
+      'react', 'angular', 'vue', 'html', 'css', 'sass', 'tailwind', 'webpack',
+      'node', 'express', 'django', 'flask', 'spring', 'asp.net',
+      'sql', 'mongodb', 'postgresql', 'mysql', 'redis', 'dynamodb', 'elasticsearch',
+      'aws', 'azure', 'gcp', 'docker', 'kubernetes', 'terraform', 'jenkins', 'ci/cd',
+      'api', 'rest', 'graphql', 'microservices', 'agile', 'scrum', 'git', 'linux',
+      'machine learning', 'ai', 'data science', 'analytics', 'testing', 'security'
+    ];
+    
+    const descLower = description.toLowerCase();
+    return techKeywords.filter(keyword => descLower.includes(keyword));
+  }
+
+  /**
+   * Calculate text similarity using Jaccard coefficient
+   */
+  private calculateTextSimilarity(text1: string, text2: string): number {
+    const words1 = new Set(text1.toLowerCase().split(/\s+/).filter(w => w.length > 2));
+    const words2 = new Set(text2.toLowerCase().split(/\s+/).filter(w => w.length > 2));
+    
+    if (words1.size === 0 || words2.size === 0) return 0;
+    
+    const intersection = [...words1].filter(w => words2.has(w)).length;
+    const union = new Set([...words1, ...words2]).size;
+    
+    return intersection / union;
   }
 
 }

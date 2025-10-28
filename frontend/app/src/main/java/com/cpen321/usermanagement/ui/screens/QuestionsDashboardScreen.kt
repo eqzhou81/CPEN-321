@@ -30,11 +30,12 @@ fun QuestionsDashboardScreen(
     val questionProgress by viewModel.questionProgress.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
-
+    
     // Track if we've attempted to generate questions
     var hasAttemptedGeneration by remember { mutableStateOf(false) }
     var shouldReload by remember { mutableStateOf(false) }
-
+    var showGenerateDialog by remember { mutableStateOf(false) }
+    
     // Load questions when screen is displayed
     LaunchedEffect(jobId) {
         viewModel.loadQuestions(jobId)
@@ -60,7 +61,7 @@ fun QuestionsDashboardScreen(
             shouldReload = false
         }
     }
-
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -70,26 +71,26 @@ fun QuestionsDashboardScreen(
         // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onNavigateBack) {
-                Icon(
-                    Icons.Default.ArrowBack,
-                    contentDescription = "Back",
-                    tint = colorResource(R.color.text_primary)
-                )
-            }
-            Text(
-                text = "Interview Questions",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = colorResource(R.color.text_primary)
-                )
-            )
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = colorResource(R.color.text_primary)
+                    )
+                }
+                    Text(
+                        text = "Interview Questions",
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = colorResource(R.color.text_primary)
+                        )
+                    )
         }
-
+        
         Spacer(modifier = Modifier.height(24.dp))
-
+        
         // Error State
         error?.let { errorMessage ->
             Card(
@@ -116,8 +117,8 @@ fun QuestionsDashboardScreen(
                                 fontWeight = FontWeight.Bold
                             )
                         )
-                        Text(
-                            text = errorMessage,
+                    Text(
+                        text = errorMessage,
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = colorResource(R.color.error)
                             )
@@ -136,7 +137,7 @@ fun QuestionsDashboardScreen(
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
-
+        
         // Loading State
         if (isLoading || shouldReload) {
             Box(
@@ -178,9 +179,9 @@ fun QuestionsDashboardScreen(
                 // Behavioral Questions Card
                 if (questions!!.behavioralQuestions.isNotEmpty()) {
                     QuestionTypeCard(
-                        title = "Behavioral Questions",
+                            title = "Behavioral Questions",
                         description = "Practice common behavioral interview questions",
-                        icon = Icons.Default.Psychology,
+                            icon = Icons.Default.Psychology,
                         questionCount = questions!!.behavioralQuestions.size,
                         completedCount = questions!!.behavioralQuestions.count { it.status == "completed" },
                         onClick = { onNavigateToBehavioralQuestions(jobId) }
@@ -190,9 +191,9 @@ fun QuestionsDashboardScreen(
                 // Technical Questions Card
                 if (questions!!.technicalQuestions.isNotEmpty()) {
                     QuestionTypeCard(
-                        title = "Technical Questions",
+                            title = "Technical Questions",
                         description = "Solve coding challenges on LeetCode",
-                        icon = Icons.Default.Code,
+                            icon = Icons.Default.Code,
                         questionCount = questions!!.technicalQuestions.size,
                         completedCount = questions!!.technicalQuestions.count { it.status == "completed" },
                         onClick = { onNavigateToTechnicalQuestions(jobId) }
@@ -205,9 +206,9 @@ fun QuestionsDashboardScreen(
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
                         Icons.Default.QuestionAnswer,
@@ -223,22 +224,37 @@ fun QuestionsDashboardScreen(
                         )
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Button(
+            Button(
                         onClick = {
-                            hasAttemptedGeneration = false
-                            shouldReload = false
-                            viewModel.generateQuestions(jobId)
-                            shouldReload = true
+                            showGenerateDialog = true
                         },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = colorResource(R.color.primary)
-                        )
-                    ) {
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(R.color.primary)
+                )
+            ) {
                         Text("Generate Questions")
                     }
                 }
             }
         }
+        
+        // Generate Questions Dialog - Always Available
+        GenerateQuestionsDialog(
+            showDialog = showGenerateDialog,
+            onDismiss = { showGenerateDialog = false },
+            onGenerate = { selectedTypes ->
+                val types = selectedTypes.map { typeName ->
+                    when (typeName) {
+                        "behavioral" -> com.cpen321.usermanagement.data.remote.dto.QuestionType.BEHAVIORAL
+                        "technical" -> com.cpen321.usermanagement.data.remote.dto.QuestionType.TECHNICAL
+                        else -> com.cpen321.usermanagement.data.remote.dto.QuestionType.BEHAVIORAL
+                    }
+                }
+                viewModel.generateQuestions(jobId, types)
+                shouldReload = true
+                showGenerateDialog = false
+            }
+        )
     }
 }
 
@@ -270,29 +286,29 @@ private fun QuestionTypeCard(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
-            ) {
-                Icon(
+        ) {
+            Icon(
                     icon,
-                    contentDescription = null,
+                contentDescription = null,
                     modifier = Modifier.size(48.dp),
                     tint = colorResource(R.color.primary)
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
-                    Text(
+        Text(
                         text = title,
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = colorResource(R.color.text_primary)
-                        )
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = colorResource(R.color.text_primary)
+                )
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
                         text = description,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = colorResource(R.color.text_secondary)
-                        )
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = colorResource(R.color.text_secondary)
                     )
+                )
                     Spacer(modifier = Modifier.height(8.dp))
                     Badge(
                         containerColor = colorResource(R.color.primary).copy(alpha = 0.2f),
@@ -302,11 +318,84 @@ private fun QuestionTypeCard(
                     }
                 }
             }
-            Icon(
+        Icon(
                 Icons.Default.ChevronRight,
                 contentDescription = "Navigate",
-                tint = colorResource(R.color.text_tertiary)
+            tint = colorResource(R.color.text_tertiary)
             )
         }
     }
+}
+
+@Composable
+private fun GenerateQuestionsDialog(
+    showDialog: Boolean,
+    onDismiss: () -> Unit,
+    onGenerate: (List<String>) -> Unit
+) {
+    var behavioralSelected by remember { mutableStateOf(true) }
+    var technicalSelected by remember { mutableStateOf(true) }
+    
+    // Reset to defaults when dialog opens
+    LaunchedEffect(showDialog) {
+        if (showDialog) {
+            behavioralSelected = true
+            technicalSelected = true
+        }
+    }
+    
+    if (showDialog) {
+        AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+                Text("Select Question Types")
+        },
+        text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Checkbox(
+                            checked = behavioralSelected,
+                            onCheckedChange = { behavioralSelected = it }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Behavioral Questions")
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Checkbox(
+                            checked = technicalSelected,
+                            onCheckedChange = { technicalSelected = it }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Technical Questions")
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                    onClick = {
+                        val selectedTypes = mutableListOf<String>()
+                        if (behavioralSelected) selectedTypes.add("behavioral")
+                        if (technicalSelected) selectedTypes.add("technical")
+                        onGenerate(selectedTypes)
+                    },
+                    enabled = behavioralSelected || technicalSelected
+            ) {
+                Text("Generate")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
 }
