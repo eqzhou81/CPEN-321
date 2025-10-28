@@ -279,7 +279,7 @@ private fun BehavioralQuestionCard(
                     onClick = onClick,
                     colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.primary))
                 ) {
-                    Text("Practice")
+                    Text("Start Mock Interview")
                 }
             }
         }

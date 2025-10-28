@@ -76,11 +76,8 @@ fun Navigation(
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToBehavioralQuestions = { navController.navigate(NavRoutes.behavioralQuestionsPath(jobId)) },
                     onNavigateToTechnicalQuestions = { navController.navigate(NavRoutes.technicalQuestionsPath(jobId)) },
-                    onNavigateToMockInterview = { sessionId ->
-                        navController.navigate(NavRoutes.mockInterviewPath(sessionId))
-                    },
                     jobId = jobId,
-                    mainViewModel = mainViewModel
+
                 )
             }
         }

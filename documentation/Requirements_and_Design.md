@@ -32,10 +32,10 @@ The system stores and organizes these job applications as a searchable, clickabl
 #### 3. Generate questions
 For each job application, the user can request relevant coding and behavioral questions. Upon request, the app gathers a curated set of interview questions by leveraging a community LeetCode API to gather coding and system design questions tailored to the job description and OpenAI for behavioral questions. The app then displays two options: Technical Questions and Behavioral Questions, which the user can choose from.
 
-Additionally, the app automatically tracks and displays the user's completion progress across all generated questions, allowing them to monitor their overall preparation status for that specific job application.
+Additionally, the app automatically tracks and displays the user's completion progress across each set of generated questions, allowing them to monitor their overall preparation status for that specific job application.
 
 #### 4. Solving technical questions
-If the user selects Technical Questions, the app displays a list of relevant coding and system design questions. When the user taps on a question, they are redirected to the appropriate external platform (e.g., LeetCode, HackerRank) where they can practice and solve the problem in a real coding environment. After solving the questions, the user can mark the question as completed which increments their overall progress tracker.
+If the user selects Technical Questions, the app displays a list of relevant coding and system design questions. When the user taps on a question, they are redirected to the appropriate external platform (e.g., LeetCode, HackerRank) where they can practice and solve the problem in a real coding environment. After solving the questions, the user can mark the question as completed which increments their overall technical progress tracker.
 
 #### 5. Mock Interviews
 If the user selects Behavioural Questions, the app displays a list of behavioural questions. A user can start a mock interview session for behavioral questions. When the user taps the "Start Mock Interview" button, the app redirects them to a dedicated mock interview screen where the behavioral questions are displayed.
@@ -93,7 +93,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 **Feature 3: Generate Questions**
 
-*   **Generate questions for a saved job:** The system produces behavioral (OpenAI) and technical (LeetCode) sets for the selected job. The system shows the user's overall completion progress across the generated questions.
+*   **Generate questions for a saved job:** The system produces behavioral (OpenAI) and technical (LeetCode) sets for the selected job. 
     
 *   **Access Technical Questions:** The user opens the technical set for that job.
     
@@ -104,7 +104,8 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 *   **Solve a Technical Question:** The user selects a problem to practice then the system redireted the user to the external website that hosts the question (LeetCode).
     
-*   **Mark a technical question as complete:** The user marks a question as completed; overall user progress for the job application updates.
+*   **Mark a technical question as complete:** The user marks a question as completed.
+
     
 
 **Feature 5: Mock Interviews**
@@ -153,7 +154,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 **Post-conditions:** 
 - User can access tailored behavioral and coding questions for the selected job application
 - Questions are stored and available for future practice sessions
-- Progress tracking is initialized for the generated questions
+
     
 **Main success scenario**:
 1. User navigates to their job applications list
@@ -254,7 +255,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 **Post-conditions:**  
 - Mock interview session is active with the first question displayed
 - User can proceed through questions and receive feedback
-- Session progress is tracked for completion monitoring
+
 
 **Main success scenario**:  
 1. User navigates to behavioral questions for a selected job application
@@ -486,6 +487,8 @@ Any user can browse a list of active discussions and find discussions relevant t
 
         *   **Purpose:** Enable real-time communication for discussion forums, broadcasting new discussion creation and real-time message delivery to connected users in discussion rooms.
 
+
+
             
             
     
@@ -512,6 +515,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 **Note:**
 - currenlty for the mvp each job is owned or stored by a user as a job model requires a user id; hence the dependency. However for scalability we might be changing that in later milestones.
+- We decided to keep the sessions (even though in the lab we said we wouldn't) because it was simpler to code as it provided more separation of concerns.
 
 
 ![System Diagram](./images/M2_dependecy.png)
