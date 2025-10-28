@@ -370,67 +370,142 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 ### **3.7. Non-Functional Requirements**
 
+**NFR-1: API Response Time**
 
-**NFR-1 Performance**
+*   **Requirement:** All backend API endpoints must respond with a **p95 response time ≤ 3 seconds** under normal load conditions (≤ 100 concurrent requests across all endpoints).
 
-*   **Requirement:** Generate a 20-question set (behavioral + technical) in **≤ 10 s p95**.
     
-*   **Why it matters:** Fast iteration is critical during prep; slow generation breaks flow.
-    
+*   **Why it matters:** Users interact with multiple features during interview prep; consistently fast response times across the entire system ensure a smooth user experience regardless of which feature they use.
 
-**NFR-2 Security & Privacy**
 
-*   **Requirement:** TLS 1.2+ in transit; AES-256 at rest for résumés/JDs/answers; per-user data isolation; hard delete on account removal.
-    
-*   **Why it matters:** Users share sensitive information; trust hinges on strong data protection.
-    
 
-**NFR-3 Availability**
+**NFR-2: System Scalability**
 
-*   **Requirement:** **≥ 99.5% uptime** monthly (excl. planned maintenance); graceful degradation if external APIs are down.
+*   **Requirement:** The system must support **at least 50 concurrent users** performing mixed operations (job management, question generation, discussion participation) with **≤ 5% request failure rate** and maintaining response times within NFR-1 limits.
+
     
-*   **Why it matters:** Users prep near interview dates; downtime must be rare and non-blocking.
+*   **Why it matters:** The application must handle multiple simultaneous users across all features without degradation; poor scalability leads to failures during peak usage times when students are actively preparing.
+
+
+
+**NFR-3: Data Integrity and Consistency**
+
+*   **Requirement:** The system must maintain **100% data consistency** across all CRUD operations with **zero data loss** during concurrent access. Specifically: (1) All created jobs, questions, and discussions must be successfully stored and retrievable, (2) Question completion status updates must be atomic and accurately reflected, (3) Concurrent message posts to the same discussion must all be saved without overwriting.
+    
+    
+*   **Why it matters:** Users trust the system to accurately track their interview preparation progress; data loss or inconsistency (e.g., losing completed questions, missing discussion messages) severely damages user trust and application usefulness.
+
+
+
+----  
+    
+### 4.1. Main Components
+###
+
+#### **4.1 Component Interfaces**
+
+##### **Users**
+- **Purpose:** Manage user authentication, profiles, and user-specific data access
+- **Rationale:** Handles all user-related operations and maintains user session state
+
+**External Interface (Frontend ↔ Backend):**
+  - `POST /auth/signin(GoogleLoginRequest{idToken})` → `AuthData{userId, name, email, token}` - Authenticate user with Google OAuth token and return session credentials
+  - `POST /auth/signup(GoogleLoginRequest{idToken})` → `AuthData{userId, name, email, token}` - Register new user with Google OAuth and create profile
+  - `GET /user/profile()` → `UserProfile{userId, name, email, createdAt}` - Retrieve authenticated user's profile information
+  - `POST /user/profile(UpdateProfileRequest{name?, email?})` → `UserProfile` - Update user profile details (name, email)
+  - `DELETE /user/profile(DeleteProfileRequest{password})` → `Unit` - Permanently delete user account and all associated data
+
+**Internal Interface (Used by other Backend Components):**
+  - `userModel.findById(userId: String)` → `User{_id, name, email, ...}` - Retrieve user details by ID (used by Discussions, Sessions, Questions for displaying user info)
+  - `userModel.create(userData: UserData)` → `User` - Create new user record in database (used during authentication)
 
 ---
 
-*   ###   
-    
-   ### 4.1. Main Components
-   ###
-
-**Jobs**
+##### **Jobs**
 - **Purpose:** Handle job application management - adding, storing, viewing, and organizing user's saved job postings
 - **Rationale:** Centralizes all job-related data operations and provides foundation for question generation
-- **Interface:**
 
-**Users** 
-- **Purpose:** Manage user authentication, profiles, and user-specific data access
-- **Rationale:** Handles all user-related operations and maintains user session state
-- **Interface:**
+**External Interface (Frontend ↔ Backend):**
+  - `POST /jobs(CreateJobApplicationRequest{title, company, description, location?, url?, salary?, jobType?, experienceLevel?})` → `JobApplication{id, userId, ...}` - Create new job application entry
+  - `GET /jobs(page, limit)` → `JobApplicationsListResponse{jobApplications, total}` - Retrieve paginated list of user's saved job applications
+  - `GET /jobs/{id}()` → `JobApplication` - Get detailed information for specific job application
+  - `PUT /jobs/{id}(UpdateJobApplicationRequest{title?, company?, description?, ...})` → `JobApplication` - Update existing job application details
+  - `DELETE /jobs/{id}()` → `Unit` - Remove job application from user's saved jobs
+  - `GET /jobs/search(query, page, limit)` → `JobApplicationsListResponse{jobApplications, total}` - Search user's jobs by text (title, company, description)
+  - `GET /jobs/by-company(company, page, limit)` → `JobApplicationsListResponse{jobApplications, total}` - Filter jobs by company name
+  - `GET /jobs/statistics()` → `JobStatistics{totalApplications, topCompanies, totalCompanies}` - Get user's job application statistics and insights
+  - `POST /jobs/scrape(ScrapeJobRequest{url})` → `ScrapedJobDetails{title, company, description, location, salary, ...}` - Extract job details from external career site URL using web scraper
+  - `POST /jobs/{id}/similar(SimilarJobsRequest{radius?, remote?, limit?})` → `SimilarJobsResponse{similarJobs, total}` - Find similar job postings based on saved job using web scraping and title/location matching
 
-**Questions**
+**Internal Interface (Used by other Backend Components):**
+  - `jobApplicationModel.findById(jobId: ObjectId, userId: ObjectId)` → `JobApplication{title, company, description, ...}` - Retrieve job details by ID (used by Questions to get job description for question generation)
+  - `jobApplicationModel.findByUserId(userId: ObjectId, limit: Number, skip: Number)` → `{jobApplications: JobApplication[], total: Number}` - Get all jobs for a user (used by Sessions to list available jobs)
+
+---
+
+##### **Questions**
 - **Purpose:** Generate, store, and retrieve technical and behavioral interview questions for specific job applications
 - **Rationale:** Encapsulates question generation logic and manages question lifecycle
-- **Interface:**
 
-**Discussions**
-- **Purpose:** Handle discussion discussion creation, management, and user participation
+**External Interface (Frontend ↔ Backend):**
+  - `POST /questions/generate(GenerateQuestionsRequest{jobId, types: [BEHAVIORAL, TECHNICAL], count})` → `GenerateQuestionsResponse{behavioralQuestions, technicalQuestions, totalQuestions}` - Generate interview questions using OpenAI API (behavioral) and LeetCode API (technical) based on job description
+  - `POST /questions/generateQuestions(GenerateQuestionsFromDescriptionRequest{jobDescription, jobId})` → `GenerateQuestionsFromDescriptionResponse{success, data, storedQuestions}` - Alternative generation endpoint that takes job description directly and generates technical questions from LeetCode API
+  - `GET /questions/job/{jobId}(type?)` → `GenerateQuestionsResponse{behavioralQuestions, technicalQuestions, totalQuestions, jobApplication}` - Retrieve all questions or filter by type (BEHAVIORAL or TECHNICAL) for specific job
+  - `GET /questions/job/{jobId}/progress()` → `QuestionProgressResponse{technical, behavioral, overall}` - Get completion statistics for job's questions (total, completed counts)
+  - `GET /questions/{questionId}()` → `BehavioralQuestion{id, title, description, tags, status, ...}` - Retrieve single behavioral question details by ID
+  - `PUT /questions/{questionId}/answer(SubmitAnswerRequest{questionId, answer, questionType})` → `SubmitAnswerResponse{feedback, score, strengths, improvements}` - Submit answer for behavioral question and receive AI-generated feedback from OpenAI
+  - `PUT /questions/{questionId}/toggle()` → `GenerateQuestionsResponse{...updatedQuestions}` - Mark question as completed or incomplete, tracking user progress
+  - `DELETE /questions/{questionId}()` → `Unit` - Delete specific question from job's question list
+  - `GET /questions/categories()` → `List<QuestionCategory>` - Retrieve available question categories for filtering
+  - `GET /questions/difficulties()` → `List<QuestionDifficulty>` - Retrieve available difficulty levels (EASY, MEDIUM, HARD)
+
+**Internal Interface (Used by other Backend Components):**
+  - `questionModel.findByJobAndType(jobId: ObjectId, userId: ObjectId, type?: QuestionType)` → `Question[]` - Retrieve questions for a job, optionally filtered by type (used by Sessions to get questions for mock interviews)
+  - `questionModel.createMany(userId: ObjectId, jobId: ObjectId, questions: QuestionData[])` → `Question[]` - Bulk create questions (used internally during generation)
+  - `questionModel.updateStatus(questionId: ObjectId, userId: ObjectId, status: QuestionStatus)` → `Question` - Update question completion status (used by Sessions when user completes questions)
+
+
+---
+
+##### **Discussions**
+- **Purpose:** Handle discussion forum creation, management, and user participation
 - **Rationale:** Manages community features separate from individual practice components
-- **Interface:** 
-                
 
-**Sessions**
+**External Interface (Frontend ↔ Backend):**
+  - `GET /discussions(search?, sortBy, page, limit)` → `DiscussionListResponse{discussions, pagination}` - Retrieve all public discussions with search and sorting (recent/popular), shows discussions from all users
+  - `GET /discussions/{id}()` → `DiscussionDetailResponse{id, topic, description, creatorId, creatorName, messages, messageCount, ...}` - Get specific discussion with all messages and participant info
+  - `POST /discussions(CreateDiscussionRequest{topic, description?})` → `CreateDiscussionResponse{success, discussionId}` - Create new discussion thread, broadcasts to all users via WebSocket
+  - `POST /discussions/{id}/messages(PostMessageRequest{content})` → `PostMessageResponse{message}` - Post message to discussion, notifies participants in real-time via WebSocket
+  - `GET /discussions/my/discussions(page, limit)` → `DiscussionListResponse{discussions, pagination}` - Get discussions created by authenticated user only
+
+**Internal Interface (Used by other Backend Components):**
+  - `discussionModel.findById(discussionId: String)` → `Discussion{_id, topic, messages, userId, ...}` - Retrieve discussion details (used internally for validation)
+  - `discussionModel.create(userId: String, userName: String, topic: String, description?: String)` → `Discussion` - Create new discussion (called by controller)
+  - `discussionModel.postMessage(discussionId: String, userId: String, userName: String, content: String)` → `Discussion` - Add message to discussion (called by controller)
+
+
+
+---
+
+##### **Sessions**
 - **Purpose:** Handle mock interview session lifecycle, including creation, question navigation, answer submission, and session state management
 - **Rationale:** Manages interview practice sessions separate from question generation, tracking user progress through behavioral questions and coordinating with OpenAI for real-time feedback
-- **Interface:** 
-  - `createSession(CreateSessionRequest{jobId})` - Initialize new mock interview session
-  - `getSession(sessionId)` - Retrieve active session details
-  - `getUserSessions(limit)` - Get user's session history
-  - `submitAnswer(SubmitAnswerRequest)` - Submit answer for current question and get AI feedback
-  - `navigateToQuestion(sessionId, NavigateRequest)` - Move to next/previous question
-  - `updateSessionStatus(sessionId, UpdateStatusRequest)` - Update session state (active/completed/cancelled)
-  - `getSessionProgress(sessionId)` - Get current progress (questions answered, score, etc.)
-  - `deleteSession(sessionId)` - Delete/cancel session
+
+**External Interface (Frontend ↔ Backend):**
+  - `POST /sessions/create(CreateSessionRequest{jobId})` → `CreateSessionResponse{sessionId, jobId, status}` - Initialize new mock interview session with behavioral questions from specified job
+  - `GET /sessions/{sessionId}()` → `SessionResponse{sessionId, currentQuestion, questionsAnswered, totalQuestions, status, ...}` - Retrieve active session details including current question and progress
+  - `GET /sessions(limit)` → `UserSessionsResponse{sessions, total}` - Get user's session history with pagination
+  - `POST /sessions/submit-answer(SubmitAnswerRequest{sessionId, questionId, answer})` → `SubmitAnswerResponse{feedback, score, nextQuestion}` - Submit answer for current question, receive AI-generated feedback from OpenAI, and get next question
+  - `PUT /sessions/{sessionId}/navigate(NavigateRequest{direction})` → `SessionResponse{...updatedSession}` - Move to next/previous question in session
+  - `PUT /sessions/{sessionId}/status(UpdateStatusRequest{status})` → `SessionResponse{...updatedSession}` - Update session state (active/completed/cancelled)
+  - `GET /sessions/{sessionId}/progress()` → `SessionProgressResponse{questionsAnswered, totalQuestions, averageScore, completionPercentage}` - Get current progress statistics
+  - `DELETE /sessions/{sessionId}()` → `Unit` - Delete/cancel session and remove from history
+
+**Internal Interface (Used by other Backend Components):**
+  - `sessionModel.findActiveByJobId(jobId: ObjectId, userId: ObjectId)` → `Session | null` - Check if user has active session for job (used by Questions to prevent question regeneration during active session)
+  - `sessionModel.create(userId: ObjectId, jobId: ObjectId, questionIds: ObjectId[])` → `Session` - Create new session (called by controller)
+
+
     
     * * *
     
@@ -486,7 +561,10 @@ Any user can browse a list of active discussions and find discussions relevant t
     4. **Websocket**
 
         *   **Purpose:** Enable real-time communication for discussion forums, broadcasting new discussion creation and real-time message delivery to connected users in discussion rooms.
+    
+    5. **Web Scraper (Puppeteer/Cheerio)**
 
+        *   **Purpose:** Extract job postings from external career sites (Indeed, LinkedIn, Glassdoor, RemoteOK, Stack Overflow Jobs, GitHub Jobs) to provide similar job recommendations. Scrapes job titles, descriptions, locations, salaries, and requirements from multiple sources to expand job search beyond manually entered applications.
 
 
             
@@ -524,7 +602,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 ### **4.6. Use Case Sequence Diagram (5 Most Major Use Cases)**
 #### **Use Case 1: Generate Questions for a Saved Job**
-![System Diagram](./images/sequence_uc1.png)
+![System Diagram](./images/final_usecase1.png)
 #### **Use Case 2: Solve a Technical Question**
 ![System Diagram](./images/final_usecase2.png)
 #### **Use Case 3: Start Mock Interview**
@@ -537,48 +615,40 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 
 
+### **4.7. Design and Ways to Test Non-Functional Requirements**
 
+**NFR-1: API Response Time**  
+**Validation:**
 
+*   Load-test all major endpoints (`POST /questions/generate`, `GET /jobs`, `POST /discussions`, `PUT /questions/{id}/toggle`) with 100 concurrent users using **k6/JMeter/Locust**: ramp 2 min → steady 10 min. Pass if **p95 ≤ 3s** for all endpoints and overall error rate < 1%.
+    
+*   Measure individual endpoint latency under normal load (10 concurrent users) for 5 minutes. Pass if lightweight endpoints (`GET /jobs`, `GET /discussions`) achieve **p95 ≤ 500ms** and heavy endpoints (`POST /questions/generate`) achieve **p95 ≤ 8s**.
+    
+*   Monitor backend logs and APM tools (Azure Application Insights/New Relic) during load tests. Pass if database query times remain **< 200ms p95** and external API calls (OpenAI/LeetCode) are properly timeout-handled.
 
-<!-- ### **4.7. Design and Ways to Test Non-Functional Requirements**
-*     
+* * *
+
+**NFR-2: System Scalability**  
+**Validation:**
+
+*   Concurrent user simulation with **Locust/k6**: simulate 50 virtual users executing mixed realistic workflows (login → create job → generate questions → browse discussions → post message) continuously for 15 minutes. Pass if **error rate ≤ 5%**, **p95 response time ≤ 3s**, and **zero server crashes**.
     
-    **Performance & Responsiveness**  
-    **Validation:**
+*   Resource monitoring during load test: track CPU usage, memory consumption, database connection pool utilization, and network I/O using monitoring tools (Docker stats, Azure Monitor, Grafana). Pass if **CPU < 80%**, **memory < 85%**, **DB connections < 80% of pool limit**.
     
-    *   Load-test **UC1 (Generate Questions)** with 100 virtual users (k6/JMeter): ramp 2 min → steady 5 min. Pass if **p95 ≤ 10s** end-to-end and error rate < 1%.
-        
-    *   API latency tests for lightweight endpoints (e.g., `GET /jobs`, `GET /questions`) with 100 VUs. Pass if **p95 ≤ 500ms**.
-        
-    *   Client render timing via Lighthouse (mobile emulation). Pass if **First Contentful Paint ≤ 2s p95** on mid-range hardware.
-        
+*   Stress test beyond capacity: gradually increase concurrent users from 50 → 100 → 150 until system degrades. Pass if system handles **at least 50 users** gracefully and provides **clear degradation signals** (503 responses, queue full messages) rather than silent failures when overloaded.
+
+* * *
+
+**NFR-3: Data Integrity and Consistency**  
+**Validation:**
+
+*   CRUD consistency tests using **automated integration tests (Jest/JUnit/Pytest)**: Create 100 jobs, 100 questions, and 50 discussions via API calls. Retrieve all records and verify **100% match** (no missing data, correct attributes). Pass if **zero data loss** across 10 test runs.
     
-    * * *
+*   Concurrency race condition tests: Simulate 20 concurrent users toggling the same question's completion status 50 times each (total 1000 toggles). Verify final state matches expected count. Simulate 50 concurrent users posting messages to the same discussion simultaneously. Pass if **all 50 messages saved** with correct timestamps and **no overwrites/corruption**.
     
-    **Security & Privacy**  
-    **Validation:**
+*   Database integrity checks: Run MongoDB validation commands (`db.collection.validate()`) on all collections after load tests and concurrent operations. Query for orphaned records (questions without jobs, messages without discussions). Pass if **zero orphaned records** and **all foreign key relationships intact**.
     
-    *   Transport security: SSL Labs scan must grade **A**; HSTS present; only HTTPS reachable.
-        
-    *   App vulns: run **OWASP ZAP** authenticated scan; Pass if **0 High/Critical** (Mediums triaged).
-        
-    *   Secrets & deps: **Gitleaks/TruffleHog** + `npm audit` CI step; Pass if **no exposed secrets** and **no critical** vulns.
-        
-    *   AuthZ tests: attempt cross-user access to `/jobs/{id}` and `/answers/{id}`; Pass if **403/404** for non-owners.
-        
-    *   Data deletion: create user → add data → “Delete Account” → verify **hard delete within 24h** (Mongo queries).
-        
-    
-    * * *
-    
-    **Availability & Resilience**  
-    **Validation:**
-    
-    *   Uptime SLO via Azure Monitor/App Insights: Pass if **≥ 99.5% monthly** (excl. planned maintenance).
-        
-    *   Chaos drills: kill API process; simulate OpenAI/LeetCode outages (DNS blackhole). Pass if app **degrades gracefully** (cached content, clear messaging) and **auto-recovers < 1 min**.
-        
-    *   Backup/restore: snapshot Mongo in non-prod and restore. Pass if **RTO ≤ 60 min** and integrity checks succeed. -->
+*   Transaction rollback tests: Simulate failures during multi-step operations (e.g., create job + generate questions). Force failures midway and verify **atomic rollback** (no partial data). Pass if database remains consistent with **no incomplete transactions**.
 
 
 
