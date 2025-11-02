@@ -66,11 +66,29 @@ export class JobSearchService {
         nextButton: '.nextButton, .next-button, [aria-label="Next"]',
         maxPages: 3
       }
+    },
+    amazon: {
+      baseUrl: 'https://www.amazon.jobs',
+      searchPath: '/en/search',
+      selectors: {
+        jobCard: 'div[class*="job"], div[class*="card"], div[class*="listing"], .job, .result-item, article, [class*="search-result"]',
+        title: 'h1, h2, h3, h4, h5, a[class*="title"], [class*="job-title"], [class*="position"], .title',
+        company: '[class*="company"], [class*="employer"], .company, span:contains("Amazon"), div:contains("Amazon")',
+        location: '[class*="location"], [class*="city"], .location, .city',
+        description: '[class*="description"], [class*="summary"], .description, .summary, p',
+        url: 'a[href*="/job"], a[href*="amazon.jobs"], a[href*="/en/"], a',
+        salary: '[class*="salary"], [class*="compensation"], [class*="pay"], .salary',
+        postedDate: '[class*="date"], [class*="posted"], .date, time'
+      },
+      pagination: {
+        nextButton: 'button[aria-label*="next"], button[class*="next"], .next, [class*="pagination"] button:last-child',
+        maxPages: 3
+      }
     }
   };
 
   /**
-   * Find similar jobs using database-first approach
+   * Find similar jobs using web-scraping-first approach
    */
   async findSimilarJobs(
     jobId: string,
@@ -90,16 +108,43 @@ export class JobSearchService {
       const searchKeywords = this.extractSearchKeywords(jobApplication);
       logger.info(`Extracted keywords: ${searchKeywords.join(', ')}`);
 
-      // Search for similar jobs from our database only
-      const databaseJobs = await this.findSimilarJobsFromDatabase(jobApplication, limit);
-
-      if (databaseJobs.length > 0) {
-        logger.info(`Found ${databaseJobs.length} similar jobs from database`);
-        return databaseJobs.slice(0, limit);
+      // PRIORITY 1: Try web scraping for similar jobs
+      logger.info('Searching for similar jobs via web scraping...');
+      
+      try {
+        const webScrapedJobs = await this.searchSimilarJobs(jobApplication, { limit });
+        
+        if (webScrapedJobs.length > 0) {
+          logger.info(`Found ${webScrapedJobs.length} similar jobs from web scraping`);
+          return webScrapedJobs.slice(0, limit);
+        }
+        
+        logger.info('No jobs found via primary web scraping, trying alternative scraping...');
+        
+        // PRIORITY 2: Try alternative scraping methods
+        const alternativeJobs = await this.scrapeJobsFromUnprotectedSites(searchKeywords, limit);
+        
+        if (alternativeJobs.length > 0) {
+          logger.info(`Found ${alternativeJobs.length} similar jobs from alternative scraping`);
+          return alternativeJobs.slice(0, limit);
+        }
+        
+      } catch (scrapingError) {
+        logger.warn('Web scraping failed:', scrapingError);
       }
 
-      // No results found in database
-      logger.warn('No similar jobs found in database');
+      // DATABASE SEARCH COMPLETELY DISABLED - WEB SCRAPING ONLY
+      // // PRIORITY 3: Fallback to database search only if web scraping fails
+      // logger.info('Falling back to database search...');
+      // const databaseJobs = await this.findSimilarJobsFromDatabase(jobApplication, limit);
+
+      // if (databaseJobs.length > 0) {
+      //   logger.info(`Found ${databaseJobs.length} similar jobs from database fallback`);
+      //   return databaseJobs.slice(0, limit);
+      // }
+
+      // No results found via web scraping
+      logger.warn('No similar jobs found via web scraping - database search disabled');
       return [];
 
     } catch (error) {
@@ -973,7 +1018,7 @@ export class JobSearchService {
         }
         
         // Extract job data
-        const jobs = await page.evaluate((selectors) => {
+        const jobs = await page.evaluate((selectors, source) => {
           const jobCards = document.querySelectorAll(selectors.jobCard);
           const jobs: any[] = [];
           
@@ -1015,6 +1060,27 @@ export class JobSearchService {
                 }
                 
                 jobs.push(job);
+              } else if (source === 'amazon') {
+                // For Amazon, try a more flexible approach - assume it's Amazon if no company found
+                if (titleEl && titleEl.textContent?.trim()) {
+                  const job: any = {
+                    title: (titleEl.textContent || '').trim(),
+                    company: 'Amazon', // Default to Amazon since we're on amazon.jobs
+                    location: (locationEl?.textContent || '').trim(),
+                    description: (descriptionEl?.textContent || '').trim(),
+                    url: urlEl?.getAttribute('href') || '',
+                    salary: salaryEl?.textContent?.trim(),
+                    postedDate: postedEl?.textContent?.trim(),
+                    source: source
+                  };
+                  
+                  // Make URL absolute if it's relative
+                  if (job.url && !job.url.startsWith('http')) {
+                    job.url = new URL(job.url, window.location.origin).href;
+                  }
+                  
+                  jobs.push(job);
+                }
               }
             } catch (error) {
               console.error('Error parsing job card:', error);
@@ -1022,14 +1088,16 @@ export class JobSearchService {
           });
           
           return jobs;
-        }, config.selectors);
+        }, config.selectors, source);
+        
+        const jobList = jobs;
         
         await browser.close();
         
         // Process and validate jobs
-        const processedJobs = jobs
-          .filter(job => job.title && job.company)
-          .map(job => this.processJobData(job, source));
+        const processedJobs = jobList
+          .filter((job: any) => job.title && job.company)
+          .map((job: any) => this.processJobData(job, source));
         
         logger.info(`Scraped ${processedJobs.length} jobs from ${source}`);
         
@@ -1082,6 +1150,16 @@ export class JobSearchService {
         url.searchParams.set('locT', 'C');
         url.searchParams.set('locId', params.location);
       }
+    } else if (config.baseUrl.includes('amazon.jobs')) {
+      // Amazon jobs search parameters
+      url.searchParams.set('query', params.title);
+      if (params.location && !params.remote) {
+        url.searchParams.set('location[]', params.location);
+      } else if (params.remote) {
+        url.searchParams.set('location[]', 'Virtual');
+      }
+      // Add business category filter if available
+      url.searchParams.set('business_category[]', 'software-development');
     }
     
     return url.toString();
