@@ -1,5 +1,9 @@
 import mongoose from 'mongoose';
+import axios from 'axios';
 import puppeteer from 'puppeteer';
+import fs from 'fs';
+import path from 'path';
+import * as cheerio from 'cheerio';
 import { availableJobModel } from '../models/availableJob.model';
 import {
   IJobSearchParams,
@@ -1348,213 +1352,154 @@ export class JobSearchService {
   /**
    * Scrape job details from a specific URL
    */
-  async scrapeJobDetails(url: string): Promise<Partial<ISimilarJob> | null> {
+  async scrapeJobDetails(url: string): Promise<any> {
+  try {
+    // ===== SANITIZE URL =====
+    logger.info(`[DEBUG] Raw URL: "${url}"`);
+    
+    url = url
+      .trim()
+      .replace(/[\r\n\t\f\v]/g, '')
+      .replace(/%0[dDaA]/gi, '')
+      .replace(/\s+/g, '');
+    
+    let cleanUrl: string;
     try {
-      logger.info(`Scraping job details from: ${url}`);
-      
-      // Use Puppeteer for better handling of dynamic content
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
+      const parsedUrl = new URL(url);
+      cleanUrl = parsedUrl.href;
+    } catch (e) {
+      throw new Error('Invalid URL format');
+    }
+    
+    logger.info(`[INFO] Fetching job details from: ${cleanUrl}`);
 
-      try {
-        const page = await browser.newPage();
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
-        
-        // Navigate to the job posting
-        await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
-        
-        // Wait a bit for dynamic content to load
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Extract job details using multiple strategies
-        const jobDetails = await page.evaluate(() => {
-          // Common selectors for different job sites
-          const selectors = {
-            title: [
-              'h1[data-testid="job-title"]',
-              'h1.job-title',
-              'h1.jobTitle',
-              '.job-title h1',
-              'h1',
-              '[data-testid="job-title"]',
-              '.jobsearch-JobInfoHeader-title',
-              '.job-details h1',
-              '.job-header h1',
-              '.position-title',
-              '.job-title-text',
-              'h2.job-title',
-              '.title'
-            ],
-            company: [
-              '.company-name',
-              '.companyName',
-              '.employer',
-              '[data-testid="company-name"]',
-              '.jobsearch-CompanyInfoContainer',
-              '.company',
-              '.employer-name',
-              '.job-company',
-              '.company-info',
-              '.organization',
-              '.company-title'
-            ],
-            location: [
-              '.location',
-              '.job-location',
-              '.companyLocation',
-              '[data-testid="job-location"]',
-              '.jobsearch-JobInfoHeader-subtitle',
-              '.job-location',
-              '.job-details .location',
-              '.workplace',
-              '.office-location',
-              '.work-location'
-            ],
-            description: [
-              '.job-description',
-              '.jobDescription',
-              '.description',
-              '[data-testid="job-description"]',
-              '.jobsearch-jobDescriptionText',
-              '.job-description-content',
-              '.job-details',
-              '.job-content',
-              '.description-content',
-              '.job-summary',
-              '.position-description',
-              '.role-description',
-              'main',
-              '.content'
-            ],
-            salary: [
-              '.salary',
-              '.salaryText',
-              '.compensation',
-              '[data-testid="salary"]',
-              '.jobsearch-JobMetadataHeader-item',
-              '.salary-range',
-              '.pay',
-              '.wage',
-              '.compensation-range'
-            ]
-          };
+    // ===== FETCH HTML WITH AXIOS =====
+    const response = await axios.get(cleanUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      },
+      timeout: 30000,
+      maxRedirects: 5
+    });
+    
+    const htmlContent = response.data;
+    logger.info('[DEBUG] Successfully fetched HTML content');
 
-          const extractText = (selectors: string[]): string => {
-            for (const selector of selectors) {
-              const element = document.querySelector(selector);
-              if (element && element.textContent?.trim()) {
-                return element.textContent.trim();
-              }
-            }
-            return '';
-          };
+    // ===== PARSE WITH CHEERIO (NO CHROMIUM!) =====
+    const $ = cheerio.load(htmlContent);
+    logger.info('[DEBUG] HTML parsed with Cheerio');
 
-          let title = extractText(selectors.title);
-          let company = extractText(selectors.company);
-          const location = extractText(selectors.location);
-          const description = extractText(selectors.description);
-          const salary = extractText(selectors.salary);
+    // ===== DETECT SITE AND USE SELECTORS =====
+    const hostname = new URL(cleanUrl).hostname.toLowerCase();
+    let selectors;
 
-          // If we didn't find title or company, try more generic approaches
-          if (!title) {
-            const h1 = document.querySelector('h1');
-            if (h1) title = h1.textContent?.trim() || '';
-            
-            // Try h2, h3 as fallback
-            if (!title) {
-              const h2 = document.querySelector('h2');
-              if (h2) title = h2.textContent?.trim() || '';
-            }
-            
-            // Extract from URL as last resort
-            if (!title) {
-              const url = window.location.href;
-              if (url.includes('trulioo.com')) {
-                title = 'Trulioo Job Position';
-              } else if (url.includes('amazon.jobs')) {
-                title = 'Amazon Job Position';
-              } else if (url.includes('indeed.com')) {
-                title = 'Indeed Job Posting';
-              } else if (url.includes('linkedin.com')) {
-                title = 'LinkedIn Job Posting';
-              } else {
-                title = 'Job Position';
-              }
-            }
-          }
+    if (hostname.includes('greenhouse.io')) {
+      selectors = {
+        title: 'h1.app-title, .job-title h1, h1',
+        company: '.company-name, [class*="company"]',
+        location: '.location, [class*="location"]',
+        description: '.job-description, #content, .content',
+        salary: '.salary, [class*="salary"]'
+      };
+    } else if (hostname.includes('amazon.jobs')) {
+      selectors = {
+        title: 'h1.title, h1, .job-title',
+        company: '.company, .header-module_company-name',
+        location: '.location, [data-test="location"]',
+        description: '.job-description, .description, #job-detail-body',
+        salary: '.salary, .compensation'
+      };
+    } else if (hostname.includes('ea.com')) {
+      selectors = {
+        title: 'h1, [class*="title"], [class*="Title"]',
+        company: '[class*="company"], [class*="Company"]',
+        location: '[class*="location"], [class*="Location"]',
+        description: '[class*="description"], [class*="Description"], .content',
+        salary: '[class*="salary"]'
+      };
+    } else {
+      selectors = {
+        title: 'h1, h2',
+        company: '[class*="company"]',
+        location: '[class*="location"]',
+        description: '[class*="description"], main',
+        salary: '[class*="salary"]'
+      };
+    }
 
-          if (!company) {
-            // Look for company in meta tags
-            const companyMeta = document.querySelector('meta[property="og:site_name"], meta[name="application-name"]');
-            if (companyMeta) company = companyMeta.getAttribute('content') || '';
-            
-            // Extract from URL as fallback
-            if (!company) {
-              const url = window.location.href;
-              if (url.includes('trulioo.com')) {
-                company = 'Trulioo';
-              } else if (url.includes('amazon.jobs')) {
-                company = 'Amazon';
-              } else if (url.includes('indeed.com')) {
-                company = 'Company on Indeed';
-              } else if (url.includes('linkedin.com')) {
-                company = 'Company on LinkedIn';
-              } else {
-                company = 'Company';
-              }
-            }
-          }
-
-          // Clean up the description (remove extra whitespace)
-          const cleanDescription = description.replace(/\s+/g, ' ').trim();
-
-          return {
-            title,
-            company,
-            location,
-            description: cleanDescription,
-            salary,
-            url: window.location.href
-          };
-        });
-
-        await browser.close();
-
-        // Validate that we got essential information
-        if (!jobDetails.title || !jobDetails.company) {
-          logger.warn('Insufficient job details extracted:', jobDetails);
-          return null;
+    // ===== EXTRACT DATA WITH CHEERIO =====
+    const extractText = (selector: string): string => {
+      const elements = $(selector);
+      for (let i = 0; i < elements.length; i++) {
+        const text = $(elements[i]).text().trim();
+        if (text && text.length > 0) {
+          return text;
         }
-
-        // Extract additional metadata
-        const jobType = this.extractJobType(jobDetails.title, jobDetails.description);
-        const experienceLevel = this.extractExperienceLevel(jobDetails.title, jobDetails.description);
-
-        const result = {
-          title: jobDetails.title,
-          company: jobDetails.company,
-          location: jobDetails.location || undefined,
-          description: jobDetails.description,
-          salary: jobDetails.salary || undefined,
-          url: jobDetails.url,
-          jobType,
-          experienceLevel
-        };
-
-        logger.info('Successfully scraped job details:', { title: result.title, company: result.company });
-        return result;
-
-      } finally {
-        await browser.close();
       }
-      
-    } catch (error) {
-      logger.error('Error scraping job details:', error);
+      return '';
+    };
+
+    let title = extractText(selectors.title);
+    let company = extractText(selectors.company);
+    const location = extractText(selectors.location);
+    const description = extractText(selectors.description);
+    const salary = extractText(selectors.salary);
+
+    // Fallbacks
+    if (!title) {
+      title = $('h1').first().text().trim() || 'Job Position';
+    }
+
+    if (!company) {
+      const companyMeta = $('meta[property="og:site_name"]').attr('content');
+      if (companyMeta) {
+        company = companyMeta;
+      } else if (hostname.includes('amazon.jobs')) {
+        company = 'Amazon';
+      } else if (hostname.includes('ea.com')) {
+        company = 'Electronic Arts';
+      } else if (hostname.includes('greenhouse.io')) {
+        // Extract from URL path (e.g., ada18 from job-boards.greenhouse.io/ada18/jobs/...)
+        const pathParts = new URL(cleanUrl).pathname.split('/');
+        company = pathParts[1] || 'Company';
+      } else {
+        company = 'Company';
+      }
+    }
+
+    // Clean description
+    const cleanDescription = description.replace(/\s+/g, ' ').trim();
+
+    // Validate
+    if (!title || !company) {
+      logger.warn('Insufficient job details:', { title, company });
       return null;
     }
+
+    // Extract metadata
+    const jobType = this.extractJobType(title, cleanDescription);
+    const experienceLevel = this.extractExperienceLevel(title, cleanDescription);
+
+    const result = {
+      title,
+      company,
+      location: location || undefined,
+      description: cleanDescription,
+      salary: salary || undefined,
+      url: cleanUrl,
+      jobType,
+      experienceLevel
+    };
+
+    logger.info('Successfully scraped:', { title: result.title, company: result.company });
+    return result;
+
+  } catch (error: any) {
+    logger.error('Error scraping job details:', error);
+    throw new Error(`Scraping failed: ${error.message}`);
   }
+}
 
   /**
    * Scrape jobs from Stack Overflow Jobs (developer-focused, less protection)
