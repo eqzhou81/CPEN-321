@@ -42,10 +42,10 @@ export class SessionsController {
       }
 
       let jobObjectId = new mongoose.Types.ObjectId(jobId);
-      let jobApplication = await jobApplicationModel.findById(jobObjectId, new mongoose.Types.ObjectId(new mongoose.Types.ObjectId(user._id)));
+      let jobApplication = await jobApplicationModel.findById(jobObjectId, new mongoose.Types.ObjectId(user._id));
       if (!jobApplication) {
         try {
-          jobApplication = await jobApplicationModel.create(new mongoose.Types.ObjectId(new mongoose.Types.ObjectId(user._id)), {
+          jobApplication = await jobApplicationModel.create(new mongoose.Types.ObjectId(user._id), {
             title: 'Mock Interview Practice Session',
             company: 'Practice Company',
             description: 'This is a practice mock interview session to help you prepare for real interviews. Answer behavioral questions and receive AI-powered feedback.',
@@ -61,12 +61,12 @@ export class SessionsController {
         }
       }
 
-      const existingSession = await sessionModel.findActiveByJobId(jobObjectId, new mongoose.Types.ObjectId(new mongoose.Types.ObjectId(user._id)));
+      const existingSession = await sessionModel.findActiveByJobId(jobObjectId, new mongoose.Types.ObjectId(user._id));
       if (existingSession) {
         // If creating a session for a specific question, cancel the existing session first
         if (specificQuestionId) {
           logger.info(`Canceling existing session ${existingSession._id} to create new session for specific question`);
-          await sessionModel.updateStatus(existingSession._id, new mongoose.Types.ObjectId(new mongoose.Types.ObjectId(user._id)), SessionStatus.CANCELLED);
+          await sessionModel.updateStatus(existingSession._id, new mongoose.Types.ObjectId(user._id), SessionStatus.CANCELLED);
         } else {
           return res.status(409).json({
             message: 'An active session already exists for this job. Please complete or cancel it first.',
@@ -100,7 +100,7 @@ export class SessionsController {
           ];
 
           const questionPromises = defaultBehavioralQuestions.map(questionText => 
-            questionModel.create(new mongoose.Types.ObjectId(new mongoose.Types.ObjectId(user._id)), {
+            questionModel.create(new mongoose.Types.ObjectId(user._id), {
               jobId: jobObjectId.toString(),
               type: QuestionType.BEHAVIORAL,
               title: questionText,
@@ -139,7 +139,7 @@ export class SessionsController {
         ];
 
         const questionPromises = defaultBehavioralQuestions.map(questionText => 
-          questionModel.create(new mongoose.Types.ObjectId(new mongoose.Types.ObjectId(user._id)), {
+          questionModel.create(new mongoose.Types.ObjectId(user._id), {
             jobId: jobObjectId.toString(),
             type: QuestionType.BEHAVIORAL,
             title: questionText,
@@ -152,9 +152,9 @@ export class SessionsController {
         questionIds = createdQuestions.map(q => q._id);
       }
 
-      const session = await sessionModel.create(new mongoose.Types.ObjectId(new mongoose.Types.ObjectId(user._id)), jobObjectId, questionIds);
+      const session = await sessionModel.create(new mongoose.Types.ObjectId(user._id), jobObjectId, questionIds);
 
-      const populatedSession = await sessionModel.findById(session._id, new mongoose.Types.ObjectId(new mongoose.Types.ObjectId(user._id)));
+      const populatedSession = await sessionModel.findById(session._id, new mongoose.Types.ObjectId(user._id));
 
       // Get the first question for the response
       let currentQuestion: IQuestion | undefined = undefined;
@@ -470,12 +470,30 @@ export class SessionsController {
   ) {
     try {
       const user = req.user!;
-      const sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
+      
+      // Validate sessionId format
+      let sessionId: mongoose.Types.ObjectId;
+      try {
+        sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
+      } catch (error) {
+        return res.status(400).json({
+          message: 'Invalid session ID format',
+        });
+      }
+
       const { questionIndex } = req.body;
 
       if (typeof questionIndex !== 'number') {
         return res.status(400).json({
           message: 'Question index must be a number',
+        });
+      }
+
+      // Check if session exists first
+      const existingSession = await sessionModel.findById(sessionId, new mongoose.Types.ObjectId(user._id));
+      if (!existingSession) {
+        return res.status(404).json({
+          message: 'Session not found',
         });
       }
 
@@ -500,10 +518,17 @@ export class SessionsController {
     } catch (error) {
       logger.error('Failed to navigate to question:', error);
       
-      if (error instanceof Error && error.message.includes('Invalid question index')) {
-        return res.status(400).json({
-          message: error.message,
-        });
+      if (error instanceof Error) {
+        if (error.message.includes('Invalid question index')) {
+          return res.status(400).json({
+            message: error.message,
+          });
+        }
+        if (error.message.includes('Session not found')) {
+          return res.status(404).json({
+            message: 'Session not found',
+          });
+        }
       }
 
       return res.status(500).json({

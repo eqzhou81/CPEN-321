@@ -269,6 +269,15 @@ export class SessionModel {
       ).populate('questionIds').exec();
     } catch (error) {
       logger.error('Error navigating to question:', error);
+      
+      // Preserve specific error messages for controller handling
+      if (error instanceof Error) {
+        if (error.message === 'Session not found' || error.message === 'Invalid question index') {
+          throw error; // Re-throw specific errors as-is
+        }
+      }
+      
+      // Only throw generic error for unexpected errors
       throw new Error('Failed to navigate to question');
     }
   }
