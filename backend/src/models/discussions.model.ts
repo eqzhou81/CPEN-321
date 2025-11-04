@@ -32,6 +32,10 @@ const discussionSchema = new Schema<IDiscussion>(
       required: true,
       index: true,
     },
+    creatorName: {
+      type: String,
+      required: true,
+    },
     topic: {
       type: String,
       required: true,
@@ -71,10 +75,20 @@ discussionSchema.index({ lastActivityAt: -1 });
 discussionSchema.index({ messageCount: -1 });
 discussionSchema.index({ createdAt: -1 });
 
-const Discussion: Model<IDiscussion> = mongoose.model<IDiscussion>('Discussion', discussionSchema);
+// ==================== SIMPLE MODEL DEFINITION ====================
+// FIX: Use try-catch to handle model registration safely
+let Discussion: Model<IDiscussion>;
 
-// ==================== DISCUSSION MODEL CLASS ====================
-class DiscussionModel {
+try {
+  // Try to get the existing model
+  Discussion = mongoose.model<IDiscussion>('Discussion');
+} catch {
+  // If it doesn't exist, create it
+  Discussion = mongoose.model<IDiscussion>('Discussion', discussionSchema);
+}
+
+// ==================== MODEL METHODS ====================
+export const discussionModel = {
   /**
    * Create a new discussion
    */
@@ -86,6 +100,7 @@ class DiscussionModel {
   ): Promise<IDiscussion> {
     const discussion = new Discussion({
       userId,
+      creatorName: userName,
       topic,
       description,
       messages: [],
@@ -95,11 +110,10 @@ class DiscussionModel {
     });
 
     return await discussion.save();
-  }
+  },
 
   /**
    * Find ALL discussions with optional search and pagination
-   * This is the main browse endpoint - shows discussions from ALL users
    */
   async findAll(
     search?: string,
@@ -107,35 +121,32 @@ class DiscussionModel {
     limit = 20,
     skip = 0
   ): Promise<IDiscussion[]> {
-    const query: any = {}; // No filters - show ALL discussions!
+    const query: any = {};
 
-    // Add text search if provided
     if (search) {
       query.$text = { $search: search };
     }
 
-    // Determine sort order
     const sort: any = sortBy === 'popular' 
-      ? { messageCount: -1, lastActivityAt: -1 }  // Popular: most messages first
-      : { lastActivityAt: -1 };                    // Recent: newest activity first
+      ? { messageCount: -1, lastActivityAt: -1 }
+      : { lastActivityAt: -1 };
 
     return await Discussion.find(query)
       .sort(sort)
       .limit(limit)
       .skip(skip)
       .exec();
-  }
+  },
 
   /**
    * Find discussion by ID
    */
   async findById(discussionId: string): Promise<IDiscussion | null> {
     return await Discussion.findById(discussionId).exec();
-  }
+  },
 
   /**
    * Post a message to a discussion
-   * Anyone can post to any discussion - no ownership checks
    */
   async postMessage(
     discussionId: string,
@@ -147,9 +158,7 @@ class DiscussionModel {
 
     if (!discussion) return null;
 
-    // Create new message
-    const newMessage: IMessage = {
-      _id: new mongoose.Types.ObjectId().toString(),
+    const newMessage = {
       userId,
       userName,
       content,
@@ -157,21 +166,18 @@ class DiscussionModel {
       updatedAt: new Date(),
     };
 
-    // Add message to discussion
     discussion.messages.push(newMessage);
     discussion.messageCount = discussion.messages.length;
     discussion.lastActivityAt = new Date();
 
-    // Update participant count (unique users who posted)
     const uniqueParticipants = new Set(discussion.messages.map((m) => m.userId));
     discussion.participantCount = uniqueParticipants.size;
 
     return await discussion.save();
-  }
+  },
 
   /**
    * Get discussions created by a specific user
-   * For "My Discussions" view
    */
   async findByUserId(userId: string, limit = 20, skip = 0): Promise<IDiscussion[]> {
     return await Discussion.find({ userId })
@@ -179,26 +185,10 @@ class DiscussionModel {
       .limit(limit)
       .skip(skip)
       .exec();
-  }
-
+  },
 
   /**
-   * Search discussions by query string
-   * Searches in both topic and description
-   */
-  async search(query: string, limit = 20, skip = 0): Promise<IDiscussion[]> {
-    return await Discussion.find({
-      $text: { $search: query },
-    })
-      .sort({ score: { $meta: 'textScore' }, lastActivityAt: -1 })
-      .limit(limit)
-      .skip(skip)
-      .exec();
-  }
-
-   /**
    * Get total count of discussions
-   * Used for pagination
    */
   async count(search?: string): Promise<number> {
     const query: any = {};
@@ -206,19 +196,28 @@ class DiscussionModel {
       query.$text = { $search: search };
     }
     return await Discussion.countDocuments(query).exec();
-  }
+  },
 
   /**
    * Get count of discussions created by user
    */
   async countByUserId(userId: string): Promise<number> {
     return await Discussion.countDocuments({ userId }).exec();
+  },
+
+  /**
+   * Delete discussions by query (for testing cleanup)
+   */
+  async deleteMany(query: any): Promise<any> {
+    return await Discussion.deleteMany(query).exec();
+  },
+
+  /**
+   * Find by ID and delete (for testing cleanup)
+   */
+  async findByIdAndDelete(id: string): Promise<IDiscussion | null> {
+    return await Discussion.findByIdAndDelete(id).exec();
   }
+};
 
-
-
-  // NO DELETE METHOD - discussions are permanent like Reddit!
-}
-
-export const discussionModel = new DiscussionModel();
 export { Discussion };
