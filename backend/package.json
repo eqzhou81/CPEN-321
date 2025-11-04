@@ -13,7 +13,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:unmocked": "TEST_ENV=unmocked jest tests/unmock --runInBand --no-cache",
-    "test:mocked": "TEST_ENV=mocked jest tests/mocked --runInBand --no-cache",
+    "test:mocked": "TEST_ENV=mocked jest tests/mock --runInBand --no-cache",
     "test:coverage": "jest --coverage",
     "format": "prettier --check \"src/**/*.{ts,js,json}\"",
     "format:fix": "prettier --write \"src/**/*.{ts,js,json}\""
