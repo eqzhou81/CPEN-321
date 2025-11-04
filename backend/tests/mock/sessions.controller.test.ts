@@ -166,11 +166,11 @@ describe('SessionsController - With Mocking', () => {
      * Expected Status: 500
      * Expected Output: { message: 'Failed to create mock interview session' }
      * Expected Behavior: Returns error when job not found and placeholder job creation fails
-     * Mock Behavior: jobApplicationModel.findById returns null, jobApplicationModel.create returns null
+     * Mock Behavior: jobApplicationModel.findById returns null, jobApplicationModel.create throws error
      */
-    it('should return 500 if job not found and create fails', async () => {
+    it('should return 500 if job not found and create throws error', async () => {
       (jobApplicationModel.findById as jest.Mock).mockResolvedValue(null);
-      (jobApplicationModel.create as jest.Mock).mockResolvedValue(null);
+      (jobApplicationModel.create as jest.Mock).mockRejectedValue(new Error('Create failed'));
 
       const response = await request(app)
         .post('/api/sessions/create')
@@ -179,6 +179,361 @@ describe('SessionsController - With Mocking', () => {
 
       expect(response.status).toBe(500);
       expect(response.body.message).toBe('Failed to create mock interview session');
+    });
+
+    /**
+     * Input: { jobId: string }
+     * Expected Status: 201
+     * Expected Output: { message: string, data: { session: ISessionWithQuestions, currentQuestion: IQuestion } }
+     * Expected Behavior: Creates placeholder job when job not found, then creates session
+     * Mock Behavior: jobApplicationModel.findById returns null, jobApplicationModel.create returns placeholder job, sessionModel.findActiveByJobId returns null, questionModel.create returns questions, sessionModel.create returns session
+     */
+    it('should create placeholder job when job not found and then create session', async () => {
+      const placeholderJob = {
+        _id: new mongoose.Types.ObjectId(mockJobId),
+        title: 'Mock Interview Practice Session',
+        company: 'Practice Company',
+      };
+
+      const mockQuestions = Array.from({ length: 5 }, (_, i) =>
+        createMockQuestion({
+          _id: new mongoose.Types.ObjectId(),
+          title: `Question ${i + 1}`,
+        })
+      );
+
+      const mockSession = createMockSession({
+        questionIds: mockQuestions,
+      });
+
+      (jobApplicationModel.findById as jest.Mock).mockResolvedValue(null);
+      (jobApplicationModel.create as jest.Mock).mockResolvedValue(placeholderJob);
+      (sessionModel.findActiveByJobId as jest.Mock).mockResolvedValue(null);
+      (questionModel.create as jest.Mock).mockImplementation(async () => {
+        return mockQuestions[0];
+      });
+      (sessionModel.create as jest.Mock).mockResolvedValue(mockSession);
+      (sessionModel.findById as jest.Mock).mockResolvedValue(mockSession);
+      (questionModel.findById as jest.Mock).mockResolvedValue(mockQuestions[0]);
+
+      const response = await request(app)
+        .post('/api/sessions/create')
+        .set('Authorization', mockToken)
+        .send({ jobId: mockJobId });
+
+      expect(response.status).toBe(201);
+      expect(response.body.message).toBe('Mock interview session created successfully');
+      expect(jobApplicationModel.create).toHaveBeenCalled();
+    });
+
+    /**
+     * Input: { jobId: string }
+     * Expected Status: 409
+     * Expected Output: { message: string, data: { session: ISessionWithQuestions } }
+     * Expected Behavior: Returns conflict when active session already exists
+     * Mock Behavior: jobApplicationModel.findById returns mock job, sessionModel.findActiveByJobId returns existing session
+     */
+    it('should return 409 if active session already exists', async () => {
+      const mockJobApplication = {
+        _id: new mongoose.Types.ObjectId(mockJobId),
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+      };
+
+      const existingSession = createMockSession();
+      (jobApplicationModel.findById as jest.Mock).mockResolvedValue(mockJobApplication);
+      (sessionModel.findActiveByJobId as jest.Mock).mockResolvedValue(existingSession);
+
+      const response = await request(app)
+        .post('/api/sessions/create')
+        .set('Authorization', mockToken)
+        .send({ jobId: mockJobId });
+
+      expect(response.status).toBe(409);
+      expect(response.body.message).toContain('active session already exists');
+      expect(response.body.data).toHaveProperty('session');
+    });
+
+    /**
+     * Input: { jobId: string, specificQuestionId: string }
+     * Expected Status: 201
+     * Expected Output: { message: string, data: { session: ISessionWithQuestions, currentQuestion: IQuestion } }
+     * Expected Behavior: Creates session with specific question, cancels existing session
+     * Mock Behavior: jobApplicationModel.findById returns mock job, sessionModel.findActiveByJobId returns existing session, sessionModel.updateStatus cancels session, questionModel.findByJobId returns questions, sessionModel.create returns new session
+     */
+    it('should create session with specificQuestionId and cancel existing session', async () => {
+      const mockJobApplication = {
+        _id: new mongoose.Types.ObjectId(mockJobId),
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+      };
+
+      const existingSession = createMockSession();
+      const specificQuestion = createMockQuestion({
+        _id: new mongoose.Types.ObjectId(mockQuestionId),
+        type: QuestionType.BEHAVIORAL,
+      });
+      const otherQuestion = createMockQuestion({
+        _id: new mongoose.Types.ObjectId(),
+        type: QuestionType.BEHAVIORAL,
+      });
+
+      const newSession = createMockSession({
+        questionIds: [specificQuestion, otherQuestion],
+      });
+
+      (jobApplicationModel.findById as jest.Mock).mockResolvedValue(mockJobApplication);
+      (sessionModel.findActiveByJobId as jest.Mock).mockResolvedValue(existingSession);
+      (sessionModel.updateStatus as jest.Mock).mockResolvedValue(true);
+      (questionModel.findByJobId as jest.Mock).mockResolvedValue([specificQuestion, otherQuestion]);
+      (sessionModel.create as jest.Mock).mockResolvedValue(newSession);
+      (sessionModel.findById as jest.Mock).mockResolvedValue(newSession);
+      (questionModel.findById as jest.Mock).mockResolvedValue(specificQuestion);
+
+      const response = await request(app)
+        .post('/api/sessions/create')
+        .set('Authorization', mockToken)
+        .send({ jobId: mockJobId, specificQuestionId: mockQuestionId });
+
+      expect(response.status).toBe(201);
+      expect(response.body.message).toBe('Mock interview session created successfully');
+      expect(sessionModel.updateStatus).toHaveBeenCalledWith(
+        existingSession._id,
+        expect.any(mongoose.Types.ObjectId),
+        SessionStatus.CANCELLED
+      );
+    });
+
+    /**
+     * Input: { jobId: string, specificQuestionId: string }
+     * Expected Status: 201
+     * Expected Output: { message: string, data: { session: ISessionWithQuestions, currentQuestion: IQuestion } }
+     * Expected Behavior: Creates session with specific question first when behavioral questions exist
+     * Mock Behavior: jobApplicationModel.findById returns mock job, sessionModel.findActiveByJobId returns null, questionModel.findByJobId returns behavioral questions, sessionModel.create returns new session
+     */
+    it('should create session with specificQuestionId placed first', async () => {
+      const mockJobApplication = {
+        _id: new mongoose.Types.ObjectId(mockJobId),
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+      };
+
+      const specificQuestion = createMockQuestion({
+        _id: new mongoose.Types.ObjectId(mockQuestionId),
+        type: QuestionType.BEHAVIORAL,
+      });
+      const otherQuestion = createMockQuestion({
+        _id: new mongoose.Types.ObjectId(),
+        type: QuestionType.BEHAVIORAL,
+      });
+
+      const newSession = createMockSession({
+        questionIds: [specificQuestion, otherQuestion],
+      });
+
+      (jobApplicationModel.findById as jest.Mock).mockResolvedValue(mockJobApplication);
+      (sessionModel.findActiveByJobId as jest.Mock).mockResolvedValue(null);
+      (questionModel.findByJobId as jest.Mock).mockResolvedValue([otherQuestion, specificQuestion]);
+      (sessionModel.create as jest.Mock).mockResolvedValue(newSession);
+      (sessionModel.findById as jest.Mock).mockResolvedValue(newSession);
+      (questionModel.findById as jest.Mock).mockResolvedValue(specificQuestion);
+
+      const response = await request(app)
+        .post('/api/sessions/create')
+        .set('Authorization', mockToken)
+        .send({ jobId: mockJobId, specificQuestionId: mockQuestionId });
+
+      expect(response.status).toBe(201);
+      expect(response.body.message).toBe('Mock interview session created successfully');
+      // Verify the specific question is first in the questionIds array
+      expect(sessionModel.create).toHaveBeenCalledWith(
+        expect.any(mongoose.Types.ObjectId),
+        expect.any(mongoose.Types.ObjectId),
+        expect.arrayContaining([specificQuestion._id])
+      );
+    });
+
+    /**
+     * Input: { jobId: string, specificQuestionId: string }
+     * Expected Status: 201
+     * Expected Output: { message: string, data: { session: ISessionWithQuestions, currentQuestion: IQuestion } }
+     * Expected Behavior: Falls back to default questions when no behavioral questions found
+     * Mock Behavior: jobApplicationModel.findById returns mock job, sessionModel.findActiveByJobId returns null, questionModel.findByJobId returns empty array or only technical questions, questionModel.create creates default questions, sessionModel.create returns new session
+     */
+    it('should fall back to default questions when no behavioral questions found with specificQuestionId', async () => {
+      const mockJobApplication = {
+        _id: new mongoose.Types.ObjectId(mockJobId),
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+      };
+
+      const technicalQuestion = createMockQuestion({
+        _id: new mongoose.Types.ObjectId(),
+        type: QuestionType.TECHNICAL,
+      });
+
+      const defaultQuestions = Array.from({ length: 5 }, (_, i) =>
+        createMockQuestion({
+          _id: new mongoose.Types.ObjectId(),
+          type: QuestionType.BEHAVIORAL,
+          title: `Default Question ${i + 1}`,
+        })
+      );
+
+      const newSession = createMockSession({
+        questionIds: defaultQuestions,
+      });
+
+      (jobApplicationModel.findById as jest.Mock).mockResolvedValue(mockJobApplication);
+      (sessionModel.findActiveByJobId as jest.Mock).mockResolvedValue(null);
+      (questionModel.findByJobId as jest.Mock).mockResolvedValue([technicalQuestion]);
+      (questionModel.create as jest.Mock).mockImplementation(async () => {
+        return defaultQuestions[0];
+      });
+      (sessionModel.create as jest.Mock).mockResolvedValue(newSession);
+      (sessionModel.findById as jest.Mock).mockResolvedValue(newSession);
+      (questionModel.findById as jest.Mock).mockResolvedValue(defaultQuestions[0]);
+
+      const response = await request(app)
+        .post('/api/sessions/create')
+        .set('Authorization', mockToken)
+        .send({ jobId: mockJobId, specificQuestionId: mockQuestionId });
+
+      expect(response.status).toBe(201);
+      expect(response.body.message).toBe('Mock interview session created successfully');
+      expect(questionModel.create).toHaveBeenCalledTimes(5);
+    });
+
+    /**
+     * Input: { jobId: string, specificQuestionId: string }
+     * Expected Status: 201
+     * Expected Output: { message: string, data: { session: ISessionWithQuestions, currentQuestion: IQuestion } }
+     * Expected Behavior: Uses all behavioral questions when specific question not found
+     * Mock Behavior: jobApplicationModel.findById returns mock job, sessionModel.findActiveByJobId returns null, questionModel.findByJobId returns behavioral questions but not the specific one, sessionModel.create returns new session
+     */
+    it('should use all behavioral questions when specificQuestionId not found', async () => {
+      const mockJobApplication = {
+        _id: new mongoose.Types.ObjectId(mockJobId),
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+      };
+
+      const otherQuestion1 = createMockQuestion({
+        _id: new mongoose.Types.ObjectId(),
+        type: QuestionType.BEHAVIORAL,
+      });
+      const otherQuestion2 = createMockQuestion({
+        _id: new mongoose.Types.ObjectId(),
+        type: QuestionType.BEHAVIORAL,
+      });
+
+      const newSession = createMockSession({
+        questionIds: [otherQuestion1, otherQuestion2],
+      });
+
+      (jobApplicationModel.findById as jest.Mock).mockResolvedValue(mockJobApplication);
+      (sessionModel.findActiveByJobId as jest.Mock).mockResolvedValue(null);
+      (questionModel.findByJobId as jest.Mock).mockResolvedValue([otherQuestion1, otherQuestion2]);
+      (sessionModel.create as jest.Mock).mockResolvedValue(newSession);
+      (sessionModel.findById as jest.Mock).mockResolvedValue(newSession);
+      (questionModel.findById as jest.Mock).mockResolvedValue(otherQuestion1);
+
+      const response = await request(app)
+        .post('/api/sessions/create')
+        .set('Authorization', mockToken)
+        .send({ jobId: mockJobId, specificQuestionId: mockQuestionId });
+
+      expect(response.status).toBe(201);
+      expect(response.body.message).toBe('Mock interview session created successfully');
+    });
+
+    /**
+     * Input: { jobId: string }
+     * Expected Status: 500
+     * Expected Output: { message: 'Failed to create session' }
+     * Expected Behavior: Returns error when createSession throws unexpected error
+     * Mock Behavior: jobApplicationModel.findById throws error
+     */
+    it('should handle unexpected error in createSession', async () => {
+      (jobApplicationModel.findById as jest.Mock).mockRejectedValue(new Error('Unexpected error'));
+
+      const response = await request(app)
+        .post('/api/sessions/create')
+        .set('Authorization', mockToken)
+        .send({ jobId: mockJobId });
+
+      expect(response.status).toBe(500);
+      expect(response.body.message).toBe('Failed to create session');
+    });
+
+    /**
+     * Input: { jobId: string }
+     * Expected Status: 409
+     * Expected Output: { message: string }
+     * Expected Behavior: Returns error when error message contains "active session already exists"
+     * Mock Behavior: jobApplicationModel.findById returns mock job, sessionModel.findActiveByJobId throws error with specific message
+     */
+    it('should return 409 when error contains active session already exists message', async () => {
+      const mockJobApplication = {
+        _id: new mongoose.Types.ObjectId(mockJobId),
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+      };
+
+      (jobApplicationModel.findById as jest.Mock).mockResolvedValue(mockJobApplication);
+      (sessionModel.findActiveByJobId as jest.Mock).mockRejectedValue(new Error('active session already exists'));
+
+      const response = await request(app)
+        .post('/api/sessions/create')
+        .set('Authorization', mockToken)
+        .send({ jobId: mockJobId });
+
+      expect(response.status).toBe(409);
+      expect(response.body.message).toBe('active session already exists');
+    });
+
+    /**
+     * Input: { jobId: string }
+     * Expected Status: 201
+     * Expected Output: { message: string, data: { session: ISessionWithQuestions, currentQuestion: IQuestion } }
+     * Expected Behavior: Creates session successfully with default questions (questionIds will not be empty as controller always creates questions)
+     * Mock Behavior: jobApplicationModel.findById returns mock job, sessionModel.findActiveByJobId returns null, questionModel.create returns questions, sessionModel.create returns session with questions
+     */
+    it('should create session successfully and return first question', async () => {
+      const mockJobApplication = {
+        _id: new mongoose.Types.ObjectId(mockJobId),
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+      };
+
+      const mockQuestions = Array.from({ length: 5 }, (_, i) =>
+        createMockQuestion({
+          _id: new mongoose.Types.ObjectId(),
+          title: `Question ${i + 1}`,
+        })
+      );
+
+      const mockSession = createMockSession({
+        questionIds: mockQuestions,
+      });
+
+      (questionModel.create as jest.Mock).mockImplementation(async () => {
+        return mockQuestions[0];
+      });
+
+      (jobApplicationModel.findById as jest.Mock).mockResolvedValue(mockJobApplication);
+      (sessionModel.findActiveByJobId as jest.Mock).mockResolvedValue(null);
+      (sessionModel.create as jest.Mock).mockResolvedValue(mockSession);
+      (sessionModel.findById as jest.Mock).mockResolvedValue(mockSession);
+      (questionModel.findById as jest.Mock).mockResolvedValue(mockQuestions[0]);
+
+      const response = await request(app)
+        .post('/api/sessions/create')
+        .set('Authorization', mockToken)
+        .send({ jobId: mockJobId });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.currentQuestion).toBeDefined();
     });
   });
 
@@ -255,6 +610,24 @@ describe('SessionsController - With Mocking', () => {
       expect(response.status).toBe(200);
       expect(response.body.message).toBe('Session retrieved successfully');
       expect(response.body.data).toHaveProperty('session');
+    });
+
+    /**
+     * Input: GET /api/sessions/:sessionId
+     * Expected Status: 500
+     * Expected Output: { message: 'Failed to retrieve session' }
+     * Expected Behavior: Returns error when database query fails
+     * Mock Behavior: sessionModel.findById throws error
+     */
+    it('should handle database error when fetching session', async () => {
+      (sessionModel.findById as jest.Mock).mockRejectedValue(new Error('Database error'));
+
+      const response = await request(app)
+        .get(`/api/sessions/${mockSessionId}`)
+        .set('Authorization', mockToken);
+
+      expect(response.status).toBe(500);
+      expect(response.body.message).toBe('Failed to retrieve session');
     });
 
     /**
@@ -474,6 +847,28 @@ describe('SessionsController - With Mocking', () => {
     });
 
     /**
+     * Input: { sessionId: string, questionId: string, answer: string (length > 5000) }
+     * Expected Status: 400
+     * Expected Output: { message: 'Answer too long (max 5000 characters)' }
+     * Expected Behavior: Rejects request due to answer exceeding maximum length
+     * Mock Behavior: No mocks called (validation fails before model calls)
+     */
+    it('should return 400 if answer is too long', async () => {
+      const longAnswer = 'a'.repeat(5001);
+      const response = await request(app)
+        .post('/api/sessions/submit-answer')
+        .set('Authorization', mockToken)
+        .send({
+          sessionId: mockSessionId,
+          questionId: mockQuestionId,
+          answer: longAnswer,
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Answer too long (max 5000 characters)');
+    });
+
+    /**
      * Input: { sessionId: string (non-existent), questionId: string, answer: string }
      * Expected Status: 404
      * Expected Output: { message: 'Session not found' }
@@ -560,6 +955,297 @@ describe('SessionsController - With Mocking', () => {
       expect(response.status).toBe(400);
       expect(response.body.message).toBe('Question does not belong to this session');
     });
+
+    /**
+     * Input: { sessionId: string, questionId: string (non-existent), answer: string }
+     * Expected Status: 404
+     * Expected Output: { message: 'Question not found' }
+     * Expected Behavior: Returns error response for non-existent question
+     * Mock Behavior: sessionModel.findById returns mock session, questionModel.findById returns null
+     */
+    it('should return 404 if question not found', async () => {
+      const mockSession = createMockSession();
+      (sessionModel.findById as jest.Mock).mockImplementation(async () => {
+        const questionObjectId = new RealObjectId(mockQuestionId);
+        
+        const question = {
+          _id: questionObjectId,
+          type: QuestionType.BEHAVIORAL,
+          title: 'Test question',
+        };
+        
+        return {
+          _id: new RealObjectId(mockSessionId),
+          userId: new RealObjectId(mockUserId),
+          jobId: new RealObjectId(mockJobId),
+          questionIds: [question],
+          currentQuestionIndex: 0,
+          status: SessionStatus.ACTIVE,
+          totalQuestions: 5,
+          answeredQuestions: 0,
+          toObject: () => ({
+            _id: new RealObjectId(mockSessionId),
+            userId: new RealObjectId(mockUserId),
+            jobId: new RealObjectId(mockJobId),
+            questionIds: [question],
+            currentQuestionIndex: 0,
+            status: SessionStatus.ACTIVE,
+            totalQuestions: 5,
+            answeredQuestions: 0,
+          }),
+        };
+      });
+      (questionModel.findById as jest.Mock).mockResolvedValue(null);
+
+      const response = await request(app)
+        .post('/api/sessions/submit-answer')
+        .set('Authorization', mockToken)
+        .send({
+          sessionId: mockSessionId,
+          questionId: mockQuestionId,
+          answer: 'Answer',
+        });
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toBe('Question not found');
+    });
+
+    /**
+     * Input: { sessionId: string, questionId: string, answer: string } (technical question)
+     * Expected Status: 200
+     * Expected Output: { message: string, data: { session: ISessionWithQuestions, feedback: SessionAnswerFeedback } }
+     * Expected Behavior: Submits answer for technical question and returns default feedback
+     * Mock Behavior: sessionModel.findById returns mock session, questionModel.findById returns technical question, sessionModel.updateProgress returns updated session
+     */
+    it('should submit answer for technical question successfully', async () => {
+      const requestData = {
+        sessionId: mockSessionId,
+        questionId: mockQuestionId,
+        answer: 'I would solve this problem using a hash map.',
+      };
+
+      const mockQuestion = createMockQuestion({
+        type: QuestionType.TECHNICAL,
+      });
+
+      const mockUpdatedSession = createMockSession({
+        questionIds: [mockQuestion],
+        answeredQuestions: 1,
+      });
+
+      (sessionModel.findById as jest.Mock).mockImplementation(async () => {
+        const questionObjectId = new RealObjectId(mockQuestionId);
+        
+        const question = {
+          _id: questionObjectId,
+          type: QuestionType.TECHNICAL,
+          title: mockQuestion.title,
+        };
+        
+        return {
+          _id: new RealObjectId(mockSessionId),
+          userId: new RealObjectId(mockUserId),
+          jobId: new RealObjectId(mockJobId),
+          questionIds: [question],
+          currentQuestionIndex: 0,
+          status: SessionStatus.ACTIVE,
+          totalQuestions: 5,
+          answeredQuestions: 0,
+          toObject: () => ({
+            _id: new RealObjectId(mockSessionId),
+            userId: new RealObjectId(mockUserId),
+            jobId: new RealObjectId(mockJobId),
+            questionIds: [question],
+            currentQuestionIndex: 0,
+            status: SessionStatus.ACTIVE,
+            totalQuestions: 5,
+            answeredQuestions: 0,
+          }),
+        };
+      });
+      
+      (questionModel.findById as jest.Mock).mockResolvedValue(mockQuestion);
+      (sessionModel.updateProgress as jest.Mock).mockResolvedValue(mockUpdatedSession);
+
+      const response = await request(app)
+        .post('/api/sessions/submit-answer')
+        .set('Authorization', mockToken)
+        .send(requestData);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.feedback.feedback).toContain('Technical question noted');
+      expect(response.body.data.feedback.score).toBe(0);
+      expect(openaiService.generateAnswerFeedback).not.toHaveBeenCalled();
+    });
+
+    /**
+     * Input: { sessionId: string, questionId: string, answer: string } (last question)
+     * Expected Status: 200
+     * Expected Output: { message: 'Session completed successfully', data: { session: ISessionWithQuestions, feedback: SessionAnswerFeedback } }
+     * Expected Behavior: Submits answer for last question and marks session as completed
+     * Mock Behavior: sessionModel.findById returns mock session with last question, questionModel.findById returns mock question, openaiService.generateAnswerFeedback returns mock feedback, sessionModel.updateProgress returns completed session
+     */
+    it('should complete session when answering last question', async () => {
+      const requestData = {
+        sessionId: mockSessionId,
+        questionId: mockQuestionId,
+        answer: 'This is my answer to the last question.',
+      };
+
+      const mockQuestion = createMockQuestion();
+      
+      const mockFeedback = {
+        feedback: 'Excellent answer!',
+        score: 9.5,
+        strengths: ['Clear structure', 'Great examples'],
+        improvements: [],
+      };
+
+      const mockUpdatedSession = createMockSession({
+        questionIds: [mockQuestion],
+        answeredQuestions: 5,
+        currentQuestionIndex: 4,
+        totalQuestions: 5,
+        status: SessionStatus.COMPLETED,
+      });
+
+      (sessionModel.findById as jest.Mock).mockImplementation(async () => {
+        const questionObjectId = new RealObjectId(mockQuestionId);
+        
+        const question = {
+          _id: questionObjectId,
+          type: mockQuestion.type,
+          title: mockQuestion.title,
+        };
+        
+        return {
+          _id: new RealObjectId(mockSessionId),
+          userId: new RealObjectId(mockUserId),
+          jobId: new RealObjectId(mockJobId),
+          questionIds: [question],
+          currentQuestionIndex: 4,
+          status: SessionStatus.ACTIVE,
+          totalQuestions: 5,
+          answeredQuestions: 4,
+          toObject: () => ({
+            _id: new RealObjectId(mockSessionId),
+            userId: new RealObjectId(mockUserId),
+            jobId: new RealObjectId(mockJobId),
+            questionIds: [question],
+            currentQuestionIndex: 4,
+            status: SessionStatus.ACTIVE,
+            totalQuestions: 5,
+            answeredQuestions: 4,
+          }),
+        };
+      });
+      
+      (questionModel.findById as jest.Mock).mockResolvedValue(mockQuestion);
+      (openaiService.generateAnswerFeedback as jest.Mock).mockResolvedValue(mockFeedback);
+      (questionModel.updateStatus as jest.Mock).mockResolvedValue(true);
+      (sessionModel.updateProgress as jest.Mock).mockResolvedValue(mockUpdatedSession);
+
+      const response = await request(app)
+        .post('/api/sessions/submit-answer')
+        .set('Authorization', mockToken)
+        .send(requestData);
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('Session completed successfully');
+      expect(response.body.data.feedback.isLastQuestion).toBe(true);
+      expect(response.body.data.feedback.sessionCompleted).toBe(true);
+    });
+
+    /**
+     * Input: { sessionId: string, questionId: string, answer: string }
+     * Expected Status: 500
+     * Expected Output: { message: 'Failed to update session progress' }
+     * Expected Behavior: Returns error when updateProgress returns null
+     * Mock Behavior: sessionModel.findById returns mock session, questionModel.findById returns mock question, openaiService.generateAnswerFeedback returns mock feedback, questionModel.updateStatus returns true, sessionModel.updateProgress returns null
+     */
+    it('should return 500 if updateProgress returns null', async () => {
+      const requestData = {
+        sessionId: mockSessionId,
+        questionId: mockQuestionId,
+        answer: 'This is my answer.',
+      };
+
+      const mockQuestion = createMockQuestion();
+      
+      const mockFeedback = {
+        feedback: 'Good answer',
+        score: 8,
+        strengths: ['Clear structure'],
+        improvements: [],
+      };
+
+      (sessionModel.findById as jest.Mock).mockImplementation(async () => {
+        const questionObjectId = new RealObjectId(mockQuestionId);
+        
+        const question = {
+          _id: questionObjectId,
+          type: mockQuestion.type,
+          title: mockQuestion.title,
+        };
+        
+        return {
+          _id: new RealObjectId(mockSessionId),
+          userId: new RealObjectId(mockUserId),
+          jobId: new RealObjectId(mockJobId),
+          questionIds: [question],
+          currentQuestionIndex: 0,
+          status: SessionStatus.ACTIVE,
+          totalQuestions: 5,
+          answeredQuestions: 0,
+          toObject: () => ({
+            _id: new RealObjectId(mockSessionId),
+            userId: new RealObjectId(mockUserId),
+            jobId: new RealObjectId(mockJobId),
+            questionIds: [question],
+            currentQuestionIndex: 0,
+            status: SessionStatus.ACTIVE,
+            totalQuestions: 5,
+            answeredQuestions: 0,
+          }),
+        };
+      });
+      
+      (questionModel.findById as jest.Mock).mockResolvedValue(mockQuestion);
+      (openaiService.generateAnswerFeedback as jest.Mock).mockResolvedValue(mockFeedback);
+      (questionModel.updateStatus as jest.Mock).mockResolvedValue(true);
+      (sessionModel.updateProgress as jest.Mock).mockResolvedValue(null);
+
+      const response = await request(app)
+        .post('/api/sessions/submit-answer')
+        .set('Authorization', mockToken)
+        .send(requestData);
+
+      expect(response.status).toBe(500);
+      expect(response.body.message).toBe('Failed to update session progress');
+    });
+
+    /**
+     * Input: { sessionId: string, questionId: string, answer: string }
+     * Expected Status: 500
+     * Expected Output: { message: 'Failed to submit answer' }
+     * Expected Behavior: Returns error when unexpected error occurs
+     * Mock Behavior: sessionModel.findById throws error
+     */
+    it('should handle unexpected error when submitting answer', async () => {
+      (sessionModel.findById as jest.Mock).mockRejectedValue(new Error('Unexpected error'));
+
+      const response = await request(app)
+        .post('/api/sessions/submit-answer')
+        .set('Authorization', mockToken)
+        .send({
+          sessionId: mockSessionId,
+          questionId: mockQuestionId,
+          answer: 'Answer',
+        });
+
+      expect(response.status).toBe(500);
+      expect(response.body.message).toBe('Failed to submit answer');
+    });
   });
 
   /**
@@ -607,6 +1293,23 @@ describe('SessionsController - With Mocking', () => {
     });
 
     /**
+     * Input: PUT /api/sessions/:sessionId/status with { }
+     * Expected Status: 400
+     * Expected Output: { message: 'Status is required and must be a string' }
+     * Expected Behavior: Rejects request due to missing status
+     * Mock Behavior: No mocks called (validation fails before model calls)
+     */
+    it('should return 400 if status is missing', async () => {
+      const response = await request(app)
+        .put(`/api/sessions/${mockSessionId}/status`)
+        .set('Authorization', mockToken)
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Status is required and must be a string');
+    });
+
+    /**
      * Input: PUT /api/sessions/:sessionId/status with non-existent sessionId
      * Expected Status: 404
      * Expected Output: { message: 'Session not found' }
@@ -623,6 +1326,115 @@ describe('SessionsController - With Mocking', () => {
 
       expect(response.status).toBe(404);
       expect(response.body.message).toBe('Session not found');
+    });
+
+    /**
+     * Input: PUT /api/sessions/:sessionId/status with { status: string }
+     * Expected Status: 500
+     * Expected Output: { message: 'Failed to update session status' }
+     * Expected Behavior: Returns error when updateStatus returns null
+     * Mock Behavior: sessionModel.findById returns mock session, sessionModel.updateStatus returns null
+     */
+    it('should return 500 if updateStatus returns null', async () => {
+      const mockSession = createMockSession();
+      (sessionModel.findById as jest.Mock).mockResolvedValue(mockSession);
+      (sessionModel.updateStatus as jest.Mock).mockResolvedValue(null);
+
+      const response = await request(app)
+        .put(`/api/sessions/${mockSessionId}/status`)
+        .set('Authorization', mockToken)
+        .send({ status: 'paused' });
+
+      expect(response.status).toBe(500);
+      expect(response.body.message).toBe('Failed to update session status');
+    });
+
+    /**
+     * Input: PUT /api/sessions/:sessionId/status
+     * Expected Status: 500
+     * Expected Output: { message: 'Failed to update session status' }
+     * Expected Behavior: Returns error when unexpected error occurs
+     * Mock Behavior: sessionModel.findById throws error
+     */
+    it('should handle unexpected error when updating session status', async () => {
+      (sessionModel.findById as jest.Mock).mockRejectedValue(new Error('Unexpected error'));
+
+      const response = await request(app)
+        .put(`/api/sessions/${mockSessionId}/status`)
+        .set('Authorization', mockToken)
+        .send({ status: 'paused' });
+
+      expect(response.status).toBe(500);
+      expect(response.body.message).toBe('Failed to update session status');
+    });
+
+    /**
+     * Input: PUT /api/sessions/:sessionId/status with { status: 'completed' }
+     * Expected Status: 200
+     * Expected Output: { message: 'Session completed successfully' }
+     * Expected Behavior: Updates session status to completed
+     * Mock Behavior: sessionModel.findById returns mock session, sessionModel.updateStatus returns updated mock session
+     */
+    it('should update session status to completed successfully', async () => {
+      const mockSession = createMockSession({ status: SessionStatus.COMPLETED });
+      const mockUpdatedSession = createMockSession({ status: SessionStatus.COMPLETED });
+
+      (sessionModel.findById as jest.Mock).mockResolvedValue(mockSession);
+      (sessionModel.updateStatus as jest.Mock).mockResolvedValue(mockUpdatedSession);
+
+      const response = await request(app)
+        .put(`/api/sessions/${mockSessionId}/status`)
+        .set('Authorization', mockToken)
+        .send({ status: 'completed' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('Session completed successfully');
+    });
+
+    /**
+     * Input: PUT /api/sessions/:sessionId/status with { status: 'cancelled' }
+     * Expected Status: 200
+     * Expected Output: { message: 'Session cancelled successfully' }
+     * Expected Behavior: Updates session status to cancelled
+     * Mock Behavior: sessionModel.findById returns mock session, sessionModel.updateStatus returns updated mock session
+     */
+    it('should update session status to cancelled successfully', async () => {
+      const mockSession = createMockSession({ status: SessionStatus.CANCELLED });
+      const mockUpdatedSession = createMockSession({ status: SessionStatus.CANCELLED });
+
+      (sessionModel.findById as jest.Mock).mockResolvedValue(mockSession);
+      (sessionModel.updateStatus as jest.Mock).mockResolvedValue(mockUpdatedSession);
+
+      const response = await request(app)
+        .put(`/api/sessions/${mockSessionId}/status`)
+        .set('Authorization', mockToken)
+        .send({ status: 'cancelled' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('Session cancelled successfully');
+    });
+
+    /**
+     * Input: PUT /api/sessions/:sessionId/status with { status: 'active' }
+     * Expected Status: 200
+     * Expected Output: { message: 'Session active successfully' }
+     * Expected Behavior: Updates session status to active
+     * Mock Behavior: sessionModel.findById returns mock session, sessionModel.updateStatus returns updated mock session
+     */
+    it('should update session status to active successfully', async () => {
+      const mockSession = createMockSession({ status: SessionStatus.ACTIVE });
+      const mockUpdatedSession = createMockSession({ status: SessionStatus.ACTIVE });
+
+      (sessionModel.findById as jest.Mock).mockResolvedValue(mockSession);
+      (sessionModel.updateStatus as jest.Mock).mockResolvedValue(mockUpdatedSession);
+
+      const response = await request(app)
+        .put(`/api/sessions/${mockSessionId}/status`)
+        .set('Authorization', mockToken)
+        .send({ status: 'active' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('Session active successfully');
     });
   });
 
@@ -744,6 +1556,69 @@ describe('SessionsController - With Mocking', () => {
 
       expect(response.status).toBe(400);
       expect(response.body.message).toContain('Invalid question index');
+    });
+
+    /**
+     * Input: PUT /api/sessions/:sessionId/navigate with { questionIndex: number }
+     * Expected Status: 404
+     * Expected Output: { message: 'Session not found' }
+     * Expected Behavior: Returns error when navigateToQuestion returns null
+     * Mock Behavior: sessionModel.findById returns mock session, sessionModel.navigateToQuestion returns null
+     */
+    it('should return 404 if navigateToQuestion returns null', async () => {
+      const mockSession = createMockSession();
+      (sessionModel.findById as jest.Mock).mockResolvedValue(mockSession);
+      (sessionModel.navigateToQuestion as jest.Mock).mockResolvedValue(null);
+
+      const response = await request(app)
+        .put(`/api/sessions/${mockSessionId}/navigate`)
+        .set('Authorization', mockToken)
+        .send({ questionIndex: 1 });
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toBe('Session not found');
+    });
+
+    /**
+     * Input: PUT /api/sessions/:sessionId/navigate with { questionIndex: number }
+     * Expected Status: 404
+     * Expected Output: { message: 'Session not found' }
+     * Expected Behavior: Returns error when error message contains "Session not found"
+     * Mock Behavior: sessionModel.findById returns mock session, sessionModel.navigateToQuestion throws error with specific message
+     */
+    it('should return 404 when error contains Session not found message', async () => {
+      const mockSession = createMockSession();
+      (sessionModel.findById as jest.Mock).mockResolvedValue(mockSession);
+      (sessionModel.navigateToQuestion as jest.Mock).mockRejectedValue(
+        new Error('Session not found')
+      );
+
+      const response = await request(app)
+        .put(`/api/sessions/${mockSessionId}/navigate`)
+        .set('Authorization', mockToken)
+        .send({ questionIndex: 1 });
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toBe('Session not found');
+    });
+
+    /**
+     * Input: PUT /api/sessions/:sessionId/navigate with { questionIndex: number }
+     * Expected Status: 500
+     * Expected Output: { message: 'Failed to navigate to question' }
+     * Expected Behavior: Returns error when unexpected error occurs
+     * Mock Behavior: sessionModel.findById throws error
+     */
+    it('should handle unexpected error when navigating to question', async () => {
+      (sessionModel.findById as jest.Mock).mockRejectedValue(new Error('Unexpected error'));
+
+      const response = await request(app)
+        .put(`/api/sessions/${mockSessionId}/navigate`)
+        .set('Authorization', mockToken)
+        .send({ questionIndex: 1 });
+
+      expect(response.status).toBe(500);
+      expect(response.body.message).toBe('Failed to navigate to question');
     });
   });
 

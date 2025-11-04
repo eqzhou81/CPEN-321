@@ -368,7 +368,7 @@ export class SessionsController {
       }
 
       const isLastQuestion = session.currentQuestionIndex >= session.totalQuestions - 1;
-      const sessionCompleted = false;
+      const sessionCompleted = updatedSession.status === SessionStatus.COMPLETED || isLastQuestion;
 
       feedback.isLastQuestion = isLastQuestion;
       feedback.sessionCompleted = sessionCompleted;
