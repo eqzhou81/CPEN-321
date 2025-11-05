@@ -1,6 +1,11 @@
 // Test setup file
 process.env.NODE_ENV = 'test';
 
+beforeEach(() => {
+  jest.clearAllMocks();
+  jest.resetModules();
+});
+
 // Mock mongoose to prevent actual database connections during tests
 jest.mock('mongoose', () => {
   const mockObjectId = jest.fn().mockImplementation((id) => id || 'mockObjectId');

@@ -198,7 +198,8 @@ export class DiscussionsController {
     logger.info(`Discussion created: ${discussion._id} by user ${user._id}`);
 
     //emit discussion to socket 
-    const io = req.app.get('io');
+    try {
+      const io = req.app.get('io');
       if (io) {
         io.emit('newDiscussion', {
           id: discussion._id.toString(),
@@ -212,6 +213,12 @@ export class DiscussionsController {
           createdAt: discussion.createdAt.toISOString(),
         });
       }
+    } catch (socketError) {
+      // Log but don't fail the main request
+      console.error('Socket.IO notification failed:', socketError.message);
+      // Continue with successful response - this is key!
+    }
+
     console.log("   discussion._id.toString():", discussion._id?.toString());
 
     const response: CreateDiscussionResponse = {
@@ -295,8 +302,13 @@ export class DiscussionsController {
         message: messageResponse,
       };
 
+      try {
       const io = req.app.get('io');
       io?.to(id).emit('messageReceived', messageResponse);
+    } catch (socketError) {
+      console.error('Socket.IO emit failed:', socketError);
+      
+    }
 
       res.status(201).json(response);
     } catch (error) {
