@@ -13,6 +13,15 @@ plugins {
 android {
     namespace = "com.cpen321.usermanagement"
     compileSdk = 36
+    
+    // Force OkHttp version resolution to prevent NoClassDefFoundError
+    configurations.all {
+        resolutionStrategy {
+            force("com.squareup.okhttp3:okhttp:5.1.0")
+            force("com.squareup.okhttp3:mockwebserver:5.1.0")
+            force("com.squareup.okio:okio:3.9.1")
+        }
+    }
 
     defaultConfig {
         applicationId = "com.cpen321.usermanagement"
@@ -35,10 +44,20 @@ android {
         buildConfigField("String", "IMAGE_BASE_URL", "\"http://20.9.137.129:3000\"")
         buildConfigField("String", "GOOGLE_CLIENT_ID", "\"228280808099-q9229bfrdhgt9rjor3uv66vdaomhup7t.apps.googleusercontent.com\"")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"228280808099-9v5feggkb4sag0ij88mk3o4j39j22bv8.apps.googleusercontent.com\"")
-    buildConfigField("boolean", "AUTH_BYPASS_ENABLED", "false")
+        buildConfigField("boolean", "AUTH_BYPASS_ENABLED", "false")
+        
+        // Test configuration
+        buildConfigField("String", "STAGING_BASE_URL", "\"http://10.0.2.2:3000/api/\"")
+        buildConfigField("String", "TEST_USER_EMAIL", "\"test@example.com\"")
+        buildConfigField("String", "TEST_USER_PASSWORD", "\"testpassword\"")
     }
 
     buildTypes {
+        debug {
+            // Enable auth bypass for debug builds (used by tests)
+            buildConfigField("boolean", "AUTH_BYPASS_ENABLED", "true")
+        }
+        
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -132,10 +151,34 @@ dependencies {
     implementation(libs.googleid)
 
     testImplementation(libs.junit)
+    
+    // Android Test Dependencies
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation("androidx.compose.ui:ui-test-manifest")
+    
+    // UI Automator for cross-app/system UI testing
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
+    
+    // MockWebServer for mocking HTTP responses
+    // CRITICAL: Must match app's OkHttp version (5.1.0) to prevent NoClassDefFoundError
+    // The app uses logging-interceptor:5.1.0 which requires OkHttp 5.1.0
+    // Explicitly set versions to match app dependencies
+    androidTestImplementation("com.squareup.okhttp3:okhttp:5.1.0")
+    androidTestImplementation("com.squareup.okhttp3:mockwebserver:5.1.0")
+    // OkIO version compatible with OkHttp 5.1.0
+    androidTestImplementation("com.squareup.okio:okio:3.9.1")
+    
+    // Additional test utilities
+    // Note: runner and rules are typically included with androidx.test.ext:junit
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    
+    // Hilt testing support for MockWebServer injection
+    androidTestImplementation("com.google.dagger:hilt-android-testing:${libs.versions.hilt.get()}")
+    kspAndroidTest(libs.hilt.android.compiler)
+    
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

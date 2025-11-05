@@ -16,6 +16,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -61,7 +62,7 @@ fun DiscussionScreen(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Community Discussions") },
+                title = { Text("Community Discussions", modifier = Modifier.testTag("discussions_title")) },
                 actions = {
                     IconButton(onClick = onClose) {
                         Icon(Icons.Default.Close, contentDescription = "Close")
@@ -70,7 +71,10 @@ fun DiscussionScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showDialog = true }) {
+            FloatingActionButton(
+                onClick = { showDialog = true },
+                modifier = Modifier.testTag("new_discussion_button")
+            ) {
                 Icon(Icons.Default.Add, contentDescription = "New Discussion")
             }
         }
@@ -110,23 +114,28 @@ fun DiscussionScreen(
                         OutlinedTextField(
                             value = topic,
                             onValueChange = { topic = it },
+                            modifier = Modifier.testTag("discussion_topic_input"),
                             label = { Text("Topic") },
                             singleLine = true
                         )
                         OutlinedTextField(
                             value = description,
                             onValueChange = { description = it },
+                            modifier = Modifier.testTag("discussion_description_input"),
                             label = { Text("Description (optional)") }
                         )
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = {
-                        discussionViewModel.createDiscussion(topic, description)
-                        topic = ""
-                        description = ""
-                        showDialog = false
-                    }) {
+                    TextButton(
+                        onClick = {
+                            discussionViewModel.createDiscussion(topic, description)
+                            topic = ""
+                            description = ""
+                            showDialog = false
+                        },
+                        modifier = Modifier.testTag("create_discussion_button")
+                    ) {
                         Text("Create")
                     }
                 },
