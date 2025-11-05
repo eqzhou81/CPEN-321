@@ -148,8 +148,8 @@ export class DiscussionsController {
 
       // ✅ Defensive parsing of Zod errors
       const firstError =
-        Array.isArray(validationError.errors) && validationError.errors.length > 0
-          ? validationError.errors[0]
+        Array.isArray(validationError.issues) && validationError.issues.length > 0
+          ? validationError.issues[0]
           : null;
 
       const errorMessage = firstError?.message || "Invalid input data.";
@@ -222,31 +222,7 @@ export class DiscussionsController {
 
     res.status(201).json(response);
   } catch (error) {
-    // ✅ Handle known custom exceptions
-    if (error instanceof EmptyTopicException) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-        error: "EmptyTopicException",
-      });
-    }
-
-    if (error instanceof TopicTooLongException) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-        error: "TopicTooLongException",
-      });
-    }
-
-    if (error instanceof DescriptionTooLongException) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-        error: "DescriptionTooLongException",
-      });
-    }
-
+    
     // ✅ Fallback for unhandled server errors
     logger.error("Failed to create discussion:", error);
     return res.status(500).json({

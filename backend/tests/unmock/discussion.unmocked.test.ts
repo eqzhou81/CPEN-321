@@ -10,10 +10,12 @@ jest.mock('../../src/middleware/auth.middleware', () => ({
 }));
 
 import request from 'supertest';
-import { app } from '../../src/app';
+import { app, server as appServer } from '../../src/config/app';
 import { discussionModel, Discussion } from '../../src/models/discussions.model';
 import { userModel } from '../../src/models/user.model';
 import mongoose from 'mongoose';
+import { io as ioClient, Socket } from 'socket.io-client';
+import { Server } from 'http';
 
 /**
  * ====================================================================
@@ -184,6 +186,70 @@ describe('GET /api/discussions - getAllDiscussions (No Mocking)', () => {
       expect(d).toHaveProperty('messageCount');
     });
   });
+
+  /**
+   * Test: Database error during query
+   * Mock Behavior: discussionModel.findAll() throws error
+   */
+  test('should handle database error gracefully', async () => {
+    jest.spyOn(discussionModel, 'findAll').mockRejectedValueOnce(
+      new Error('Database connection failed')
+    );
+
+    const response = await request(app)
+      .get('/api/discussions')
+      .expect(500);
+
+    expect(response.body.success).toBeFalsy();
+  });
+
+  /**
+   * Test: Topic exceeds 100 characters
+   * Mock Behavior: should throw error
+   */
+  test('should return 400 when topic exceeds 100 characters', async () => {
+  const invalidData = { topic: 'A'.repeat(101), description: 'Valid' };
+  const response = await request(app).post('/api/discussions').send(invalidData).expect(400);
+  
+  expect(response.body.success).toBe(false);
+  expect(response.body.message).toBe('Topic cannot exceed 100 characters.');
+  expect(response.body.error).toBe('TopicTooLongException');
+  });
+
+  /**
+   * Test: Description exceeds 500 characters
+   * Mock Behavior: should throw error
+   */
+  test('should return 400 when description exceeds 500 characters', async () => {
+  const invalidData = { topic: 'Valid', description: 'A'.repeat(501) };
+  const response = await request(app).post('/api/discussions').send(invalidData).expect(400);
+  
+  expect(response.body.success).toBe(false);
+  expect(response.body.message).toBe('Description cannot exceed 500 characters.');
+  expect(response.body.error).toBe('DescriptionTooLongException');
+});
+
+
+/**
+   * Test: Generic invalid dicsussion creation
+   * Mock Behavior: should throw error
+   */
+test('should return 400 with InternalServerError for invalid data type', async () => {
+  const invalidData = {
+    topic: 123, // number instead of string
+    description: 'Valid description',
+  };
+
+  const response = await request(app)
+    .post('/api/discussions')
+    .send(invalidData)
+    .expect(500);
+
+  expect(response.body.success).toBe(false);
+  expect(response.body.error).toBe('InternalServerError'); // Generic fallback
+  expect(response.body.message).toBeDefined();
+});
+
 });
 
 /**
@@ -590,4 +656,312 @@ describe('GET /api/discussions/my/discussions - getMyDiscussions (No Mocking)', 
     expect(response.body.data.length).toBe(1);
     expect(response.body.pagination.limit).toBe(1);
   });
+});
+
+/**
+ * ====================================================================
+ * SOCKET.IO - Discussion Events (No Mocking)
+ * ====================================================================
+ */
+describe('Socket.IO - Discussion Events (No Mocking)', () => {
+  let server: Server;
+  let clientSocket: Socket;
+  let testUserId: string;
+  const createdDiscussionIds: string[] = [];
+
+  beforeAll(async () => {
+    // Create test user
+    const user = await userModel.create({
+      googleId: `gid-socket-${Date.now()}`,
+      email: `socket-${Date.now()}@example.com`,
+      name: 'Socket Test User',
+    });
+    testUserId = user._id.toString();
+
+    // Start the server on a random port
+    server = appServer.listen(0);
+    const address = server.address();
+    const port = typeof address === 'object' && address ? address.port : 3000;
+
+    // Connect socket.io client
+    clientSocket = ioClient(`http://localhost:${port}`, {
+      transports: ['websocket'],
+      forceNew: true,
+    });
+
+    // Wait for connection
+    await new Promise<void>((resolve) => {
+      clientSocket.on('connect', () => {
+        resolve();
+      });
+    });
+  });
+
+  afterAll(async () => {
+    // Cleanup
+    await Discussion.deleteMany({ _id: { $in: createdDiscussionIds } });
+    await mongoose.connection.collection('users').deleteOne({ 
+      _id: new mongoose.Types.ObjectId(testUserId) 
+    });
+
+    // Disconnect socket and close server
+    if (clientSocket) {
+      clientSocket.disconnect();
+    }
+    if (server) {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
+
+  /**
+   * Test: newDiscussion event emitted when discussion created
+   * Input: POST /api/discussions with valid data
+   * Expected Event: 'newDiscussion' with discussion data
+   * Expected Behavior: Socket event contains all discussion details
+   */
+  test('should emit newDiscussion event when discussion is created', (done) => {
+    const newDiscussion = {
+      topic: 'Socket Test Discussion',
+      description: 'Testing socket emission',
+    };
+
+    // Listen for the socket event FIRST
+    clientSocket.once('newDiscussion', (data: any) => {
+      try {
+        expect(data).toHaveProperty('id');
+        expect(data).toHaveProperty('topic', newDiscussion.topic);
+        expect(data).toHaveProperty('description', newDiscussion.description);
+        expect(data).toHaveProperty('creatorName', 'Test User');
+        expect(data).toHaveProperty('messageCount', 0);
+        expect(data).toHaveProperty('participantCount', 1);
+        
+        createdDiscussionIds.push(data.id);
+        done();
+      } catch (error) {
+        done(error);
+      }
+    });
+
+    // Then make API call
+    request(app)
+      .post('/api/discussions')
+      .send(newDiscussion)
+      .expect(201)
+      .end((err) => {
+        if (err) done(err);
+      });
+  });
+
+  /**
+   * Test: messageReceived event emitted when message posted
+   * Input: POST /api/discussions/:id/messages with valid content
+   * Expected Event: 'messageReceived' with message data
+   * Expected Behavior: Socket event contains message details
+   */
+  test('should emit messageReceived event when message is posted', (done) => {
+  // Create a discussion first - wrap in IIFE
+  (async () => {
+    const discussion = await discussionModel.create(
+      testUserId,
+      'Socket Test User',
+      'Discussion for Message Event',
+      'Testing message socket emission'
+    );
+    const discussionId = discussion._id.toString();
+    createdDiscussionIds.push(discussionId);
+
+    // Join the discussion room
+    clientSocket.emit('joinDiscussion', discussionId);
+
+    const messageContent = {
+      content: 'Test socket message',
+    };
+
+    // Listen for the socket event
+    clientSocket.once('messageReceived', (data: any) => {
+      try {
+        expect(data).toHaveProperty('id');
+        expect(data).toHaveProperty('content', messageContent.content);
+        expect(data).toHaveProperty('userName', 'Test User');
+        expect(data).toHaveProperty('userId');
+        
+        done();
+      } catch (error) {
+        done(error);
+      }
+    });
+
+    // Post message
+    request(app)
+      .post(`/api/discussions/${discussionId}/messages`)
+      .send(messageContent)
+      .expect(201)
+      .end((err) => {
+        if (err) done(err);
+      });
+  })();
+});
+
+  /**
+   * Test: No socket event when discussion creation fails
+   * Input: POST /api/discussions with invalid data
+   * Expected Event: No event emitted
+   * Expected Behavior: Socket event only emitted on success
+   */
+  test('should NOT emit newDiscussion event when creation fails', (done) => {
+    const invalidData = {
+      description: 'Invalid - missing topic',
+    };
+
+    let eventEmitted = false;
+
+    clientSocket.once('newDiscussion', () => {
+      eventEmitted = true;
+    });
+
+    request(app)
+      .post('/api/discussions')
+      .send(invalidData)
+      .expect(400)
+      .end(() => {
+        // Wait to ensure no event was emitted
+        setTimeout(() => {
+          expect(eventEmitted).toBe(false);
+          done();
+        }, 500);
+      });
+  });
+
+  /**
+   * Test: Multiple clients receive newDiscussion event
+   * Input: POST /api/discussions with valid data
+   * Expected Event: All connected clients receive the event
+   * Expected Behavior: Broadcasting works correctly
+   */
+  test('should broadcast newDiscussion to multiple clients', (done) => {
+  (async () => {
+    const address = server.address();
+    const port = typeof address === 'object' && address ? address.port : 3000;
+    
+    // Connect second client
+    const secondClient = ioClient(`http://localhost:${port}`, {
+      transports: ['websocket'],
+      forceNew: true,
+    });
+
+    await new Promise<void>((resolve) => {
+      secondClient.on('connect', resolve);
+    });
+
+    const newDiscussion = {
+      topic: 'Broadcast Test',
+      description: 'Testing broadcast',
+    };
+
+    let client1Received = false;
+    let client2Received = false;
+
+    clientSocket.once('newDiscussion', (data: any) => {
+      client1Received = true;
+      checkBothReceived();
+    });
+
+    secondClient.once('newDiscussion', (data: any) => {
+      client2Received = true;
+      createdDiscussionIds.push(data.id);
+      checkBothReceived();
+    });
+
+    function checkBothReceived() {
+      if (client1Received && client2Received) {
+        secondClient.disconnect();
+        done();
+      }
+    }
+
+    request(app)
+      .post('/api/discussions')
+      .send(newDiscussion)
+      .expect(201)
+      .end((err) => {
+        if (err) done(err);
+      });
+  })();
+});
+});
+
+/**
+ * ====================================================================
+ * SOCKET.IO - Error Handling (No Mocking)
+ * ====================================================================
+ */
+describe('Socket.IO - Error Handling (No Mocking)', () => {
+  /**
+   * Test: Socket.IO not available (graceful degradation)
+   * Input: POST /api/discussions when io is undefined
+   * Expected Behavior: API still works, just no event emitted
+   */
+  test('should handle missing socket.io gracefully', async () => {
+    // Temporarily remove io
+    const originalIo = app.get('io');
+    app.set('io', undefined);
+
+    const newDiscussion = {
+      topic: 'No Socket Test',
+      description: 'Testing without socket',
+    };
+
+    const response = await request(app)
+      .post('/api/discussions')
+      .send(newDiscussion)
+      .expect(201);
+
+    expect(response.body.success).toBe(true);
+
+    // Restore io and cleanup
+    app.set('io', originalIo);
+    await Discussion.findByIdAndDelete(response.body.discussionId);
+  });
+});
+
+// Add this BEFORE the socket tests
+describe('Socket.IO Debug', () => {
+  test('can connect to server with socket', async () => {
+    const testServer = appServer.listen(0);
+    const address = testServer.address();
+    const port = typeof address === 'object' && address ? address.port : 3000;
+
+    console.log('Starting server on port:', port);
+    
+    // Check if io exists
+    const io = app.get('io');
+    console.log('io exists:', !!io);
+    
+    const client = ioClient(`http://localhost:${port}`, {
+      transports: ['websocket'],
+      forceNew: true,
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        console.log('Connection timeout!');
+        reject(new Error('Timeout'));
+      }, 5000);
+
+      client.on('connect', () => {
+        console.log('✅ Connected!');
+        clearTimeout(timeout);
+        resolve();
+      });
+
+      client.on('connect_error', (err) => {
+        console.log('❌ Connection error:', err.message);
+        clearTimeout(timeout);
+        reject(err);
+      });
+    });
+
+    client.disconnect();
+    await new Promise(resolve => testServer.close(resolve));
+  }, 10000);
 });
