@@ -1,18 +1,30 @@
 import mongoose from 'mongoose';
 
-// ✅ Suppress noisy console output during tests
-const originalError = console.error;
-const originalWarn = console.warn;
+// ✅ This setup file runs for unmocked tests - ensures real database connections
 
-beforeAll(async () => {
-  const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+console.log('🔧 Setting up unmocked test environment');
+
+const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+
+// Connect to database before tests start
+(global as any).beforeAll = (global as any).beforeAll || ((fn: any) => fn());
+(global as any).afterAll = (global as any).afterAll || ((fn: any) => fn());
+(global as any).jest = (global as any).jest || { setTimeout: () => {} };
+
+(global as any).beforeAll(async () => {
+  console.log('🔧 Unmocked test setup - mongoose type:', typeof mongoose.connect);
+  console.log('🔧 Unmocked test setup - connection type:', typeof mongoose.connection.collection);
+  
   if (mongoose.connection.readyState === 0) {
     await mongoose.connect(uri);
   }
 });
 
-afterAll(async () => {
-  await mongoose.connection.close();
+(global as any).afterAll(async () => {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.close();
+  }
 });
 
-jest.setTimeout(20000);
+// Increase timeout for database operations
+(global as any).jest.setTimeout(20000);
