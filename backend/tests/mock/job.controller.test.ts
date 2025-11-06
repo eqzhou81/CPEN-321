@@ -1,6 +1,6 @@
 import request from 'supertest';
 import mongoose from 'mongoose';
-import { app } from '../../src/app';
+import { app } from '../../src/config/app';
 import { jobApplicationModel } from '../../src/models/jobApplication.model';
 import { availableJobModel } from '../../src/models/availableJob.model';
 import { jobSearchService } from '../../src/services/jobSearch.service';

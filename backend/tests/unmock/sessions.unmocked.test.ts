@@ -7,7 +7,7 @@ process.env.BYPASS_AUTH = 'true';
 process.env.MOCK_USER_ID = MOCKED_USER_ID;
 
 import request from 'supertest';
-import { app } from '../../src/app';
+import { app } from '../../src/config/app';
 import { sessionModel } from '../../src/models/session.model';
 import { questionModel } from '../../src/models/question.model';
 import { jobApplicationModel } from '../../src/models/jobApplication.model';

@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { app } from '../../src/app';
+import { app } from '../../src/config/app';
 import { questionModel } from '../../src/models/question.model';
 import { generateQuestions } from '../../src/services/generateQuestions.service';
 import { QuestionType } from '../../src/types/questions.types';

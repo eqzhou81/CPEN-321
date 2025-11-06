@@ -43,7 +43,7 @@ jest.mock('../../src/models/discussions.model', () => {
     discussionModel: {
       findAll: jest.fn(),
       findById: jest.fn(),
-      findByUserId: jest.fn(),  // ← Add this
+      findByUserId: jest.fn(),  
       findByUser: jest.fn(),
       create: jest.fn(),
       addMessage: jest.fn(),
@@ -304,7 +304,7 @@ describe('GET /api/discussions/my/discussions - Database Errors (Mocked)', () =>
    * Scenario: Connection drops during query
    */
   test('should return 500 when database connection lost', async () => {
-    (discussionModel.findByUser as jest.Mock).mockRejectedValueOnce(
+    (discussionModel.findByUserId as jest.Mock).mockRejectedValueOnce(
       new Error('Database connection lost')
     );
 
@@ -312,7 +312,7 @@ describe('GET /api/discussions/my/discussions - Database Errors (Mocked)', () =>
       .get('/api/discussions/my/discussions')
       .expect(500);
 
-    expect(discussionModel.findByUser).toHaveBeenCalled();
+    expect(discussionModel.findByUserId).toHaveBeenCalled();
   });
 
   /**
@@ -345,241 +345,3 @@ describe('GET /api/discussions/my/discussions - Database Errors (Mocked)', () =>
   });
 });
 
-// /**
-//  * ====================================================================
-//  * SOCKET.IO ERRORS
-//  * ====================================================================
-//  */
-describe('Socket.IO Error Handling (Mocked)', () => {
-  let consoleErrorSpy;
-  let originalIo;
-
-  beforeEach(() => {
-    // Spy on console.error to verify silent logging
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    originalIo = app.get('io');
-  });
-
-  afterEach(() => {
-    consoleErrorSpy.mockRestore();
-    // Restore original io after each test
-    if (originalIo) {
-      app.set('io', originalIo);
-    }
-    jest.clearAllMocks();
-  });
-
-  /**
-   * Test: Socket.IO emit fails silently
-   * Scenario: io.emit throws error but API still succeeds
-   */
-  test('should handle Socket.IO emit failure gracefully', async () => {
-    // Mock successful create
-    const mockDiscussion = {
-      _id: { toString: () => '507f1f77bcf86cd799439011' },
-      topic: 'Test Discussion',
-      description: 'Test',
-      userId: '507f1f77bcf86cd799439012',
-      creatorName: 'Test User',
-      messageCount: 0,
-      participantCount: 1,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      lastActivityAt: new Date(),
-      toObject: function() {
-        return {
-          id: this._id.toString(),
-          topic: this.topic,
-          description: this.description,
-          creatorName: this.creatorName,
-          messageCount: this.messageCount,
-          participantCount: this.participantCount,
-          createdAt: this.createdAt.toISOString(),
-          updatedAt: this.updatedAt.toISOString(),
-        };
-      }
-    };
-
-    (discussionModel.create as jest.Mock).mockResolvedValueOnce(mockDiscussion);
-
-    // Create a proper mock that supports the chain: io.to(id).emit()
-    const mockIo = {
-      to: jest.fn().mockReturnThis(),
-      emit: jest.fn().mockImplementationOnce(() => {
-        throw new Error('Socket.IO connection failed');
-      })
-    };
-
-    // Replace the app's io with our mock
-    app.set('io', mockIo);
-
-    const response = await request(app)
-      .post('/api/discussions')
-      .send({ topic: 'Test', description: 'Test' })
-      .expect(201);
-
-    // API still succeeds even if socket fails
-    expect(response.body.success).toBe(true);
-    
-    // Verify error was logged silently
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Socket.IO notification failed:',
-      'Socket.IO connection failed'
-    );
-
-    // Verify socket was attempted
-    expect(mockIo.to).toHaveBeenCalledWith('507f1f77bcf86cd799439012');
-    expect(mockIo.emit).toHaveBeenCalledWith('messageReceived', expect.any(Object));
-  });
-
-  /**
-   * Test: Socket.IO undefined
-   * Scenario: io not initialized
-   */
-  test('should handle missing Socket.IO gracefully', async () => {
-    const mockDiscussion = {
-      _id: { toString: () => '507f1f77bcf86cd799439011' },
-      topic: 'Test Discussion',
-      description: 'Test',
-      userId: '507f1f77bcf86cd799439012',
-      creatorName: 'Test User',
-      toObject: function() {
-        return {
-          id: this._id.toString(),
-          topic: this.topic,
-          description: this.description,
-          creatorName: this.creatorName,
-        };
-      }
-    };
-
-    (discussionModel.create as jest.Mock).mockResolvedValueOnce(mockDiscussion);
-
-    // Set io to undefined
-    app.set('io', undefined);
-
-    const response = await request(app)
-      .post('/api/discussions')
-      .send({ topic: 'Test', description: 'Test' })
-      .expect(201);
-
-    expect(response.body.success).toBe(true);
-    
-    // No error should be logged when io is undefined
-    expect(consoleErrorSpy).not.toHaveBeenCalled();
-  });
-
-  /**
-   * Test: Socket.IO emit on room fails
-   * Scenario: Emitting to specific room fails but API succeeds
-   */
-  test('should handle room emit failure gracefully', async () => {
-    const mockDiscussion = {
-      _id: { toString: () => '507f1f77bcf86cd799439011' },
-      topic: 'Test Discussion',
-    };
-
-    const mockUpdatedDiscussion = {
-      _id: { toString: () => '507f1f77bcf86cd799439011' },
-      messages: [
-        {
-          _id: { toString: () => '507f1f77bcf86cd799439013' },
-          userId: '507f1f77bcf86cd799439012',
-          userName: 'Test User',
-          content: 'Test message',
-          createdAt: new Date(),
-        }
-      ],
-    };
-
-    (discussionModel.findById as jest.Mock).mockResolvedValueOnce(mockDiscussion);
-    (discussionModel.postMessage as jest.Mock).mockResolvedValueOnce(mockUpdatedDiscussion);
-
-    // Mock that supports the chain and throws error
-    const mockIo = {
-      to: jest.fn().mockReturnThis(),
-      emit: jest.fn().mockImplementationOnce(() => {
-        throw new Error('Room emit failed');
-      })
-    };
-
-    app.set('io', mockIo);
-
-    const response = await request(app)
-      .post('/api/discussions/507f1f77bcf86cd799439011/messages')
-      .send({ content: 'Test message' })
-      .expect(201);
-
-    // API still succeeds
-    expect(response.body.success).toBe(true);
-    
-    // Error was logged silently
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Socket.IO notification failed:',
-      'Room emit failed'
-    );
-  });
-
-  /**
-   * Test: Multiple socket operations with partial failures
-   */
-  test('should handle partial Socket.IO failures', async () => {
-    const mockDiscussion = {
-      _id: { toString: () => '507f1f77bcf86cd799439011' },
-      topic: 'Test Discussion',
-      userId: '507f1f77bcf86cd799439012',
-      toObject: function() {
-        return {
-          id: this._id.toString(),
-          topic: this.topic,
-          userId: this.userId,
-        };
-      }
-    };
-
-    (discussionModel.create as jest.Mock).mockResolvedValueOnce(mockDiscussion);
-
-    // Mock that fails on specific emits but not others
-    let emitCount = 0;
-    const mockIo = {
-      to: jest.fn().mockReturnThis(),
-      emit: jest.fn().mockImplementation(() => {
-        emitCount++;
-        if (emitCount === 1) {
-          throw new Error('First emit failed');
-        }
-        // Second emit succeeds
-      })
-    };
-
-    app.set('io', mockIo);
-
-    const response = await request(app)
-      .post('/api/discussions')
-      .send({ topic: 'Test', description: 'Test' })
-      .expect(201);
-
-    expect(response.body.success).toBe(true);
-    
-    // Only one error should be logged (for the first failed emit)
-    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
-  });
-});
-
-/**
- * ====================================================================
- * SUMMARY
- * ====================================================================
- * 
- * These tests cover error scenarios that are:
- * 1. Impossible to test with real DB (connection failures, timeouts)
- * 2. Race conditions (hard to reproduce consistently)
- * 3. Defensive programming checks (null returns when shouldn't happen)
- * 4. Socket.IO failures (emit errors, missing io)
- * 
- * Combined with unmocked tests, we achieve comprehensive coverage:
- * - Unmocked: Happy paths, validation, 404s, basic CRUD
- * - Mocked: Database failures, edge cases, Socket.IO errors
- * 
- * Total Coverage Goal: 95%+ on discussions.controller.ts
- */

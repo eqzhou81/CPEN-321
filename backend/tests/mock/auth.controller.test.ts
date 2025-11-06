@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { app } from '../../src/app';
+import { app } from '../../src/config/app';
 import { authService } from '../../src/services/auth.service';
 import { userModel } from '../../src/models/user.model';
 
