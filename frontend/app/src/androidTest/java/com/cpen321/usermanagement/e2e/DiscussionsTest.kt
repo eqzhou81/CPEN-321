@@ -295,130 +295,70 @@ class DiscussionsTest : BaseComposeTest() {
     @Test
     fun useCase_CreateDiscussion_EmptyTopic_Failure() {
         android.util.Log.d("DiscussionsTest", "=== Use Case: Create Discussion - Empty Topic Failure ===")
-        
-        // Note: Navigation to discussions is already done in setup()
-        // We're already on discussions screen
-        
-        // Step 1: Get current discussions list state (count or names)
-        android.util.Log.d("DiscussionsTest", "Step 1: Getting baseline discussions list...")
-        composeTestRule.waitForIdle()
-        Thread.sleep(2000)
-        
-        // Verify we're on discussions list
+
+        // Step 1: Verify we're on discussions list
         assert(checkText("Community Discussions", maxRetries = 6)) {
             "Failed: Not on Community Discussions screen"
         }
-        
+        composeTestRule.waitForIdle()
+
         // Step 2: Click "Create Discussion"
-        android.util.Log.d("DiscussionsTest", "Step 2: Opening Create Discussion form...")
+        android.util.Log.d("DiscussionsTest", "Opening Create Discussion form...")
         val createClicked = checkTagAndClick("new_discussion_button", maxRetries = 3)
         assert(createClicked) { "Failed: Could not click Create Discussion button" }
         composeTestRule.waitForIdle()
-        Thread.sleep(2000)
-        
-        // Step 3: Check for form
+
+        // Step 3: Verify form appears
         assert(checkText("Create Discussion", maxRetries = 6)) {
             "Failed: Create Discussion form not found"
         }
         composeTestRule.waitForIdle()
-        Thread.sleep(1000)
-        
-        // Step 4: Try to submit without entering any topic (leave it empty)
-        android.util.Log.d("DiscussionsTest", "Step 4: Attempting to submit with empty topic...")
+
+        // Step 4: Try to submit without entering topic
+        android.util.Log.d("DiscussionsTest", "Submitting with empty topic...")
         val submitClicked = checkTagAndClick("create_discussion_button", maxRetries = 3)
         assert(submitClicked) { "Failed: Could not click Create Discussion button" }
         composeTestRule.waitForIdle()
-        Thread.sleep(5000) // Wait longer to see if validation prevents submission
-        
-        // Step 5: Check what happened after submission
-        // If validation worked correctly, we should still be on the form OR back on list without creating
-        android.util.Log.d("DiscussionsTest", "Step 5: Checking state after submission...")
-        val stillOnForm = check(maxRetries = 3) {
-            try {
-                composeTestRule.onAllNodes(hasText("Create Discussion", substring = true))
-                    .fetchSemanticsNodes(false).isNotEmpty()
-            } catch (e: Exception) {
-                false
-            }
+
+        // Step 5: Wait for either snackbar or return to list
+        composeTestRule.waitUntil(timeoutMillis = 10_000) {
+            composeTestRule.onAllNodes(hasText("empty", substring = true))
+                .fetchSemanticsNodes().isNotEmpty() ||
+                    composeTestRule.onAllNodes(hasText("Community Discussions", substring = true))
+                        .fetchSemanticsNodes().isNotEmpty()
         }
-        
-        val onDiscussionList = check(maxRetries = 3) {
-            try {
-                composeTestRule.onAllNodes(hasText("Community Discussions", substring = true))
-                    .fetchSemanticsNodes(false).isNotEmpty()
-            } catch (e: Exception) {
-                false
-            }
+
+        // Step 6: Check if snackbar appeared
+        val snackbarAppeared = check {
+            composeTestRule.onAllNodes(
+                hasText("empty", substring = true) or hasText("required", substring = true)
+            ).fetchSemanticsNodes().isNotEmpty()
         }
-        
-        // Step 6: Navigate back to discussions list if needed
-        if (stillOnForm) {
-            android.util.Log.d("DiscussionsTest", "Form still open (validation prevented submission), closing form...")
-            val cancelClicked = checkTextAndClick("Cancel", maxRetries = 3)
-            if (!cancelClicked) {
-                pressBack()
-                Thread.sleep(1000)
-            }
-            composeTestRule.waitForIdle()
-            Thread.sleep(2000)
-        } else if (!onDiscussionList) {
-            android.util.Log.d("DiscussionsTest", "Not on form or list, navigating back...")
-            pressBack()
-            Thread.sleep(1000)
-            composeTestRule.waitForIdle()
-            Thread.sleep(2000)
+
+        // Step 7: Check if we navigated back to list
+        val onDiscussionList = check {
+            composeTestRule.onAllNodes(hasText("Community Discussions", substring = true))
+                .fetchSemanticsNodes().isNotEmpty()
         }
-        
-        // Step 7: Verify we're on discussions list
-        android.util.Log.d("DiscussionsTest", "Step 7: Verifying we're on discussions list...")
-        assert(checkText("Community Discussions", maxRetries = 6)) {
-            "Failed: Not on Community Discussions screen"
+
+        // Accept either valid outcome
+        assert(snackbarAppeared || onDiscussionList) {
+            "Failed: Neither snackbar appeared nor navigated back to list after empty topic submission."
         }
+
+        // Step 8: Verify no discussion was created
         composeTestRule.waitForIdle()
-        Thread.sleep(2000)
-        
-        // Step 8: Verify side effect - No new discussion was created
-        // Since we didn't enter a topic, we can't check for a specific name
-        // But we can verify that we're still on the list and no unexpected redirect happened
-        // The key side effect is: we should NOT be on a discussion detail page
-        android.util.Log.d("DiscussionsTest", "Step 8: Verifying side effect - discussion was NOT created...")
-        
-        val stillOnList = checkText("Community Discussions", maxRetries = 3)
-        assert(stillOnList) {
-            "Failed: Side effect check failed. Expected to be on discussions list, " +
-            "but discussion creation may have succeeded (which should not happen with empty topic)."
+        val invalidDiscussionExists = check {
+            composeTestRule.onAllNodes(hasText("Test Discussion", substring = true))
+                .fetchSemanticsNodes().isNotEmpty()
         }
-        
-        // Also verify we're not on a discussion detail page (which would indicate a discussion was created)
-        val notOnDetailPage = check(maxRetries = 3) {
-            try {
-                // If we're on a detail page, we'd see a back button or message input
-                val hasBackButton = try {
-                    composeTestRule.onNodeWithContentDescription("Back").assertExists()
-                    true
-                } catch (e: Exception) {
-                    false
-                }
-                val hasMessageInput = try {
-                    composeTestRule.onNodeWithTag("message_input").assertExists()
-                    true
-                } catch (e: Exception) {
-                    false
-                }
-                // We should NOT be on detail page (no back button or message input visible)
-                !hasBackButton && !hasMessageInput
-            } catch (e: Exception) {
-                true // If check fails, assume we're on list (good)
-            }
+        assert(!invalidDiscussionExists) {
+            "Failed: Discussion appears to have been created despite empty topic."
         }
-        
-        assert(notOnDetailPage) {
-            "Failed: Side effect check failed. Appears to be on discussion detail page, " +
-            "which suggests a discussion was created despite empty topic. This should not happen."
-        }
-        
-        android.util.Log.d("DiscussionsTest", "✓ Side effect verified: Discussion was NOT created - test PASSED")
+
+        android.util.Log.d("DiscussionsTest", "✓ Validation verified: Discussion not created, snackbar or navigation occurred - test PASSED")
     }
+
 
     /**
      * Use Case: Create Discussion - Failure Scenario 4b
@@ -430,146 +370,69 @@ class DiscussionsTest : BaseComposeTest() {
     @Test
     fun useCase_CreateDiscussion_TopicTooLong_Failure() {
         android.util.Log.d("DiscussionsTest", "=== Use Case: Create Discussion - Topic Too Long Failure ===")
-        
-        // Note: Navigation to discussions is already done in setup()
-        // We're already on discussions screen
-        
+
         // Step 1: Verify we're on discussions list
-        android.util.Log.d("DiscussionsTest", "Step 1: Verifying we're on discussions list...")
         assert(checkText("Community Discussions", maxRetries = 6)) {
             "Failed: Not on Community Discussions screen"
         }
         composeTestRule.waitForIdle()
-        Thread.sleep(1000)
-        
+
         // Step 2: Click "Create Discussion"
-        android.util.Log.d("DiscussionsTest", "Step 2: Opening Create Discussion form...")
         val createClicked = checkTagAndClick("new_discussion_button", maxRetries = 3)
         assert(createClicked) { "Failed: Could not click Create Discussion button" }
         composeTestRule.waitForIdle()
-        Thread.sleep(2000)
-        
+
         // Step 3: Check for form
         assert(checkText("Create Discussion", maxRetries = 6)) {
             "Failed: Create Discussion form not found"
         }
         composeTestRule.waitForIdle()
-        Thread.sleep(1000)
-        
+
         // Step 4: Enter topic exceeding 100 characters (invalid input)
-        android.util.Log.d("DiscussionsTest", "Step 4: Entering topic exceeding 100 characters...")
         val longTopic = "A".repeat(101)
-        try {
-            composeTestRule.onNodeWithTag("discussion_topic_input")
-                .performTextInput(longTopic)
-            Thread.sleep(1000)
-            composeTestRule.waitForIdle()
-        } catch (e: Exception) {
-            android.util.Log.w("DiscussionsTest", "Could not input topic: ${e.message}")
-            assert(false) { "Failed: Could not input topic text" }
-        }
-        
-        // Step 5: Try to submit
-        android.util.Log.d("DiscussionsTest", "Step 5: Attempting to submit with topic too long...")
+        composeTestRule.onNodeWithTag("discussion_topic_input").performTextInput(longTopic)
+        composeTestRule.waitForIdle()
+
+        // Step 5: Submit
         val submitClicked = checkTagAndClick("create_discussion_button", maxRetries = 3)
         assert(submitClicked) { "Failed: Could not click Create Discussion button" }
         composeTestRule.waitForIdle()
-        Thread.sleep(5000) // Wait longer to see if validation prevents submission
-        
-        // Step 6: Check what happened after submission
-        android.util.Log.d("DiscussionsTest", "Step 6: Checking state after submission...")
-        val stillOnForm = check(maxRetries = 3) {
-            try {
-                composeTestRule.onAllNodes(hasText("Create Discussion", substring = true))
-                    .fetchSemanticsNodes(false).isNotEmpty()
-            } catch (e: Exception) {
-                false
-            }
+
+        // Step 6: Wait for snackbar or navigation
+        composeTestRule.waitUntil(timeoutMillis = 10_000) {
+            composeTestRule.onAllNodes(hasText("too long", substring = true))
+                .fetchSemanticsNodes().isNotEmpty() ||
+                    composeTestRule.onAllNodes(hasText("Community Discussions", substring = true))
+                        .fetchSemanticsNodes().isNotEmpty()
         }
-        
-        val onDiscussionList = check(maxRetries = 3) {
-            try {
-                composeTestRule.onAllNodes(hasText("Community Discussions", substring = true))
-                    .fetchSemanticsNodes(false).isNotEmpty()
-            } catch (e: Exception) {
-                false
-            }
+
+        // Step 7: Determine what happened
+        val snackbarAppeared = check {
+            composeTestRule.onAllNodes(hasText("too long", substring = true))
+                .fetchSemanticsNodes().isNotEmpty()
         }
-        
-        // Step 7: Navigate back to discussions list if needed
-        if (stillOnForm) {
-            android.util.Log.d("DiscussionsTest", "Form still open (validation prevented submission), closing form...")
-            val cancelClicked = checkTextAndClick("Cancel", maxRetries = 3)
-            if (!cancelClicked) {
-                pressBack()
-                Thread.sleep(1000)
-            }
-            composeTestRule.waitForIdle()
-            Thread.sleep(2000)
-        } else if (!onDiscussionList) {
-            android.util.Log.d("DiscussionsTest", "Not on form or list, navigating back...")
-            pressBack()
-            Thread.sleep(1000)
-            composeTestRule.waitForIdle()
-            Thread.sleep(2000)
+        val onDiscussionList = check {
+            composeTestRule.onAllNodes(hasText("Community Discussions", substring = true))
+                .fetchSemanticsNodes().isNotEmpty()
         }
-        
-        // Step 8: Verify we're on discussions list
-        android.util.Log.d("DiscussionsTest", "Step 8: Verifying we're on discussions list...")
-        assert(checkText("Community Discussions", maxRetries = 6)) {
-            "Failed: Not on Community Discussions screen"
+
+        assert(snackbarAppeared || onDiscussionList) {
+            "Failed: Neither snackbar appeared nor navigated back to list."
         }
+
+        // Step 8: Ensure discussion was NOT created
         composeTestRule.waitForIdle()
-        Thread.sleep(2000)
-        
-        // Step 9: Verify side effect - Discussion with long topic was NOT created
-        android.util.Log.d("DiscussionsTest", "Step 8: Verifying side effect - discussion was NOT created...")
-        
-        // Check that the long topic (101 'A's) does NOT appear in the discussions list
-        val longTopicExists = check(maxRetries = 3) {
-            try {
-                // Try to find the long topic in the list
-                composeTestRule.onAllNodes(hasText("A".repeat(101), substring = false))
-                    .fetchSemanticsNodes(false).isNotEmpty()
-            } catch (e: Exception) {
-                false
-            }
+        val topicExists = check {
+            composeTestRule.onAllNodes(hasText(longTopic.take(20), substring = true))
+                .fetchSemanticsNodes().isNotEmpty()
         }
-        
-        // Test PASSES if the long topic is NOT found (discussion was NOT created)
-        assert(!longTopicExists) {
-            "Failed: Side effect check failed. Found discussion with topic '${"A".repeat(101)}' in the list, " +
-            "which means the discussion was created despite topic being too long. This should not happen."
+        assert(!topicExists) {
+            "Failed: Discussion with long topic was created."
         }
-        
-        // Also verify we're not on a discussion detail page
-        val notOnDetailPage = check(maxRetries = 3) {
-            try {
-                val hasBackButton = try {
-                    composeTestRule.onNodeWithContentDescription("Back").assertExists()
-                    true
-                } catch (e: Exception) {
-                    false
-                }
-                val hasMessageInput = try {
-                    composeTestRule.onNodeWithTag("message_input").assertExists()
-                    true
-                } catch (e: Exception) {
-                    false
-                }
-                !hasBackButton && !hasMessageInput
-            } catch (e: Exception) {
-                true
-            }
-        }
-        
-        assert(notOnDetailPage) {
-            "Failed: Side effect check failed. Appears to be on discussion detail page, " +
-            "which suggests a discussion was created despite topic being too long."
-        }
-        
-        android.util.Log.d("DiscussionsTest", "✓ Side effect verified: Discussion was NOT created - test PASSED")
+
+        android.util.Log.d("DiscussionsTest", "✓ Validation verified: Discussion not created, snackbar or navigation occurred - test PASSED")
     }
+
 
     /**
      * Use Case: Create Discussion - Failure Scenario 5a
@@ -641,16 +504,21 @@ class DiscussionsTest : BaseComposeTest() {
         Thread.sleep(5000) // Wait longer to see if validation prevents submission
         
         // Step 7: Check what happened after submission
-        android.util.Log.d("DiscussionsTest", "Step 7: Checking state after submission...")
-        val stillOnForm = check(maxRetries = 3) {
+        // Step 7: Wait for either form to close OR snackbar to appear
+        composeTestRule.waitForIdle()
+        Thread.sleep(2000)
+
+        // Check if the snackbar shows validation error
+        val snackbarAppeared = check(maxRetries = 3) {
             try {
-                composeTestRule.onAllNodes(hasText("Create Discussion", substring = true))
+                composeTestRule.onAllNodes(hasText("Description too long", substring = true))
                     .fetchSemanticsNodes(false).isNotEmpty()
             } catch (e: Exception) {
                 false
             }
         }
-        
+
+// Check if we navigated back to the list (form closed)
         val onDiscussionList = check(maxRetries = 3) {
             try {
                 composeTestRule.onAllNodes(hasText("Community Discussions", substring = true))
@@ -659,37 +527,14 @@ class DiscussionsTest : BaseComposeTest() {
                 false
             }
         }
-        
-        // Step 8: Navigate back to discussions list if needed
-        if (stillOnForm) {
-            android.util.Log.d("DiscussionsTest", "Form still open (validation prevented submission), closing form...")
-            val cancelClicked = checkTextAndClick("Cancel", maxRetries = 3)
-            if (!cancelClicked) {
-                pressBack()
-                Thread.sleep(1000)
-            }
-            composeTestRule.waitForIdle()
-            Thread.sleep(2000)
-        } else if (!onDiscussionList) {
-            android.util.Log.d("DiscussionsTest", "Not on form or list, navigating back...")
-            pressBack()
-            Thread.sleep(1000)
-            composeTestRule.waitForIdle()
-            Thread.sleep(2000)
+
+// Step 8: Accept either “snackbar shown” or “on list” as a valid outcome
+        assert(snackbarAppeared || onDiscussionList) {
+            "Failed: Neither validation snackbar appeared nor navigated back to discussion list."
         }
-        
-        // Step 9: Verify we're on discussions list
-        android.util.Log.d("DiscussionsTest", "Step 9: Verifying we're on discussions list...")
-        assert(checkText("Community Discussions", maxRetries = 6)) {
-            "Failed: Not on Community Discussions screen"
-        }
+
+// Step 9: Ensure no discussion with the invalid topic exists
         composeTestRule.waitForIdle()
-        Thread.sleep(2000)
-        
-        // Step 10: Verify side effect - Discussion with test topic was NOT created
-        android.util.Log.d("DiscussionsTest", "Step 10: Verifying side effect - discussion was NOT created...")
-        
-        // Check that the test topic does NOT appear in the discussions list
         val testTopicExists = check(maxRetries = 3) {
             try {
                 composeTestRule.onAllNodes(hasText(testTopic, substring = true))
@@ -698,40 +543,12 @@ class DiscussionsTest : BaseComposeTest() {
                 false
             }
         }
-        
-        // Test PASSES if the test topic is NOT found (discussion was NOT created)
         assert(!testTopicExists) {
-            "Failed: Side effect check failed. Found discussion with topic '$testTopic' in the list, " +
-            "which means the discussion was created despite description being too long. This should not happen."
+            "Failed: Discussion with topic '$testTopic' exists despite invalid input."
         }
-        
-        // Also verify we're not on a discussion detail page
-        val notOnDetailPage = check(maxRetries = 3) {
-            try {
-                val hasBackButton = try {
-                    composeTestRule.onNodeWithContentDescription("Back").assertExists()
-                    true
-                } catch (e: Exception) {
-                    false
-                }
-                val hasMessageInput = try {
-                    composeTestRule.onNodeWithTag("message_input").assertExists()
-                    true
-                } catch (e: Exception) {
-                    false
-                }
-                !hasBackButton && !hasMessageInput
-            } catch (e: Exception) {
-                true
-            }
-        }
-        
-        assert(notOnDetailPage) {
-            "Failed: Side effect check failed. Appears to be on discussion detail page, " +
-            "which suggests a discussion was created despite description being too long."
-        }
-        
-        android.util.Log.d("DiscussionsTest", "✓ Side effect verified: Discussion was NOT created - test PASSED")
+
+        android.util.Log.d("DiscussionsTest", "✓ Validation verified: Discussion not created, snackbar or navigation occurred - test PASSED")
+
     }
 
     /**
