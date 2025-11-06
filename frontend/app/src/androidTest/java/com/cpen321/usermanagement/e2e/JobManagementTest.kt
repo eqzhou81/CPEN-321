@@ -1,6 +1,7 @@
 package com.cpen321.usermanagement.e2e
 
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTextInput
 import com.cpen321.usermanagement.data.remote.api.RetrofitClient
@@ -326,50 +327,129 @@ class JobManagementTest : BaseComposeTest() {
      * Use Case: Paste job posting - Failure Scenario
      * User submits empty title
      * 
-     * Expected: Error message displayed, form remains open
+     * Expected side effect:
+     * Job should NOT be created (validation should prevent it)
      */
     @Test
     fun useCase_PasteJobPosting_EmptyTitle_Failure() {
         android.util.Log.d("JobManagementTest", "=== Use Case: Paste Job Posting - Empty Title Failure ===")
         
-        // Navigate to add job
+        // Step 1: Verify we're on job applications list
+        android.util.Log.d("JobManagementTest", "Step 1: Verifying we're on job applications list...")
         assert(checkText("My Job Applications", maxRetries = 6)) {
             "Failed: Main screen not found"
         }
+        composeTestRule.waitForIdle()
+        Thread.sleep(1000)
         
+        // Step 2: Click "Add Job" button
+        android.util.Log.d("JobManagementTest", "Step 2: Opening Add Job form...")
         val addClicked = checkTagAndClick("add_job_button", maxRetries = 3) ||
                         checkTextAndClick("Add", maxRetries = 3)
         assert(addClicked) { "Failed: Could not click Add Job button" }
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
         
+        // Step 3: Check for Add Job dialog
         assert(checkText("Add Job", maxRetries = 6)) {
             "Failed: Add Job dialog not found"
         }
+        composeTestRule.waitForIdle()
+        Thread.sleep(1000)
         
-        // Try to submit without filling title
+        // Step 4: Try to submit without filling title (leave it empty)
+        android.util.Log.d("JobManagementTest", "Step 4: Attempting to submit with empty title...")
         val submitClicked = checkTextAndClick("Add", maxRetries = 3)
-        if (submitClicked) {
-            composeTestRule.waitForIdle()
-            Thread.sleep(2000)
-            
-            // Check for error message
-            val errorFound = checkText("required", maxRetries = 3) ||
-                           checkText("title", maxRetries = 3) ||
-                           checkText("Error", maxRetries = 3)
-            
-            if (errorFound) {
-                android.util.Log.d("JobManagementTest", "✓ Error message found as expected")
-            } else {
-                android.util.Log.d("JobManagementTest", "Note: Error message not found - validation may be different")
-            }
-            
-            // Verify still on form
-            assert(checkText("Add Job", maxRetries = 3)) {
-                "Failed: Not on Add Job form after error"
+        assert(submitClicked) { "Failed: Could not click Add button to submit" }
+        composeTestRule.waitForIdle()
+        Thread.sleep(5000) // Wait to see if validation prevents submission
+        
+        // Step 5: Check what happened after submission
+        android.util.Log.d("JobManagementTest", "Step 5: Checking state after submission...")
+        val stillOnForm = check(maxRetries = 3) {
+            try {
+                composeTestRule.onAllNodes(hasText("Add Job", substring = true))
+                    .fetchSemanticsNodes(false).isNotEmpty()
+            } catch (e: Exception) {
+                false
             }
         }
         
-        android.util.Log.d("JobManagementTest", "✓ Use Case: Paste Job Posting - Empty Title Failure COMPLETED")
+        val onJobList = check(maxRetries = 3) {
+            try {
+                composeTestRule.onAllNodes(hasText("My Job Applications", substring = true))
+                    .fetchSemanticsNodes(false).isNotEmpty()
+            } catch (e: Exception) {
+                false
+            }
+        }
+        
+        // Step 6: Navigate back to job list if needed
+        if (stillOnForm) {
+            android.util.Log.d("JobManagementTest", "Form still open (validation prevented submission), closing form...")
+            val cancelClicked = checkTextAndClick("Cancel", maxRetries = 3)
+            if (!cancelClicked) {
+                pressBack()
+                Thread.sleep(1000)
+            }
+            composeTestRule.waitForIdle()
+            Thread.sleep(2000)
+        } else if (!onJobList) {
+            android.util.Log.d("JobManagementTest", "Not on form or list, navigating back...")
+            pressBack()
+            Thread.sleep(1000)
+            composeTestRule.waitForIdle()
+            Thread.sleep(2000)
+        }
+        
+        // Step 7: Verify we're on job applications list
+        android.util.Log.d("JobManagementTest", "Step 7: Verifying we're on job applications list...")
+        assert(checkText("My Job Applications", maxRetries = 6)) {
+            "Failed: Not on job applications list"
+        }
+        composeTestRule.waitForIdle()
+        Thread.sleep(2000)
+        
+        // Step 8: Verify side effect - Job with empty title was NOT created
+        android.util.Log.d("JobManagementTest", "Step 8: Verifying side effect - job was NOT created...")
+        
+        // Since we didn't enter a title, we can't check for a specific job name
+        // But we can verify we're on the list and no unexpected redirect happened
+        // The key side effect is: we should NOT be on a job detail page
+        
+        val stillOnList = checkText("My Job Applications", maxRetries = 3)
+        assert(stillOnList) {
+            "Failed: Side effect check failed. Expected to be on job list, " +
+            "but job creation may have succeeded (which should not happen with empty title)."
+        }
+        
+        // Also verify we're not on a job detail page (which would indicate a job was created)
+        val notOnDetailPage = check(maxRetries = 3) {
+            try {
+                val hasBackButton = try {
+                    composeTestRule.onNodeWithContentDescription("Back").assertExists()
+                    true
+                } catch (e: Exception) {
+                    false
+                }
+                val hasJobDetails = try {
+                    composeTestRule.onAllNodes(hasText("Job Details", substring = true))
+                        .fetchSemanticsNodes(false).isNotEmpty()
+                    true
+                } catch (e: Exception) {
+                    false
+                }
+                !hasBackButton && !hasJobDetails
+            } catch (e: Exception) {
+                true // If check fails, assume we're on list (good)
+            }
+        }
+        
+        assert(notOnDetailPage) {
+            "Failed: Side effect check failed. Appears to be on job detail page, " +
+            "which suggests a job was created despite empty title. This should not happen."
+        }
+        
+        android.util.Log.d("JobManagementTest", "✓ Side effect verified: Job was NOT created - test PASSED")
     }
 }

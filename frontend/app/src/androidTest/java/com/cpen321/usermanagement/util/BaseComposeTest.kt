@@ -403,5 +403,175 @@ abstract class BaseComposeTest {
                 .assertIsDisplayed()
         }
     }
+    
+    /**
+     * Check function with retry logic
+     * Checks if an element exists, if not waits 5 seconds and retries
+     * 
+     * @param maxRetries Maximum number of retries (default 3)
+     * @param retryDelayMs Delay between retries in milliseconds (default 5000)
+     * @param checkFunction Function that returns true if element is found, false otherwise
+     * @return true if element was found, false if all retries exhausted
+     */
+    protected fun check(
+        maxRetries: Int = 3,
+        retryDelayMs: Long = 5000,
+        checkFunction: () -> Boolean
+    ): Boolean {
+        var attempt = 0
+        while (attempt < maxRetries) {
+            try {
+                composeTestRule.waitForIdle()
+                if (checkFunction()) {
+                    android.util.Log.d("BaseComposeTest", "✓ Check passed on attempt ${attempt + 1}")
+                    return true
+                }
+            } catch (e: Exception) {
+                android.util.Log.d("BaseComposeTest", "Check failed on attempt ${attempt + 1}: ${e.message}")
+            }
+            
+            attempt++
+            if (attempt < maxRetries) {
+                android.util.Log.d("BaseComposeTest", "Retrying check in ${retryDelayMs}ms... (attempt ${attempt + 1}/$maxRetries)")
+                Thread.sleep(retryDelayMs)
+            }
+        }
+        
+        android.util.Log.w("BaseComposeTest", "✗ Check failed after $maxRetries attempts")
+        return false
+    }
+    
+    /**
+     * Check for text on screen with retry logic
+     * 
+     * @param text Text to search for
+     * @param substring Whether to use substring matching (default true)
+     * @param maxRetries Maximum retries (default 3)
+     * @return true if text found, false otherwise
+     */
+    protected fun checkText(
+        text: String,
+        substring: Boolean = true,
+        maxRetries: Int = 3
+    ): Boolean {
+        return check(maxRetries = maxRetries) {
+            try {
+                if (substring) {
+                    composeTestRule.onAllNodes(hasText(text, substring = true))
+                        .fetchSemanticsNodes(false).isNotEmpty()
+                } else {
+                    composeTestRule.onNodeWithText(text).assertExists()
+                    true
+                }
+            } catch (e: Exception) {
+                false
+            }
+        }
+    }
+    
+    /**
+     * Check for element with test tag with retry logic
+     * 
+     * @param tag Test tag to search for
+     * @param maxRetries Maximum retries (default 3)
+     * @return true if element found, false otherwise
+     */
+    protected fun checkTag(
+        tag: String,
+        maxRetries: Int = 3
+    ): Boolean {
+        return check(maxRetries = maxRetries) {
+            try {
+                composeTestRule.onNodeWithTag(tag).assertExists()
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+    }
+    
+    /**
+     * Check for element and click it with retry logic
+     * 
+     * @param checkFunction Function that returns a SemanticsNodeInteraction if found, null otherwise
+     * @param maxRetries Maximum retries (default 3)
+     * @return true if clicked successfully, false otherwise
+     */
+    protected fun checkAndClick(
+        maxRetries: Int = 3,
+        checkFunction: () -> SemanticsNodeInteraction?
+    ): Boolean {
+        var attempt = 0
+        while (attempt < maxRetries) {
+            try {
+                composeTestRule.waitForIdle()
+                val node = checkFunction()
+                if (node != null) {
+                    node.performClick()
+                    android.util.Log.d("BaseComposeTest", "✓ Clicked element on attempt ${attempt + 1}")
+                    Thread.sleep(1000) // Brief pause after click
+                    return true
+                }
+            } catch (e: Exception) {
+                android.util.Log.d("BaseComposeTest", "Click failed on attempt ${attempt + 1}: ${e.message}")
+            }
+            
+            attempt++
+            if (attempt < maxRetries) {
+                android.util.Log.d("BaseComposeTest", "Retrying click in 5000ms... (attempt ${attempt + 1}/$maxRetries)")
+                Thread.sleep(5000)
+            }
+        }
+        
+        android.util.Log.w("BaseComposeTest", "✗ Click failed after $maxRetries attempts")
+        return false
+    }
+    
+    /**
+     * Check for text and click it with retry logic
+     * 
+     * @param text Text to find and click
+     * @param substring Whether to use substring matching (default true)
+     * @param maxRetries Maximum retries (default 3)
+     * @return true if clicked successfully, false otherwise
+     */
+    protected fun checkTextAndClick(
+        text: String,
+        substring: Boolean = true,
+        maxRetries: Int = 3
+    ): Boolean {
+        return checkAndClick(maxRetries = maxRetries) {
+            try {
+                if (substring) {
+                    composeTestRule.onAllNodes(hasText(text, substring = true))
+                        .onFirst()
+                } else {
+                    composeTestRule.onNodeWithText(text)
+                }
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+    
+    /**
+     * Check for tag and click it with retry logic
+     * 
+     * @param tag Test tag to find and click
+     * @param maxRetries Maximum retries (default 3)
+     * @return true if clicked successfully, false otherwise
+     */
+    protected fun checkTagAndClick(
+        tag: String,
+        maxRetries: Int = 3
+    ): Boolean {
+        return checkAndClick(maxRetries = maxRetries) {
+            try {
+                composeTestRule.onNodeWithTag(tag)
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
 }
 
