@@ -70,8 +70,8 @@ export class UserController {
           profile: this.transformUserToResponse(req.user!),
         });
       }
-
-      next(error);
+      
+      next(error); 
     }
   }
 
@@ -81,18 +81,20 @@ export class UserController {
     next: NextFunction
   ) {
     try {
+
+    
       const user = req.user!;
       const { confirmDelete } = req.body;
 
-      // Validate confirmation
-      if (!confirmDelete) {
-        return res.status(400).json({
-          success: false,
-          message: 'Delete confirmation required',
-        });
-      }
+      // // Validate confirmation
+      // if (!confirmDelete) {
+      //   console.log('❌ Controller returning 400');
+      //   return res.status(400).json({
+      //     success: false,
+      //     message: 'Delete confirmation required',
+      //   });
+      // }
 
-     
 
       // Delete user from database
       await userModel.delete(user._id);

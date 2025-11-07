@@ -46,6 +46,7 @@ jest.mock('../../src/models/discussions.model', () => {
       findByUserId: jest.fn(),  
       findByUser: jest.fn(),
       create: jest.fn(),
+      count: jest.fn(),
       addMessage: jest.fn(),
       postMessage: jest.fn(),
     },
@@ -56,10 +57,26 @@ jest.mock('../../src/models/discussions.model', () => {
   };
 });
 
+/**
+ * Mock the user model (because mongoose is mocked in setup)
+ */
+jest.mock('../../src/models/user.model', () => {
+  const original = jest.requireActual('../../src/models/user.model');
+  return {
+    ...original,
+    userModel: {
+      ...original.userModel,
+      findById: jest.fn(),  // we override just this
+    },
+  };
+});
+
+import { userModel } from '../../src/models/user.model';
 import request from 'supertest';
 import { app } from '../../src/config/app';
 import { discussionModel } from '../../src/models/discussions.model';
 import mongoose from 'mongoose';
+import * as discussionTypes from '../../src/types/discussions.types';
 
 /**
  * ====================================================================
@@ -128,6 +145,53 @@ describe('GET /api/discussions - Database Errors (Mocked)', () => {
       .get('/api/discussions')
       .expect(500);
   });
+
+  test('should handle Socket.IO emit failure gracefully', async () => {
+  (discussionModel.create as jest.Mock).mockResolvedValueOnce({
+    _id: new mongoose.Types.ObjectId(),
+    userId: '507f1f77bcf86cd799439011',
+    topic: 'Valid topic',
+    description: 'Valid description',
+    messageCount: 0,
+    participantCount: 0,
+    lastActivityAt: new Date(),
+    createdAt: new Date(),
+  });
+
+  const fakeApp: any = app;
+  fakeApp.set('io', {
+    emit: () => { throw new Error('Socket fail'); },
+  });
+
+  const validData = {
+    topic: 'Valid topic',
+    description: 'Valid description',
+  };
+
+  const res = await request(app)
+    .post('/api/discussions')
+    .send(validData)
+    .expect(201);
+
+  expect(res.body.success).toBe(true);
+});
+
+
+test('should handle unexpected validation error gracefully', async () => {
+  const res = await request(app)
+    .post('/api/discussions')
+    .send({ topic: 'ok', description: ['bad'] }) // Zod expects string, gets array
+    .expect(400);
+
+  expect(res.body.error).toBe('ValidationError');
+});
+
+
+
+  
+  
+
+
 });
 
 /**
@@ -153,6 +217,26 @@ describe('GET /api/discussions/:id - Database Errors (Mocked)', () => {
       .get('/api/discussions/507f1f77bcf86cd799439011')
       .expect(500);
   });
+
+  test('should return 500 when date fields are invalid', async () => {
+  (discussionModel.findById as jest.Mock).mockResolvedValueOnce({
+    _id: new mongoose.Types.ObjectId(),
+    topic: 'Test',
+    description: 'desc',
+    userId: '507f1f77bcf86cd799439011',
+    messageCount: 0,
+    participantCount: 0,
+    messages: [],
+    createdAt: undefined, // invalid
+    updatedAt: undefined, // invalid
+  });
+
+  await request(app)
+    .get('/api/discussions/507f1f77bcf86cd799439011')
+    .expect(500);
+});
+
+ 
 });
 
 /**
@@ -202,6 +286,21 @@ describe('POST /api/discussions - Database Errors (Mocked)', () => {
     await request(app)
       .post('/api/discussions')
       .send(validData)
+      .expect(500);
+  });
+
+  /**
+   * Test: Missing req.user causes 500
+   * Scenario: Auth middleware failed or user not attached
+   */
+  test('should return 500 when req.user is missing', async () => {
+    // Temporarily override middleware to skip user injection
+    jest.resetModules();
+    const { app: freshApp } = require('../../src/config/app');
+
+    await request(freshApp)
+      .post('/api/discussions')
+      .send({ topic: 'No user', description: 'desc' })
       .expect(500);
   });
 });
@@ -342,6 +441,15 @@ describe('GET /api/discussions/my/discussions - Database Errors (Mocked)', () =>
     await request(app)
       .get('/api/discussions/my/discussions')
       .expect(500);
+  });
+
+  /**
+   * Test: findByUserId returns null
+   * Scenario: Database query resolves but returns null unexpectedly
+   */
+  test('should return 500 when findByUserId returns null', async () => {
+    (discussionModel.findByUserId as jest.Mock).mockResolvedValueOnce(null);
+    await request(app).get('/api/discussions/my/discussions').expect(500);
   });
 });
 
