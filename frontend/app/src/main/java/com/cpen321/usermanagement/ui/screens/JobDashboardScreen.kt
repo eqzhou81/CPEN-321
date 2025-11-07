@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,6 +69,7 @@ fun JobDashboardScreen(
             Column {
                 Text(
                     text = "My Job Applications",
+                    modifier = Modifier.testTag("job_applications_title"),
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = colorResource(R.color.text_primary)
@@ -83,6 +85,7 @@ fun JobDashboardScreen(
             
             FloatingActionButton(
                 onClick = { showAddJobDialog = true },
+                modifier = Modifier.testTag("add_job_button"),
                 containerColor = colorResource(R.color.primary),
                 contentColor = colorResource(R.color.text_on_primary)
             ) {
@@ -497,7 +500,9 @@ private fun JobApplicationCard(
             ) {
                 Button(
                     onClick = onGenerateQuestions,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("generate_questions_button"),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colorResource(R.color.primary)
                     )

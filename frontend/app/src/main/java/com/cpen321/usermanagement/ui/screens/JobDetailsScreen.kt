@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -292,7 +293,9 @@ fun JobDetailsScreen(
                 ) {
                     Button(
                         onClick = { onNavigateToQuestions(jobId) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("generate_questions_button"),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = colorResource(R.color.primary)
                         )
