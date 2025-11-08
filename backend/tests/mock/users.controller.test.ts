@@ -388,4 +388,49 @@ describe('UsersController', () => {
             expect(response.body.data.user.name).toBe('Test User');
         });
     });
+
+        describe('Unhandled Error and Coverage Edge Cases', () => {
+        it('should call next when updateProfile catches a non-Error value', async () => {
+            // Arrange
+            (userModel.update as jest.Mock).mockRejectedValueOnce('plain string error');
+            const updateData = { name: 'Anything' };
+
+            const response = await request(app)
+                .post('/api/user/profile')
+                .set('Authorization', mockToken)
+                .send(updateData);
+
+            // Express still returns 500 in test setup, but this hits next(error)
+            expect(response.status).toBe(500);
+        });
+
+        it('should use default message when updateProfile error has no message', async () => {
+            const err = new Error();
+            delete (err as any).message; // simulate no message
+            (userModel.update as jest.Mock).mockRejectedValueOnce(err);
+
+            const response = await request(app)
+                .post('/api/user/profile')
+                .set('Authorization', mockToken)
+                .send({ name: 'Updated' });
+
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('Failed to update user info');
+        });
+
+        it('should use default message when deleteProfile error has no message', async () => {
+            const err = new Error();
+            delete (err as any).message;
+            (userModel.delete as jest.Mock).mockRejectedValueOnce(err);
+
+            const response = await request(app)
+                .delete('/api/user/profile')
+                .set('Authorization', mockToken)
+                .send({ confirmDelete: true });
+
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('Failed to delete user');
+        });
+    });
+
 });
