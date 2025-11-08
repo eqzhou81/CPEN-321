@@ -11,6 +11,7 @@ export interface IDiscussion extends Document {
   participantCount: number;
   lastActivityAt: Date;
   isActive: boolean;
+  creatorName?: string; 
   createdAt: Date;
   updatedAt: Date;
 }

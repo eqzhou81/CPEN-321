@@ -159,6 +159,7 @@ export const discussionModel = {
     if (!discussion) return null;
 
     const newMessage = {
+      _id: new mongoose.Types.ObjectId().toString(),
       userId,
       userName,
       content,

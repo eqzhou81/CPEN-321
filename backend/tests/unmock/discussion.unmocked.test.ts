@@ -1,13 +1,10 @@
-jest.mock('../../src/middleware/auth.middleware', () => ({
-  authenticateToken: (req: any, res: any, next: any) => {
-    req.user = {
-      _id: '507f1f77bcf86cd799439011', // mock ObjectId
-      name: 'Test User',
-      email: 'test@example.com',
-    };
-    next();
-  },
-}));
+jest.unmock('mongoose');
+
+
+
+// Set environment variable to bypass auth
+process.env.BYPASS_AUTH = 'true';
+
 
 import request from 'supertest';
 import { app, server as appServer } from '../../src/config/app';
@@ -16,6 +13,14 @@ import { userModel } from '../../src/models/user.model';
 import mongoose from 'mongoose';
 import { io as ioClient, Socket } from 'socket.io-client';
 import { Server } from 'http';
+import {
+  createDiscussionSchema,
+  postMessageSchema,
+  EmptyTopicException,
+  TopicTooLongException,
+  DescriptionTooLongException,
+} from '../../src/types/discussions.types';
+
 
 /**
  * ====================================================================
@@ -964,4 +969,75 @@ describe('Socket.IO Debug', () => {
     client.disconnect();
     await new Promise(resolve => testServer.close(resolve));
   }, 10000);
+
+//   /**
+//  * Test: Socket emission throws error internally
+//  * Input: POST /api/discussions (io.emit throws)
+//  * Expected Behavior: API still returns 201, logs error
+//  */
+// test('should handle internal socket emission failure gracefully', async () => {
+//   // Temporarily patch io.emit to throw
+//   const io = app.get('io');
+//   const originalEmit = io?.emit;
+//   if (io) {
+//     io.emit = jest.fn(() => {
+//       throw new Error('Simulated socket emit failure');
+//     }) as any;
+//   }
+
+//   const newDiscussion = {
+//     topic: 'Emit Failure Test',
+//     description: 'Simulate socket emission crash',
+//   };
+
+//   const response = await request(app)
+//     .post('/api/discussions')
+//     .send(newDiscussion)
+//     .expect(201);
+
+//   // API should still succeed even though socket failed
+//   expect(response.body.success).toBe(true);
+//   expect(response.body.message).toBe('Discussion created successfully');
+
+//   // Restore original emit
+//   if (io) io.emit = originalEmit!;
+// });
+
 });
+
+describe('Discussion Types & Validation', () => {
+  test('createDiscussionSchema passes valid data', () => {
+    const data = { topic: 'Good topic', description: 'Nice description' };
+    const result = createDiscussionSchema.parse(data);
+    expect(result).toEqual(data);
+  });
+
+  test('createDiscussionSchema fails for missing topic', () => {
+    expect(() =>
+      createDiscussionSchema.parse({ description: 'No topic' })
+    ).toThrow();
+  });
+
+  test('postMessageSchema fails for empty content', () => {
+    expect(() =>
+      postMessageSchema.parse({ content: '' })
+    ).toThrow();
+  });
+
+  test('EmptyTopicException has correct message', () => {
+    const err = new EmptyTopicException();
+    expect(err.name).toBe('EmptyTopicException');
+    expect(err.message).toMatch(/required/i);
+  });
+
+  test('TopicTooLongException has correct message', () => {
+    const err = new TopicTooLongException();
+    expect(err.message).toContain('100');
+  });
+
+  test('DescriptionTooLongException has correct message', () => {
+    const err = new DescriptionTooLongException();
+    expect(err.message).toContain('500');
+  });
+});
+
