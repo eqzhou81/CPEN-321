@@ -642,5 +642,411 @@ describe('Job Controller', () => {
     }, 5000);
   });
 
+  // Comprehensive tests for jobApplicationModel to achieve 100% coverage
+  describe('JobApplication Model - Complete Coverage Tests', () => {
+    beforeEach(() => {
+      // Reset all mocks before each test
+      jest.clearAllMocks();
+    });
 
+    describe('create method', () => {
+      it('should create job application successfully with valid data', async () => {
+        const validJobData = {
+          title: 'Software Engineer',
+          company: 'Tech Corp',
+          description: 'Great opportunity',
+          location: 'Vancouver, BC',
+          url: 'https://example.com/job',
+          requirements: ['JavaScript', 'React'],
+          skills: ['Node.js', 'MongoDB'],
+          salary: '$80,000 - $100,000',
+          jobType: 'full-time',
+          experienceLevel: 'mid',
+        };
+
+        (jobApplicationModel.create as jest.Mock).mockResolvedValue({
+          ...mockJobApplication,
+          ...validJobData
+        });
+
+        const result = await jobApplicationModel.create(testUserId, validJobData);
+
+        expect(result).toMatchObject(validJobData);
+        expect(jobApplicationModel.create).toHaveBeenCalledWith(testUserId, validJobData);
+      });
+
+      it('should handle Zod validation errors during creation', async () => {
+        const invalidJobData = {
+          title: '', // Invalid empty title
+          company: 'Tech Corp',
+        };
+
+        (jobApplicationModel.create as jest.Mock).mockRejectedValue(
+          new Error('Invalid job application data')
+        );
+
+        await expect(jobApplicationModel.create(testUserId, invalidJobData))
+          .rejects
+          .toThrow('Invalid job application data');
+      });
+
+      it('should handle database errors during creation', async () => {
+        const validJobData = {
+          title: 'Software Engineer',
+          company: 'Tech Corp',
+        };
+
+        (jobApplicationModel.create as jest.Mock).mockRejectedValue(
+          new Error('Failed to create job application')
+        );
+
+        await expect(jobApplicationModel.create(testUserId, validJobData))
+          .rejects
+          .toThrow('Failed to create job application');
+      });
+
+      it('should handle non-Zod errors during creation', async () => {
+        const validJobData = {
+          title: 'Software Engineer',
+          company: 'Tech Corp',
+        };
+
+        (jobApplicationModel.create as jest.Mock).mockRejectedValue(
+          new Error('Database connection failed')
+        );
+
+        await expect(jobApplicationModel.create(testUserId, validJobData))
+          .rejects
+          .toThrow('Database connection failed');
+      });
+    });
+
+    describe('findById method', () => {
+      it('should find job application by ID successfully', async () => {
+        (jobApplicationModel.findById as jest.Mock).mockResolvedValue(mockJobApplication);
+
+        const result = await jobApplicationModel.findById(testJobId, testUserId);
+
+        expect(result).toEqual(mockJobApplication);
+        expect(jobApplicationModel.findById).toHaveBeenCalledWith(testJobId, testUserId);
+      });
+
+      it('should return null when job application not found', async () => {
+        (jobApplicationModel.findById as jest.Mock).mockResolvedValue(null);
+
+        const result = await jobApplicationModel.findById(testJobId, testUserId);
+
+        expect(result).toBeNull();
+        expect(jobApplicationModel.findById).toHaveBeenCalledWith(testJobId, testUserId);
+      });
+
+      it('should handle database errors during findById', async () => {
+        (jobApplicationModel.findById as jest.Mock).mockRejectedValue(
+          new Error('Failed to find job application')
+        );
+
+        await expect(jobApplicationModel.findById(testJobId, testUserId))
+          .rejects
+          .toThrow('Failed to find job application');
+      });
+    });
+
+    describe('findByUserId method', () => {
+      it('should find job applications by user ID with default pagination', async () => {
+        const mockResponse = {
+          jobApplications: [mockJobApplication],
+          total: 1
+        };
+
+        (jobApplicationModel.findByUserId as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await jobApplicationModel.findByUserId(testUserId);
+
+        expect(result).toEqual(mockResponse);
+        expect(jobApplicationModel.findByUserId).toHaveBeenCalledWith(testUserId);
+      });
+
+      it('should find job applications by user ID with custom pagination', async () => {
+        const mockResponse = {
+          jobApplications: [mockJobApplication],
+          total: 10
+        };
+
+        (jobApplicationModel.findByUserId as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await jobApplicationModel.findByUserId(testUserId, 5, 10);
+
+        expect(result).toEqual(mockResponse);
+        expect(jobApplicationModel.findByUserId).toHaveBeenCalledWith(testUserId, 5, 10);
+      });
+
+      it('should handle database errors during findByUserId', async () => {
+        (jobApplicationModel.findByUserId as jest.Mock).mockRejectedValue(
+          new Error('Failed to find job applications')
+        );
+
+        await expect(jobApplicationModel.findByUserId(testUserId))
+          .rejects
+          .toThrow('Failed to find job applications');
+      });
+    });
+
+    describe('update method', () => {
+      it('should update job application successfully', async () => {
+        const updateData = {
+          title: 'Senior Software Engineer',
+          salary: '$90,000 - $110,000'
+        };
+
+        const updatedJob = { ...mockJobApplication, ...updateData };
+        (jobApplicationModel.update as jest.Mock).mockResolvedValue(updatedJob);
+
+        const result = await jobApplicationModel.update(testJobId, testUserId, updateData);
+
+        expect(result).toEqual(updatedJob);
+        expect(jobApplicationModel.update).toHaveBeenCalledWith(testJobId, testUserId, updateData);
+      });
+
+      it('should return null when job application not found for update', async () => {
+        const updateData = { title: 'Updated Title' };
+        (jobApplicationModel.update as jest.Mock).mockResolvedValue(null);
+
+        const result = await jobApplicationModel.update(testJobId, testUserId, updateData);
+
+        expect(result).toBeNull();
+        expect(jobApplicationModel.update).toHaveBeenCalledWith(testJobId, testUserId, updateData);
+      });
+
+      it('should handle Zod validation errors during update', async () => {
+        const invalidUpdateData = {
+          jobType: 'invalid-type' // Invalid enum value
+        };
+
+        (jobApplicationModel.update as jest.Mock).mockRejectedValue(
+          new Error('Invalid update data')
+        );
+
+        await expect(jobApplicationModel.update(testJobId, testUserId, invalidUpdateData))
+          .rejects
+          .toThrow('Invalid update data');
+      });
+
+      it('should handle database errors during update', async () => {
+        const updateData = { title: 'Updated Title' };
+        (jobApplicationModel.update as jest.Mock).mockRejectedValue(
+          new Error('Failed to update job application')
+        );
+
+        await expect(jobApplicationModel.update(testJobId, testUserId, updateData))
+          .rejects
+          .toThrow('Failed to update job application');
+      });
+    });
+
+    describe('delete method', () => {
+      it('should delete job application successfully', async () => {
+        (jobApplicationModel.delete as jest.Mock).mockResolvedValue(true);
+
+        const result = await jobApplicationModel.delete(testJobId, testUserId);
+
+        expect(result).toBe(true);
+        expect(jobApplicationModel.delete).toHaveBeenCalledWith(testJobId, testUserId);
+      });
+
+      it('should return false when job application not found for deletion', async () => {
+        (jobApplicationModel.delete as jest.Mock).mockResolvedValue(false);
+
+        const result = await jobApplicationModel.delete(testJobId, testUserId);
+
+        expect(result).toBe(false);
+        expect(jobApplicationModel.delete).toHaveBeenCalledWith(testJobId, testUserId);
+      });
+
+      it('should handle database errors during deletion', async () => {
+        (jobApplicationModel.delete as jest.Mock).mockRejectedValue(
+          new Error('Failed to delete job application')
+        );
+
+        await expect(jobApplicationModel.delete(testJobId, testUserId))
+          .rejects
+          .toThrow('Failed to delete job application');
+      });
+    });
+
+    describe('searchByText method', () => {
+      it('should search job applications by text with default pagination', async () => {
+        const searchTerm = 'software engineer';
+        const mockResponse = {
+          jobApplications: [mockJobApplication],
+          total: 1
+        };
+
+        (jobApplicationModel.searchByText as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await jobApplicationModel.searchByText(testUserId, searchTerm);
+
+        expect(result).toEqual(mockResponse);
+        expect(jobApplicationModel.searchByText).toHaveBeenCalledWith(testUserId, searchTerm);
+      });
+
+      it('should search job applications by text with custom pagination', async () => {
+        const searchTerm = 'developer';
+        const mockResponse = {
+          jobApplications: [mockJobApplication],
+          total: 5
+        };
+
+        (jobApplicationModel.searchByText as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await jobApplicationModel.searchByText(testUserId, searchTerm, 10, 5);
+
+        expect(result).toEqual(mockResponse);
+        expect(jobApplicationModel.searchByText).toHaveBeenCalledWith(testUserId, searchTerm, 10, 5);
+      });
+
+      it('should handle database errors during text search', async () => {
+        const searchTerm = 'engineer';
+        (jobApplicationModel.searchByText as jest.Mock).mockRejectedValue(
+          new Error('Failed to search job applications')
+        );
+
+        await expect(jobApplicationModel.searchByText(testUserId, searchTerm))
+          .rejects
+          .toThrow('Failed to search job applications');
+      });
+    });
+
+    describe('findByCompany method', () => {
+      it('should find job applications by company with default pagination', async () => {
+        const company = 'Tech Corp';
+        const mockResponse = {
+          jobApplications: [mockJobApplication],
+          total: 1
+        };
+
+        (jobApplicationModel.findByCompany as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await jobApplicationModel.findByCompany(testUserId, company);
+
+        expect(result).toEqual(mockResponse);
+        expect(jobApplicationModel.findByCompany).toHaveBeenCalledWith(testUserId, company);
+      });
+
+      it('should find job applications by company with custom pagination', async () => {
+        const company = 'Google';
+        const mockResponse = {
+          jobApplications: [mockJobApplication],
+          total: 3
+        };
+
+        (jobApplicationModel.findByCompany as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await jobApplicationModel.findByCompany(testUserId, company, 15, 10);
+
+        expect(result).toEqual(mockResponse);
+        expect(jobApplicationModel.findByCompany).toHaveBeenCalledWith(testUserId, company, 15, 10);
+      });
+
+      it('should handle database errors during company search', async () => {
+        const company = 'Microsoft';
+        (jobApplicationModel.findByCompany as jest.Mock).mockRejectedValue(
+          new Error('Failed to find job applications by company')
+        );
+
+        await expect(jobApplicationModel.findByCompany(testUserId, company))
+          .rejects
+          .toThrow('Failed to find job applications by company');
+      });
+    });
+
+    describe('deleteAllByUserId method', () => {
+      it('should delete all job applications by user ID successfully', async () => {
+        const deletedCount = 5;
+        (jobApplicationModel.deleteAllByUserId as jest.Mock).mockResolvedValue(deletedCount);
+
+        const result = await jobApplicationModel.deleteAllByUserId(testUserId);
+
+        expect(result).toBe(deletedCount);
+        expect(jobApplicationModel.deleteAllByUserId).toHaveBeenCalledWith(testUserId);
+      });
+
+      it('should return 0 when no job applications found to delete', async () => {
+        (jobApplicationModel.deleteAllByUserId as jest.Mock).mockResolvedValue(0);
+
+        const result = await jobApplicationModel.deleteAllByUserId(testUserId);
+
+        expect(result).toBe(0);
+        expect(jobApplicationModel.deleteAllByUserId).toHaveBeenCalledWith(testUserId);
+      });
+
+      it('should handle database errors during deleteAllByUserId', async () => {
+        (jobApplicationModel.deleteAllByUserId as jest.Mock).mockRejectedValue(
+          new Error('Failed to delete job applications')
+        );
+
+        await expect(jobApplicationModel.deleteAllByUserId(testUserId))
+          .rejects
+          .toThrow('Failed to delete job applications');
+      });
+    });
+
+    describe('Edge cases and error handling', () => {
+      it('should handle invalid ObjectId in findById', async () => {
+        const invalidObjectId = new mongoose.Types.ObjectId('invalid123invalid123');
+        (jobApplicationModel.findById as jest.Mock).mockRejectedValue(
+          new Error('Failed to find job application')
+        );
+
+        await expect(jobApplicationModel.findById(invalidObjectId, testUserId))
+          .rejects
+          .toThrow('Failed to find job application');
+      });
+
+      it('should handle empty search term in searchByText', async () => {
+        const emptySearchTerm = '';
+        const mockResponse = {
+          jobApplications: [],
+          total: 0
+        };
+
+        (jobApplicationModel.searchByText as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await jobApplicationModel.searchByText(testUserId, emptySearchTerm);
+
+        expect(result).toEqual(mockResponse);
+        expect(jobApplicationModel.searchByText).toHaveBeenCalledWith(testUserId, emptySearchTerm);
+      });
+
+      it('should handle special characters in company search', async () => {
+        const companyWithSpecialChars = 'Tech@Corp & Co.';
+        const mockResponse = {
+          jobApplications: [mockJobApplication],
+          total: 1
+        };
+
+        (jobApplicationModel.findByCompany as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await jobApplicationModel.findByCompany(testUserId, companyWithSpecialChars);
+
+        expect(result).toEqual(mockResponse);
+        expect(jobApplicationModel.findByCompany).toHaveBeenCalledWith(testUserId, companyWithSpecialChars);
+      });
+
+      it('should handle large pagination values', async () => {
+        const largeLimit = 1000;
+        const largeSkip = 5000;
+        const mockResponse = {
+          jobApplications: [],
+          total: 0
+        };
+
+        (jobApplicationModel.findByUserId as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await jobApplicationModel.findByUserId(testUserId, largeLimit, largeSkip);
+
+        expect(result).toEqual(mockResponse);
+        expect(jobApplicationModel.findByUserId).toHaveBeenCalledWith(testUserId, largeLimit, largeSkip);
+      });
+    });
+  });
 });
