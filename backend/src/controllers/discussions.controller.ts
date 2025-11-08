@@ -17,6 +17,7 @@ import {
 import { discussionModel } from '../models/discussions.model';
 import { userModel } from '../models/user.model';
 import logger from '../utils/logger.util';
+import { ZodError } from 'zod';
 
 export class DiscussionsController {
   /**
@@ -215,7 +216,10 @@ export class DiscussionsController {
       }
     } catch (socketError) {
       // Log but don't fail the main request
-      console.error('Socket.IO notification failed:', socketError.message);
+     
+    const err = socketError as Error;
+    console.error('Socket.IO notification failed:', err.message);
+
       // Continue with successful response - this is key!
     }
 

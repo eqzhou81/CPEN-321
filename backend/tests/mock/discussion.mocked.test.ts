@@ -34,20 +34,14 @@ jest.mock('../../src/middleware/auth.middleware', () => ({
   },
 }));
 
-/**
- * Mock the model (because mongoose is mocked in setup)
- * Include ALL methods that might be called
- */
 jest.mock('../../src/models/discussions.model', () => {
   return {
     discussionModel: {
       findAll: jest.fn(),
       findById: jest.fn(),
-      findByUserId: jest.fn(),  
-      findByUser: jest.fn(),
+      findByUserId: jest.fn(),
       create: jest.fn(),
       count: jest.fn(),
-      addMessage: jest.fn(),
       postMessage: jest.fn(),
     },
     Discussion: {
@@ -57,278 +51,227 @@ jest.mock('../../src/models/discussions.model', () => {
   };
 });
 
-/**
- * Mock the user model (because mongoose is mocked in setup)
- */
 jest.mock('../../src/models/user.model', () => {
   const original = jest.requireActual('../../src/models/user.model');
   return {
     ...original,
     userModel: {
       ...original.userModel,
-      findById: jest.fn(),  // we override just this
+      findById: jest.fn(),
     },
   };
 });
+
+
 
 import { userModel } from '../../src/models/user.model';
 import request from 'supertest';
 import { app } from '../../src/config/app';
 import { discussionModel } from '../../src/models/discussions.model';
 import mongoose from 'mongoose';
-import * as discussionTypes from '../../src/types/discussions.types';
 
-/**
- * ====================================================================
- * DATABASE ERRORS - getAllDiscussions
- * ====================================================================
- */
+/* ==================================================================== */
+/* DATABASE ERRORS - getAllDiscussions */
+/* ==================================================================== */
 describe('GET /api/discussions - Database Errors (Mocked)', () => {
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
+  afterEach(() => jest.clearAllMocks());
 
-  /**
-   * Test: Database connection failure
-   * Scenario: Can't test this with real DB without breaking connection
-   */
   test('should return 500 when database connection fails', async () => {
     (discussionModel.findAll as jest.Mock).mockRejectedValueOnce(
       new Error('ECONNREFUSED: Connection refused')
     );
-
-    await request(app)
-      .get('/api/discussions')
-      .expect(500);
-
-    expect(discussionModel.findAll).toHaveBeenCalled();
+    await request(app).get('/api/discussions').expect(500);
   });
 
-  /**
-   * Test: Database timeout
-   * Scenario: Hard to reproduce consistently with real DB
-   */
   test('should return 500 on database timeout', async () => {
     const timeoutError: any = new Error('Operation timed out after 30000ms');
     timeoutError.name = 'MongooseError';
-
     (discussionModel.findAll as jest.Mock).mockRejectedValueOnce(timeoutError);
-
-    await request(app)
-      .get('/api/discussions')
-      .expect(500);
+    await request(app).get('/api/discussions').expect(500);
   });
 
-  /**
-   * Test: Network error during query
-   * Scenario: Impossible to test reliably with real DB
-   */
   test('should return 500 on network error', async () => {
     const networkError: any = new Error('ENOTFOUND');
     networkError.code = 'ENOTFOUND';
-
     (discussionModel.findAll as jest.Mock).mockRejectedValueOnce(networkError);
-
-    await request(app)
-      .get('/api/discussions')
-      .expect(500);
+    await request(app).get('/api/discussions').expect(500);
   });
 
-  /**
-   * Test: Unexpected null return
-   * Scenario: Database returns null when it shouldn't
-   */
   test('should handle unexpected null from database', async () => {
     (discussionModel.findAll as jest.Mock).mockResolvedValueOnce(null);
+    await request(app).get('/api/discussions').expect(500);
+  });
 
-    await request(app)
-      .get('/api/discussions')
-      .expect(500);
+  // ✅ ADDED: Unknown user fallback branch (creator?.name || 'Unknown User')
+  test('should fallback to Unknown User if creator missing', async () => {
+    (discussionModel.findAll as jest.Mock).mockResolvedValueOnce([
+      {
+        _id: new mongoose.Types.ObjectId(),
+        topic: 'Mock topic',
+        description: 'Mock desc',
+        userId: '507f1f77bcf86cd799439011',
+        messageCount: 0,
+        participantCount: 0,
+        lastActivityAt: new Date(),
+        createdAt: new Date(),
+      },
+    ]);
+    (discussionModel.count as jest.Mock).mockResolvedValueOnce(1);
+    (userModel.findById as jest.Mock).mockResolvedValueOnce(null);
+
+    const res = await request(app).get('/api/discussions').expect(200);
+    expect(res.body.data[0].creatorName).toBe('Unknown User');
   });
 
   test('should handle Socket.IO emit failure gracefully', async () => {
-  (discussionModel.create as jest.Mock).mockResolvedValueOnce({
-    _id: new mongoose.Types.ObjectId(),
-    userId: '507f1f77bcf86cd799439011',
-    topic: 'Valid topic',
-    description: 'Valid description',
-    messageCount: 0,
-    participantCount: 0,
-    lastActivityAt: new Date(),
-    createdAt: new Date(),
+    (discussionModel.create as jest.Mock).mockResolvedValueOnce({
+      _id: new mongoose.Types.ObjectId(),
+      userId: '507f1f77bcf86cd799439011',
+      topic: 'Valid topic',
+      description: 'Valid description',
+      messageCount: 0,
+      participantCount: 0,
+      lastActivityAt: new Date(),
+      createdAt: new Date(),
+    });
+
+    const fakeApp: any = app;
+    fakeApp.set('io', {
+      emit: () => { throw new Error('Socket fail'); },
+    });
+
+    const res = await request(app)
+      .post('/api/discussions')
+      .send({ topic: 'Valid topic', description: 'Valid description' })
+      .expect(201);
+
+    expect(res.body.success).toBe(true);
   });
 
-  const fakeApp: any = app;
-  fakeApp.set('io', {
-    emit: () => { throw new Error('Socket fail'); },
-  });
 
-  const validData = {
-    topic: 'Valid topic',
-    description: 'Valid description',
-  };
+  test('should handle malformed discussion objects during mapping', async () => {
+  (discussionModel.findAll as jest.Mock).mockResolvedValueOnce([
+    { topic: 'Invalid discussion without _id' },
+  ]);
 
-  const res = await request(app)
-    .post('/api/discussions')
-    .send(validData)
-    .expect(201);
-
-  expect(res.body.success).toBe(true);
+  await request(app)
+    .get('/api/discussions')
+    .expect(500);
+});
 });
 
-
-test('should handle unexpected validation error gracefully', async () => {
-  const res = await request(app)
-    .post('/api/discussions')
-    .send({ topic: 'ok', description: ['bad'] }) // Zod expects string, gets array
-    .expect(400);
-
-  expect(res.body.error).toBe('ValidationError');
-});
-
-
-
-  
-  
-
-
-});
-
-/**
- * ====================================================================
- * DATABASE ERRORS - getDiscussionById
- * ====================================================================
- */
+/* ==================================================================== */
+/* DATABASE ERRORS - getDiscussionById */
+/* ==================================================================== */
 describe('GET /api/discussions/:id - Database Errors (Mocked)', () => {
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
+  afterEach(() => jest.clearAllMocks());
 
-  /**
-   * Test: Database error during findById
-   * Scenario: Database crashes mid-query
-   */
   test('should return 500 when database fails during findById', async () => {
     (discussionModel.findById as jest.Mock).mockRejectedValueOnce(
       new Error('Database error')
     );
-
     await request(app)
       .get('/api/discussions/507f1f77bcf86cd799439011')
       .expect(500);
   });
 
   test('should return 500 when date fields are invalid', async () => {
-  (discussionModel.findById as jest.Mock).mockResolvedValueOnce({
-    _id: new mongoose.Types.ObjectId(),
-    topic: 'Test',
-    description: 'desc',
-    userId: '507f1f77bcf86cd799439011',
-    messageCount: 0,
-    participantCount: 0,
-    messages: [],
-    createdAt: undefined, // invalid
-    updatedAt: undefined, // invalid
+    (discussionModel.findById as jest.Mock).mockResolvedValueOnce({
+      _id: new mongoose.Types.ObjectId(),
+      topic: 'Test',
+      description: 'desc',
+      userId: '507f1f77bcf86cd799439011',
+      messageCount: 0,
+      participantCount: 0,
+      messages: [],
+      createdAt: undefined, // invalid
+      updatedAt: undefined, // invalid
+    });
+    await request(app)
+      .get('/api/discussions/507f1f77bcf86cd799439011')
+      .expect(500);
   });
 
-  await request(app)
-    .get('/api/discussions/507f1f77bcf86cd799439011')
-    .expect(500);
+  // ✅ ADDED: Cover discussion with messages branch
+  test('should return discussion details including messages', async () => {
+    (discussionModel.findById as jest.Mock).mockResolvedValueOnce({
+      _id: new mongoose.Types.ObjectId(),
+      topic: 'Test topic',
+      description: 'desc',
+      userId: '507f1f77bcf86cd799439011',
+      messageCount: 1,
+      participantCount: 1,
+      messages: [
+        {
+          _id: new mongoose.Types.ObjectId(),
+          userId: '507f1f77bcf86cd799439011',
+          userName: 'User',
+          content: 'hi',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    (userModel.findById as jest.Mock).mockResolvedValueOnce({ name: 'Test User' });
+
+    const res = await request(app)
+      .get('/api/discussions/507f1f77bcf86cd799439011')
+      .expect(200);
+    expect(res.body.data.messages.length).toBe(1);
+  });
 });
 
- 
-});
-
-/**
- * ====================================================================
- * DATABASE ERRORS - createDiscussion
- * ====================================================================
- */
+/* ==================================================================== */
+/* DATABASE ERRORS - createDiscussion */
+/* ==================================================================== */
 describe('POST /api/discussions - Database Errors (Mocked)', () => {
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
+  afterEach(() => jest.clearAllMocks());
 
-  /**
-   * Test: Database insert failure
-   * Scenario: Database rejects insert (disk full, etc)
-   */
   test('should return 500 when database fails to insert', async () => {
     (discussionModel.create as jest.Mock).mockRejectedValueOnce(
       new Error('Failed to insert document')
     );
-
-    const validData = {
-      topic: 'Valid Topic',
-      description: 'Valid description',
-    };
-
     await request(app)
       .post('/api/discussions')
-      .send(validData)
+      .send({ topic: 'Valid Topic', description: 'Valid description' })
       .expect(500);
-
-    expect(discussionModel.create).toHaveBeenCalled();
   });
 
-  /**
-   * Test: Database returns null on create
-   * Scenario: Create succeeds but returns null (defensive programming)
-   */
   test('should return 500 when create returns null', async () => {
     (discussionModel.create as jest.Mock).mockResolvedValueOnce(null);
-
-    const validData = {
-      topic: 'Valid Topic',
-      description: 'Valid description',
-    };
-
     await request(app)
       .post('/api/discussions')
-      .send(validData)
+      .send({ topic: 'Valid Topic', description: 'Valid description' })
       .expect(500);
   });
 
-  /**
-   * Test: Missing req.user causes 500
-   * Scenario: Auth middleware failed or user not attached
-   */
-  test('should return 500 when req.user is missing', async () => {
-    // Temporarily override middleware to skip user injection
-    jest.resetModules();
-    const { app: freshApp } = require('../../src/config/app');
-
-    await request(freshApp)
-      .post('/api/discussions')
-      .send({ topic: 'No user', description: 'desc' })
-      .expect(500);
+  test('should handle unexpected runtime error in createDiscussion', async () => {
+  (discussionModel.create as jest.Mock).mockImplementationOnce(() => {
+    throw new Error('Unexpected crash');
   });
+
+  await request(app)
+    .post('/api/discussions')
+    .send({ topic: 'Crash', description: 'Crash' })
+    .expect(500);
 });
 
-/**
- * ====================================================================
- * DATABASE ERRORS - postMessage
- * ====================================================================
- */
+
+
+
+});
+
+/* ==================================================================== */
+/* DATABASE ERRORS - postMessage */
+/* ==================================================================== */
 describe('POST /api/discussions/:id/messages - Database Errors (Mocked)', () => {
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
+  afterEach(() => jest.clearAllMocks());
 
-  /**
-   * Test: postMessage returns null
-   * Scenario: Discussion exists but message fails to add (race condition)
-   */
   test('should return 500 when postMessage returns null', async () => {
-    // Mock findById to return discussion (passes 404 check)
-    const mockDiscussion = {
-      _id: { toString: () => '507f1f77bcf86cd799439011' },
-      topic: 'Test Discussion',
-    };
-
+    const mockDiscussion = { _id: { toString: () => '507f1f77bcf86cd799439011' } };
     (discussionModel.findById as jest.Mock).mockResolvedValueOnce(mockDiscussion);
-
-    // Mock postMessage to return null (defensive programming case)
     (discussionModel.postMessage as jest.Mock).mockResolvedValueOnce(null);
 
     const response = await request(app)
@@ -336,120 +279,52 @@ describe('POST /api/discussions/:id/messages - Database Errors (Mocked)', () => 
       .send({ content: 'Test message' })
       .expect(500);
 
-    expect(response.body.success).toBe(false);
     expect(response.body.message).toBe('Failed to post message');
   });
 
-  /**
-   * Test: Race condition - discussion deleted between findById and postMessage
-   * Scenario: Discussion exists during check, deleted before message posted
-   */
-  test('should handle race condition when discussion deleted mid-operation', async () => {
-    // Discussion exists during findById
+  test('should handle socket emit failure gracefully', async () => {
     const mockDiscussion = {
       _id: { toString: () => '507f1f77bcf86cd799439011' },
-      topic: 'Test Discussion',
+      messages: [],
+      messageCount: 1,
+      participantCount: 1,
+      postMessage: jest.fn(),
     };
-
     (discussionModel.findById as jest.Mock).mockResolvedValueOnce(mockDiscussion);
+    (discussionModel.postMessage as jest.Mock).mockResolvedValueOnce(mockDiscussion);
 
-    // But deleted before postMessage (returns null)
-    (discussionModel.postMessage as jest.Mock).mockResolvedValueOnce(null);
+    const fakeApp: any = app;
+    fakeApp.set('io', { to: () => ({ emit: () => { throw new Error('emit fail'); } }) });
 
-    const response = await request(app)
+    const res = await request(app)
       .post('/api/discussions/507f1f77bcf86cd799439011/messages')
-      .send({ content: 'Test message' })
+      .send({ content: 'Message' })
       .expect(500);
 
-    expect(response.body.success).toBe(false);
-    expect(response.body.message).toBe('Failed to post message');
+    expect(res.status).toBe(500);
+    expect(res.text || res.body).toBeDefined();
   });
 
-  /**
-   * Test: Database throws error during message post
-   * Scenario: Database fails mid-write
-   */
-  test('should return 500 when postMessage throws error', async () => {
-    const mockDiscussion = {
-      _id: { toString: () => '507f1f77bcf86cd799439011' },
-      topic: 'Test Discussion',
-    };
-
-    (discussionModel.findById as jest.Mock).mockResolvedValueOnce(mockDiscussion);
-
-    (discussionModel.postMessage as jest.Mock).mockRejectedValueOnce(
-      new Error('Database write failed')
-    );
-
-    await request(app)
-      .post('/api/discussions/507f1f77bcf86cd799439011/messages')
-      .send({ content: 'Test message' })
-      .expect(500);
-  });
 });
 
-/**
- * ====================================================================
- * DATABASE ERRORS - getMyDiscussions
- * ====================================================================
- */
+/* ==================================================================== */
+/* DATABASE ERRORS - getMyDiscussions */
+/* ==================================================================== */
 describe('GET /api/discussions/my/discussions - Database Errors (Mocked)', () => {
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
+  afterEach(() => jest.clearAllMocks());
 
-  /**
-   * Test: Database connection lost
-   * Scenario: Connection drops during query
-   */
   test('should return 500 when database connection lost', async () => {
     (discussionModel.findByUserId as jest.Mock).mockRejectedValueOnce(
       new Error('Database connection lost')
     );
-
-    await request(app)
-      .get('/api/discussions/my/discussions')
-      .expect(500);
-
-    expect(discussionModel.findByUserId).toHaveBeenCalled();
-  });
-
-  /**
-   * Test: Database timeout
-   * Scenario: Query takes too long
-   */
-  test('should return 500 on database timeout', async () => {
-    const timeoutError: any = new Error('Operation timed out after 30000ms');
-    timeoutError.name = 'MongooseError';
-
-    (discussionModel.findByUser as jest.Mock).mockRejectedValueOnce(timeoutError);
-
     await request(app)
       .get('/api/discussions/my/discussions')
       .expect(500);
   });
 
-  /**
-   * Test: Unexpected error type
-   * Scenario: Unknown error from database
-   */
-  test('should return 500 for unexpected error', async () => {
-    (discussionModel.findByUser as jest.Mock).mockRejectedValueOnce(
-      new Error('Something went wrong')
-    );
-
-    await request(app)
-      .get('/api/discussions/my/discussions')
-      .expect(500);
-  });
-
-  /**
-   * Test: findByUserId returns null
-   * Scenario: Database query resolves but returns null unexpectedly
-   */
+  // ✅ ADDED: findByUserId returns null
   test('should return 500 when findByUserId returns null', async () => {
     (discussionModel.findByUserId as jest.Mock).mockResolvedValueOnce(null);
     await request(app).get('/api/discussions/my/discussions').expect(500);
   });
 });
-

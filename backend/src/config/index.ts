@@ -1,11 +1,9 @@
 import dotenv from 'dotenv';
 import { connectDB } from './database';
-import { app } from '../app';
+import { app } from '../config/app';
 
 //for real time socket
 import { Server } from 'socket.io';
-import{discussionModel} from '../models/discussions.model'
-import mongoose from "mongoose";
 import http from 'http';
 
 
