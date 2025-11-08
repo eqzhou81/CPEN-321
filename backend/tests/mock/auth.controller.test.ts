@@ -342,6 +342,26 @@ describe('AuthController', () => {
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('User signed in successfully');
         });
+        
+        it('should return 500 for failed user processing', async () => {
+        const requestData = {
+          idToken: 'valid-google-id-token'
+        };
+
+        (authService.signInWithGoogle as jest.Mock).mockRejectedValue(
+          new Error('Failed to process user')
+        );
+
+        const response = await request(app)
+            .post('/api/auth/signin')
+            .send(requestData);
+
+        expect(response.status).toBe(500);
+        expect(response.body).toEqual({
+          message: 'Failed to process user information'
+        });
+      });
+
     });
 
     describe('Mock Auth Endpoint (Development Only)', () => {
