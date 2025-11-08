@@ -49,6 +49,7 @@ export interface GenerateQuestionsRequest {
   jobId: string;
   types: QuestionType[];
   count?: number;
+  jobDescription?: string;
 }
 
 export interface SubmitBehavioralAnswerRequest {

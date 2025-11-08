@@ -5,6 +5,7 @@ import { jobApplicationModel } from '../models/jobApplication.model';
 import { questionModel } from '../models/question.model';
 import { sessionModel } from '../models/session.model';
 import { openaiService } from '../services/openai.service';
+import { generateQuestions as generateTechnicalQuestionTopics } from '../services/generateQuestions.service';
 import {
   BehavioralAnswerResponse,
   GenerateQuestionsRequest,
@@ -84,17 +85,64 @@ export class QuestionsController {
       }
 
       if (types.includes(QuestionType.TECHNICAL)) {
-        try {
-          const technicalCount = Math.ceil(count / types.length);
-          const technicalQuestions = this.generateFallbackTechnicalQuestions(
-            jobApplication,
-            technicalCount
-          );
+        const technicalCount = Math.ceil(count / types.length);
+        let technicalQuestions: any[] = [];
+        const bodyJobDescription = typeof req.body.jobDescription === 'string'
+          ? req.body.jobDescription.trim()
+          : '';
+        const jobDescription = bodyJobDescription || jobApplication.description || '';
 
-          generatedQuestions.push(...technicalQuestions);
-        } catch (error) {
-          logger.error('Error generating technical questions:', error);
+        if (jobDescription) {
+          try {
+            const aiGeneratedTopics = await generateTechnicalQuestionTopics(jobDescription);
+            const allowedDifficulties = ['easy', 'medium', 'hard'];
+
+            const flattenedQuestions = aiGeneratedTopics.flatMap((topicResult) =>
+              topicResult.questions.map((leetcodeQuestion) => {
+                const difficulty = leetcodeQuestion.difficulty
+                  ? leetcodeQuestion.difficulty.toLowerCase()
+                  : undefined;
+                const normalisedDifficulty = allowedDifficulties.includes(difficulty ?? '')
+                  ? (difficulty as 'easy' | 'medium' | 'hard')
+                  : 'medium';
+
+                const topicTag = topicResult.topic ? topicResult.topic.toLowerCase() : undefined;
+                const questionTags = Array.isArray(leetcodeQuestion.tags)
+                  ? leetcodeQuestion.tags
+                      .filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0)
+                      .map((tag) => tag.toLowerCase())
+                  : [];
+
+                const tags = Array.from(
+                  new Set([topicTag, ...questionTags].filter((tag): tag is string => !!tag))
+                );
+
+                return {
+                  type: QuestionType.TECHNICAL,
+                  title: leetcodeQuestion.title || 'LeetCode Problem',
+                  description: topicResult.topic
+                    ? `LeetCode problem for ${topicResult.topic}`
+                    : 'LeetCode problem',
+                  difficulty: normalisedDifficulty,
+                  tags,
+                  externalUrl: leetcodeQuestion.url,
+                };
+              })
+            );
+
+            technicalQuestions = flattenedQuestions.slice(0, technicalCount);
+          } catch (error) {
+            logger.error('Error generating technical questions via AI service:', error);
+          }
+        } else {
+          logger.warn('No job description available for AI technical question generation; using fallback questions');
         }
+
+        if (technicalQuestions.length === 0) {
+          technicalQuestions = this.generateFallbackTechnicalQuestions(jobApplication, technicalCount);
+        }
+
+        generatedQuestions.push(...technicalQuestions);
       }
 
       const savedQuestions = await questionModel.createMany(
