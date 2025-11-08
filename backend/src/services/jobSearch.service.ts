@@ -97,7 +97,7 @@ export class JobSearchService {
   async findSimilarJobs(
     jobId: string,
     userId: string,
-    limit: number = 5
+    limit = 5
   ): Promise<ISimilarJob[]> {
     try {
       // Get the original job to extract keywords
@@ -161,7 +161,7 @@ export class JobSearchService {
    * Search for similar jobs based on a job application
    */
   async searchSimilarJobs(
-    jobApplication: any,
+    jobApplication: unknown,
     searchParams: Partial<IJobSearchParams> = {}
   ): Promise<ISimilarJob[]> {
     try {
@@ -182,7 +182,7 @@ export class JobSearchService {
         Promise.race([
           this.scrapeJobSite(source, params),
           new Promise((_, reject) => 
-            setTimeout(() => reject(new Error(`Timeout for ${source}`)), 30000) // 30 second timeout
+            setTimeout(() => { reject(new Error(`Timeout for ${source}`)); }, 30000) // 30 second timeout
           )
         ])
       );
@@ -193,8 +193,8 @@ export class JobSearchService {
       let allJobs: ISimilarJob[] = [];
       
       results.forEach((result, index) => {
-        if (result.status === 'fulfilled' && (result.value as any).jobs) {
-          allJobs = allJobs.concat((result.value as any).jobs);
+        if (result.status === 'fulfilled' && (result.value as unknown).jobs) {
+          allJobs = allJobs.concat((result.value as unknown).jobs);
         } else {
           logger.warn(`Failed to scrape ${Object.keys(this.scraperConfigs)[index]}:`, result);
         }
@@ -207,7 +207,7 @@ export class JobSearchService {
       // Sort by similarity score and limit results
       const sortedJobs = scoredJobs
         .sort((a, b) => b.score - a.score)
-        .slice(0, params.limit || 20)
+        .slice(0, params.limit ?? 20)
         .map(item => item.job);
 
       logger.info(`Found ${sortedJobs.length} similar jobs`);
@@ -247,9 +247,9 @@ export class JobSearchService {
         Promise.race([
           source.fn(),
           new Promise<ISimilarJob[]>((_, reject) => 
-            setTimeout(() => reject(new Error(`${source.name} timeout`)), 15000) // 15 second timeout per source
+            setTimeout(() => { reject(new Error(`${source.name} timeout`)); }, 15000) // 15 second timeout per source
           )
-        ]).catch(error => {
+        ]).catch((error: unknown) => {
           logger.warn(`Failed to scrape from ${source.name}: ${error.message}`);
           return [];
         })
@@ -280,7 +280,7 @@ export class JobSearchService {
         .sort((a, b) => (b.score || 0) - (a.score || 0))
         .slice(0, limit);
 
-      logger.info(`Returning ${filteredJobs.length} similar jobs with scores: ${filteredJobs.map(j => j.score?.toFixed(2)).join(', ')}`);
+      logger.info(`Returning ${filteredJobs.length} similar jobs with scores: ${filteredJobs.map(j => j.score.toFixed(2)).join(', ')}`);
       return filteredJobs;
 
     } catch (error) {
@@ -292,7 +292,7 @@ export class JobSearchService {
   /**
    * Extract search keywords from a job for finding similar positions
    */
-  private extractSearchKeywords(job: any): string[] {
+  private extractSearchKeywords(job: unknown): string[] {
     const keywords: string[] = [];
     
     // Extract from title
@@ -349,7 +349,7 @@ export class JobSearchService {
     score += (descMatches / searchKeywords.length) * 0.3;
     
     // Location bonus (10% weight)
-    if (job.location && job.location.toLowerCase().includes('remote')) {
+    if (job.location?.toLowerCase().includes('remote')) {
       score += 0.1;
     }
     
@@ -379,7 +379,7 @@ export class JobSearchService {
         });
         
         const jobData = await page.evaluate(() => {
-          const jobs: any[] = [];
+          const jobs: unknown[] = [];
           const jobCards = document.querySelectorAll('[data-jk], .job_seen_beacon, .jobsearch-SerpJobCard');
           
           for (const card of Array.from(jobCards).slice(0, 5)) {
@@ -390,11 +390,11 @@ export class JobSearchService {
             
             if (titleEl && companyEl) {
               jobs.push({
-                title: titleEl.textContent?.trim() || '',
-                company: companyEl.textContent?.trim() || '',
-                location: locationEl?.textContent?.trim() || 'Not specified',
+                title: titleEl.textContent?.trim() ?? '',
+                company: companyEl.textContent?.trim() ?? '',
+                location: locationEl?.textContent?.trim() ?? 'Not specified',
                 description: '',
-                url: (linkEl as HTMLAnchorElement)?.href || '',
+                url: (linkEl as HTMLAnchorElement).href || '',
                 salary: '',
                 postedDate: new Date(),
                 source: 'indeed'
@@ -524,7 +524,7 @@ export class JobSearchService {
                 company: companyEl.textContent?.trim() || '',
                 location: locationEl?.textContent?.trim() || 'Not specified',
                 description: '',
-                url: (linkEl as HTMLAnchorElement)?.href || '',
+                url: (linkEl!)?.href || '',
                 salary: '',
                 postedDate: new Date(),
                 source: 'glassdoor'
@@ -685,7 +685,7 @@ export class JobSearchService {
               jobs.push({
                 title: titleEl.textContent?.trim() || '',
                 company: companyEl.textContent?.trim() || '',
-                location: locationEl?.textContent?.trim() || 'Remote',
+                location: locationEl?.textContent?.trim() ?? 'Remote',
                 description: '',
                 url: (linkEl as HTMLAnchorElement)?.href || '',
                 salary: '',
@@ -755,13 +755,13 @@ export class JobSearchService {
                   const locationEl = element.querySelector('.location, .office');
                   const linkEl = element.querySelector('a');
                   
-                  if (titleEl && titleEl.textContent?.toLowerCase().includes(query.toLowerCase())) {
+                  if (titleEl?.textContent?.toLowerCase().includes(query.toLowerCase())) {
                     jobs.push({
-                      title: titleEl.textContent?.trim() || '',
+                      title: titleEl.textContent.trim() || '',
                       company: company.charAt(0).toUpperCase() + company.slice(1),
                       location: locationEl?.textContent?.trim() || 'Remote',
                       description: '',
-                      url: linkEl?.href || url,
+                      url: linkEl?.href ?? url,
                       salary: '',
                       postedDate: new Date().toISOString(),
                       source: 'company_careers'
@@ -816,7 +816,7 @@ export class JobSearchService {
             const xmlText = await response.text();
             
             // Simple XML parsing for job titles and companies
-            const titleMatches = xmlText.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/g) || [];
+            const titleMatches = xmlText.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/g) ?? [];
             const linkMatches = xmlText.match(/<link>(.*?)<\/link>/g) || [];
             
             for (let i = 0; i < Math.min(titleMatches.length, 5); i++) {
@@ -854,7 +854,7 @@ export class JobSearchService {
   /**
    * Get job by ID (helper method)
    */
-  private async getJobById(jobId: string, userId: string): Promise<any> {
+  private async getJobById(jobId: string, userId: string): Promise<unknown> {
     try {
       const { jobApplicationModel } = await import('../models/jobApplication.model');
       return await jobApplicationModel.findById(new mongoose.Types.ObjectId(jobId), new mongoose.Types.ObjectId(userId));
@@ -908,7 +908,7 @@ export class JobSearchService {
    * Calculate similarity score between two job applications
    * Uses weighted criteria for manual similarity calculation
    */
-  private calculateJobSimilarity(job1: any, job2: any): number {
+  private calculateJobSimilarity(job1: unknown, job2: any): number {
     const weights = {
       title: 0.4,      // 40% - Job title similarity
       company: 0.2,    // 20% - Company similarity  
@@ -1047,7 +1047,7 @@ export class JobSearchService {
               const postedEl = selectors.postedDate ? findElement(selectors.postedDate) : null;
               
               if (titleEl && companyEl) {
-                const job: any = {
+                const job: unknown = {
                   title: (titleEl.textContent || '').trim(),
                   company: (companyEl.textContent || '').trim(),
                   location: (locationEl?.textContent || '').trim(),
@@ -1100,8 +1100,8 @@ export class JobSearchService {
         
         // Process and validate jobs
         const processedJobs = jobList
-          .filter((job: any) => job.title && job.company)
-          .map((job: any) => this.processJobData(job, source));
+          .filter((job: unknown) => job.title && job.company)
+          .map((job: unknown) => this.processJobData(job, source));
         
         logger.info(`Scraped ${processedJobs.length} jobs from ${source}`);
         
@@ -1172,7 +1172,7 @@ export class JobSearchService {
   /**
    * Process raw job data from scraping
    */
-  private processJobData(rawJob: any, source: string): ISimilarJob {
+  private processJobData(rawJob: unknown, source: string): ISimilarJob {
     return {
       title: rawJob.title,
       company: rawJob.company,
@@ -1182,7 +1182,7 @@ export class JobSearchService {
       salary: rawJob.salary,
       jobType: this.extractJobType(rawJob.title, rawJob.description),
       experienceLevel: this.extractExperienceLevel(rawJob.title, rawJob.description),
-      source: source as any,
+      source: source as unknown,
       postedDate: rawJob.postedDate ? new Date(rawJob.postedDate) : undefined
     };
   }
@@ -1237,7 +1237,7 @@ export class JobSearchService {
    */
   private async calculateSimilarityScores(
     jobs: ISimilarJob[], 
-    originalJob: any
+    originalJob: unknown
   ): Promise<IJobSimilarityScore[]> {
     const scoredJobs: IJobSimilarityScore[] = [];
     
@@ -1352,7 +1352,7 @@ export class JobSearchService {
   /**
    * Scrape job details from a specific URL
    */
-  async scrapeJobDetails(url: string): Promise<any> {
+  async scrapeJobDetails(url: string): Promise<unknown> {
   try {
     // ===== SANITIZE URL =====
     logger.info(`[DEBUG] Raw URL: "${url}"`);
@@ -1495,7 +1495,7 @@ export class JobSearchService {
     logger.info('Successfully scraped:', { title: result.title, company: result.company });
     return result;
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error scraping job details:', error);
     throw new Error(`Scraping failed: ${error.message}`);
   }
@@ -1620,7 +1620,7 @@ export class JobSearchService {
   /**
    * Fetch candidate jobs from database using smart search strategy
    */
-  private async fetchCandidateJobs(jobApplication: any): Promise<any[]> {
+  private async fetchCandidateJobs(jobApplication: unknown): Promise<any[]> {
     const searches = [];
     
     // Extract search terms
@@ -1664,7 +1664,7 @@ export class JobSearchService {
   /**
    * Convert database job to ISimilarJob format
    */
-  private convertToSimilarJob(job: any): ISimilarJob {
+  private convertToSimilarJob(job: unknown): ISimilarJob {
     return {
       title: job.title,
       company: job.company,
@@ -1766,11 +1766,14 @@ export class JobSearchService {
   /**
    * Compare skills arrays
    */
-  private compareSkills(skills1: string[], skills2: string[]): number {
-    if (!skills1?.length || !skills2?.length) return 0;
+  private compareSkills(skills1?: string[], skills2?: string[]): number {
+    const s1Input = Array.isArray(skills1) ? skills1 : [];
+    const s2Input = Array.isArray(skills2) ? skills2 : [];
+
+    if (s1Input.length === 0 || s2Input.length === 0) return 0;
     
-    const s1 = new Set(skills1.map(s => s.toLowerCase()));
-    const s2 = new Set(skills2.map(s => s.toLowerCase()));
+    const s1 = new Set(s1Input.map(s => s.toLowerCase()));
+    const s2 = new Set(s2Input.map(s => s.toLowerCase()));
     
     const intersection = [...s1].filter(s => s2.has(s)).length;
     const union = new Set([...s1, ...s2]).size;

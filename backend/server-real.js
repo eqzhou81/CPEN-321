@@ -49,7 +49,7 @@ app.use('*', (req, res) => {
 });
 
 // Global error handler
-app.use((error: any, req: any, res: any, next: any) => {
+app.use((error: unknown, req: any, res: any, next: any) => {
   console.error('Global error handler:', error);
   res.status(500).json({
     message: 'Internal server error',

@@ -60,7 +60,7 @@ export class QuestionsController {
 
       await questionModel.deleteByJobId(jobObjectId, new mongoose.Types.ObjectId(user._id));
 
-      const generatedQuestions: any[] = [];
+      const generatedQuestions: unknown[] = [];
 
       if (types.includes(QuestionType.BEHAVIORAL)) {
         try {
@@ -73,8 +73,8 @@ export class QuestionsController {
           const behavioralQuestionsData = behavioralQuestions.map((q) => ({
             type: QuestionType.BEHAVIORAL,
             title: q.question,
-            description: q.context || q.question,
-            tags: q.tips || [],
+            description: q.context ?? q.question,
+            tags: q.tips ?? [],
           }));
 
           generatedQuestions.push(...behavioralQuestionsData);
@@ -148,7 +148,7 @@ export class QuestionsController {
           behavioralQuestions,
           technicalQuestions,
           totalQuestions: questions.length,
-          jobApplication: jobApplication || null
+          jobApplication: jobApplication ?? null
         },
       });
     } catch (error) {
@@ -306,7 +306,7 @@ export class QuestionsController {
     }
   }
 
-  private generateFallbackTechnicalQuestions(jobApplication: any, count: number): any[] {
+  private generateFallbackTechnicalQuestions(jobApplication: unknown, count: number): any[] {
     const fallbackQuestions = [
       {
         type: QuestionType.TECHNICAL,

@@ -102,7 +102,7 @@ export class JobApplicationModel {
 
   async create(
     userId: mongoose.Types.ObjectId,
-    jobData: any
+    jobData: unknown
   ): Promise<IJobApplication> {
     try {
       const validatedData = createJobApplicationSchema.parse(jobData);
@@ -141,8 +141,8 @@ export class JobApplicationModel {
 
   async findByUserId(
     userId: mongoose.Types.ObjectId,
-    limit: number = 50,
-    skip: number = 0
+    limit = 50,
+    skip = 0
   ): Promise<{ jobApplications: IJobApplication[]; total: number }> {
     try {
       const [jobApplications, total] = await Promise.all([
@@ -164,7 +164,7 @@ export class JobApplicationModel {
   async update(
     jobId: mongoose.Types.ObjectId,
     userId: mongoose.Types.ObjectId,
-    updateData: any
+    updateData: unknown
   ): Promise<IJobApplication | null> {
     try {
       const validatedData = updateJobApplicationSchema.parse(updateData);
@@ -206,7 +206,7 @@ export class JobApplicationModel {
   async searchByText(
     userId: mongoose.Types.ObjectId,
     searchTerm: string,
-    limit: number = 20,
+    limit = 20,
     skip: number = 0
   ): Promise<{ jobApplications: IJobApplication[]; total: number }> {
     try {

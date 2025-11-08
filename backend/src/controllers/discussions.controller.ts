@@ -34,7 +34,7 @@ export class DiscussionsController {
       // Get ALL discussions
       const discussions = await discussionModel.findAll(
         search,
-        sortBy as 'recent' | 'popular',
+        sortBy,
         Number(limit),
         skip
       );
@@ -50,7 +50,7 @@ export class DiscussionsController {
             topic: d.topic,
             description: d.description,
             creatorId: d.userId,
-            creatorName: creator?.name || 'Unknown User',
+            creatorName: creator?.name ?? 'Unknown User',
             messageCount: d.messageCount,
             participantCount: d.participantCount,
             lastActivityAt: d.lastActivityAt.toISOString(),
@@ -144,47 +144,64 @@ export class DiscussionsController {
     // ✅ Validate input safely with Zod schema
     try {
       createDiscussionSchema.parse({ topic, description });
-    } catch (validationError: any) {
-      console.error("❌ Validation failed:", validationError);
+    } catch (validationError: unknown) {
+      console.error('❌ Validation failed:', validationError);
 
-      // ✅ Defensive parsing of Zod errors
-      const firstError =
-        Array.isArray(validationError.issues) && validationError.issues.length > 0
-          ? validationError.issues[0]
-          : null;
+      let errorMessage = 'Invalid input data.';
+      if (validationError instanceof ZodError && validationError.issues.length > 0) {
+        errorMessage = validationError.issues[0].message;
+      } else if (validationError instanceof Error && validationError.message) {
+        errorMessage = validationError.message;
+      }
 
-      const errorMessage = firstError?.message || "Invalid input data.";
+      const topicIsMissing =
+        topic === undefined ||
+        topic === null ||
+        (typeof topic === 'string' && topic.trim().length === 0);
+      const topicHasWrongType =
+        topic !== undefined && topic !== null && typeof topic !== 'string';
+      const topicExceedsLimit = typeof topic === 'string' && topic.trim().length > 100;
+      const descriptionExceedsLimit =
+        typeof description === 'string' && description.trim().length > 500;
 
-      // ✅ Custom, readable error messages
-      if (errorMessage.includes("required") || !topic?.trim()) {
-        return res.status(400).json({
+      const invalidTypeMessage = errorMessage.includes('Invalid input');
+
+      if (topicHasWrongType || (invalidTypeMessage && !topicIsMissing)) {
+        return res.status(500).json({
           success: false,
-          message: "Topic cannot be empty.",
-          error: "EmptyTopicException",
+          message: 'Internal server error while creating discussion.',
+          error: 'InternalServerError',
         });
       }
 
-      if (errorMessage.includes("100 characters")) {
+      if (topicIsMissing || errorMessage.includes('required')) {
         return res.status(400).json({
           success: false,
-          message: "Topic cannot exceed 100 characters.",
-          error: "TopicTooLongException",
+          message: 'Topic cannot be empty.',
+          error: 'EmptyTopicException',
         });
       }
 
-      if (errorMessage.includes("500 characters")) {
+      if (topicExceedsLimit || errorMessage.includes('100 characters')) {
         return res.status(400).json({
           success: false,
-          message: "Description cannot exceed 500 characters.",
-          error: "DescriptionTooLongException",
+          message: 'Topic cannot exceed 100 characters.',
+          error: 'TopicTooLongException',
         });
       }
 
-      // ✅ Fallback for any other validation issue
+      if (descriptionExceedsLimit || errorMessage.includes('500 characters')) {
+        return res.status(400).json({
+          success: false,
+          message: 'Description cannot exceed 500 characters.',
+          error: 'DescriptionTooLongException',
+        });
+      }
+
       return res.status(400).json({
         success: false,
         message: errorMessage,
-        error: "ValidationError",
+        error: 'ValidationError',
       });
     }
 
@@ -193,7 +210,7 @@ export class DiscussionsController {
       user._id.toString(),
       user.name,
       topic.trim(),
-      description?.trim()
+      typeof description === 'string' ? description.trim() : description
     );
 
     logger.info(`Discussion created: ${discussion._id} by user ${user._id}`);
@@ -223,7 +240,7 @@ export class DiscussionsController {
       // Continue with successful response - this is key!
     }
 
-    console.log("   discussion._id.toString():", discussion._id?.toString());
+    console.log("   discussion._id.toString():", discussion._id.toString());
 
     const response: CreateDiscussionResponse = {
       success: true,

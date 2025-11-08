@@ -171,7 +171,7 @@ export class SessionModel {
   }
 
   // Get all sessions for a user
-  async findByUserId(userId: mongoose.Types.ObjectId, limit: number = 20): Promise<ISession[]> {
+  async findByUserId(userId: mongoose.Types.ObjectId, limit = 20): Promise<ISession[]> {
     try {
       return await Session.find({ userId })
         .sort({ createdAt: -1 })
@@ -192,7 +192,7 @@ export class SessionModel {
     currentQuestionIndex?: number
   ): Promise<ISession | null> {
     try {
-      const updateData: any = { answeredQuestions };
+      const updateData: unknown = { answeredQuestions };
       
       if (currentQuestionIndex !== undefined) {
         updateData.currentQuestionIndex = currentQuestionIndex;
@@ -289,7 +289,7 @@ export class SessionModel {
     status: SessionStatus
   ): Promise<ISession | null> {
     try {
-      const updateData: any = { status };
+      const updateData: unknown = { status };
       
       if (status === SessionStatus.COMPLETED) {
         updateData.completedAt = new Date();

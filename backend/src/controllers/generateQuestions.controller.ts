@@ -43,12 +43,12 @@ export const generateQuestionsController = async (req: Request, res: Response) =
       for (const leetcodeQuestion of topicResult.questions) {
         try {
           const question = await questionModel.create(userObjectId, {
-            jobId: jobId,
+            jobId,
             type: QuestionType.TECHNICAL,
             title: leetcodeQuestion.title,
             description: `LeetCode problem for ${topicResult.topic}`,
             difficulty: (leetcodeQuestion.difficulty && ['easy', 'medium', 'hard'].includes(leetcodeQuestion.difficulty) ? leetcodeQuestion.difficulty : 'medium') as 'easy' | 'medium' | 'hard',
-            tags: leetcodeQuestion.tags || [topicResult.topic],
+            tags: leetcodeQuestion.tags ?? [topicResult.topic],
             externalUrl: leetcodeQuestion.url
           });
           createdQuestions.push(question);

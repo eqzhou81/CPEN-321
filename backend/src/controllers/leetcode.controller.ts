@@ -14,7 +14,7 @@ export class LeetCodeController {
         return res.status(400).json({ message: 'query is required' });
       }
 
-      const results = await leetService.search(query as string);
+      const results = await leetService.search(query);
 
       // Return the results without persisting to DB for now
       // The jack-dev generate questions will handle persistence differently

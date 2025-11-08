@@ -111,14 +111,14 @@ export type UpdateJobApplicationRequest = z.infer<typeof updateJobApplicationSch
 export type JobSearchRequest = z.infer<typeof jobSearchSchema>;
 export type SimilarJobsSearchRequest = z.infer<typeof similarJobsSearchSchema>;
 
-export type JobApplicationResponse = {
+export interface JobApplicationResponse {
   message: string;
   data?: {
     jobApplication: IJobApplication;
   };
 };
 
-export type JobApplicationsListResponse = {
+export interface JobApplicationsListResponse {
   message: string;
   data?: {
     jobApplications: IJobApplication[];
@@ -126,7 +126,7 @@ export type JobApplicationsListResponse = {
   };
 };
 
-export type SimilarJobsResponse = {
+export interface SimilarJobsResponse {
   message: string;
   data?: {
     similarJobs: ISimilarJob[];

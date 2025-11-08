@@ -410,7 +410,7 @@ export class JobController {
       const companyStats = jobApplications.reduce((acc, job) => {
         acc[job.company] = (acc[job.company] || 0) + 1;
         return acc;
-      }, {} as Record<string, number>);
+      }, {});
       
       const topCompanies = Object.entries(companyStats)
         .sort(([, a], [, b]) => b - a)

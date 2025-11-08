@@ -18,7 +18,7 @@ class OpenAIService {
     }
 
     this.openai = new OpenAI({
-      apiKey: apiKey,
+      apiKey,
     });
   }
 
@@ -35,13 +35,13 @@ class OpenAIService {
 
   async generateBehavioralQuestions(
   jobApplication: IJobApplication,
-  count: number = 10
+  count = 10
 ): Promise<OpenAIBehavioralQuestion[]> {
   try {
     const title = this.sanitizeText(jobApplication.title);
     const company = this.sanitizeText(jobApplication.company);
     const description = this.sanitizeText(jobApplication.description);
-    const skills = jobApplication.skills?.map(s => this.sanitizeText(s)).join(', ') || 'Not specified';
+    const skills = jobApplication.skills?.map(s => this.sanitizeText(s)).join(', ') ?? 'Not specified';
     const experienceLevel = this.sanitizeText(jobApplication.experienceLevel) || 'Not specified';
 
     const prompt = `Generate ${count} behavioral interview questions for:
@@ -77,7 +77,7 @@ class OpenAIService {
     if (!content) throw new Error('No response from OpenAI');
 
     const questions = JSON.parse(content);
-    return questions.map((q: any) => ({
+    return questions.map((q: unknown) => ({
       question: q.question || q.title || '',
       context: q.context || '',
       tips: q.tips || []
@@ -141,8 +141,8 @@ Generate ${count} behavioral interview questions for the following job position:
 Job Title: ${jobApplication.title}
 Company: ${jobApplication.company}
 Job Description: ${jobApplication.description}
-Required Skills: ${jobApplication.skills?.join(', ') || 'Not specified'}
-Experience Level: ${jobApplication.experienceLevel || 'Not specified'}
+Required Skills: ${jobApplication.skills?.join(', ') ?? 'Not specified'}
+Experience Level: ${jobApplication.experienceLevel ?? 'Not specified'}
 
 Please create questions that are:
 1. Relevant to the job role and industry

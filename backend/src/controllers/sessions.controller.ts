@@ -17,7 +17,7 @@ import {
 import logger from '../utils/logger.util';
 
 export class SessionsController {
-  private formatSessionResponse(session: any): ISessionWithQuestions {
+  private formatSessionResponse(session: unknown): ISessionWithQuestions {
     return {
       ...session.toObject(),
       progressPercentage: Math.round((session.answeredQuestions / session.totalQuestions) * 100),
@@ -157,16 +157,16 @@ export class SessionsController {
       const populatedSession = await sessionModel.findById(session._id, new mongoose.Types.ObjectId(user._id));
 
       // Get the first question for the response
-      let currentQuestion: IQuestion | undefined = undefined;
+      let currentQuestion: IQuestion | undefined;
       if (questionIds.length > 0) {
-        currentQuestion = await questionModel.findById(questionIds[0], new mongoose.Types.ObjectId(user._id)) || undefined;
+        currentQuestion = await questionModel.findById(questionIds[0], new mongoose.Types.ObjectId(user._id)) ?? undefined;
       }
 
       res.status(201).json({
         message: 'Mock interview session created successfully',
         data: {
           session: this.formatSessionResponse(populatedSession),
-          currentQuestion: currentQuestion,
+          currentQuestion,
         },
       });
     } catch (error) {
@@ -207,7 +207,7 @@ export class SessionsController {
         message: 'Session retrieved successfully',
         data: {
           session: this.formatSessionResponse(session),
-          currentQuestion: currentQuestion as any,
+          currentQuestion: currentQuestion as unknown,
         },
       });
     } catch (error) {
@@ -299,14 +299,14 @@ export class SessionsController {
         });
       }
 
-      const questionInSession = session.questionIds.some((q: any) => 
+      const questionInSession = session.questionIds.some((q: unknown) => 
         q._id.toString() === questionId
       );
       
       if (!questionInSession) {
         logger.error('Question verification failed:', {
           questionId,
-          sessionQuestionIds: session.questionIds.map((q: any) => q._id.toString())
+          sessionQuestionIds: session.questionIds.map((q: unknown) => q._id.toString())
         });
         return res.status(400).json({
           message: 'Question does not belong to this session',
@@ -327,9 +327,9 @@ export class SessionsController {
 
           feedback = {
             feedback: aiFeedback.feedback || 'Good answer!',
-            score: aiFeedback.score || 7,
-            strengths: aiFeedback.strengths || [],
-            improvements: aiFeedback.improvements || [],
+            score: aiFeedback.score ?? 7,
+            strengths: aiFeedback.strengths ?? [],
+            improvements: aiFeedback.improvements ?? [],
             isLastQuestion: false,
             sessionCompleted: false,
           };
@@ -566,7 +566,7 @@ export class SessionsController {
       res.status(200).json({
         message: 'Session progress retrieved successfully',
         data: {
-          session: progress as any,
+          session: progress as unknown,
         },
       });
     } catch (error) {

@@ -14,10 +14,9 @@ if (process.env.BYPASS_AUTH === 'true') {
       message: 'Mock sign in successful',
       data: {
         user: {
-          _id: process.env.MOCK_USER_ID || '507f1f77bcf86cd799439011',
-          email: process.env.MOCK_USER_EMAIL || 'test@example.com',
-          name: process.env.MOCK_USER_NAME || 'Test User',
-          googleId: 'mock-google-id',
+          _id: process.env.MOCK_USER_ID ?? '507f1f77bcf86cd799439011',
+          email: process.env.MOCK_USER_EMAIL ?? 'test@example.com',
+          name: process.env.MOCK_USER_NAME ?? 'Test User',          googleId: 'mock-google-id',
           profilePicture: 'https://via.placeholder.com/150',
           bio: 'Test user for local development',
           hobbies: ['coding', 'testing']
