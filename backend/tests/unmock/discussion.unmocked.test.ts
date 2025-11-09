@@ -1041,3 +1041,121 @@ describe('Discussion Types & Validation', () => {
   });
 });
 
+describe('discussionModel', () => {
+  beforeAll(async () => {
+    if (mongoose.connection.readyState === 0) {
+      const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/test_discussion_model_isolated';
+      await mongoose.connect(uri);
+    }
+    await Discussion.deleteMany({});
+  });
+
+  afterAll(async () => {
+    // Don't close connection here; let Jest handle it
+  });
+
+  afterEach(async () => {
+    await Discussion.deleteMany({});
+  });
+
+  // ✅ Create
+  it('should create a discussion successfully', async () => {
+    const discussion = await discussionModel.create('user1', 'Nour', 'Test Topic', 'Test Description');
+    expect(discussion._id).toBeDefined();
+    expect(discussion.topic).toBe('Test Topic');
+    expect(discussion.creatorName).toBe('Nour');
+  });
+
+  // ✅ findAll (no search)
+  it('should find all discussions sorted by recent', async () => {
+    await discussionModel.create('u1', 'A', 'Topic A');
+    await discussionModel.create('u2', 'B', 'Topic B');
+    const result = await discussionModel.findAll(undefined, 'recent', 10, 0);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBeGreaterThanOrEqual(2);
+  });
+
+  // ✅ findAll (with search + popular sort)
+  it('should search discussions and sort by popular', async () => {
+    await discussionModel.create('u1', 'A', 'Searchable Topic');
+    const result = await discussionModel.findAll('Searchable', 'popular', 10, 0);
+    expect(result.length).toBeGreaterThanOrEqual(1);
+  });
+
+  // ✅ findById
+  it('should find discussion by ID', async () => {
+    const created = await discussionModel.create('u1', 'Tester', 'FindById');
+    const found = await discussionModel.findById(created._id.toString());
+    expect(found?.topic).toBe('FindById');
+  });
+
+  // ✅ postMessage
+  it('should post a message and update counts', async () => {
+    const created = await discussionModel.create('u1', 'Tester', 'Chat Topic');
+    const updated = await discussionModel.postMessage(
+      created._id.toString(),
+      'u1',
+      'Tester',
+      'Hello there!'
+    );
+    expect(updated?.messages.length).toBe(1);
+    expect(updated?.messageCount).toBe(1);
+    expect(updated?.participantCount).toBe(1);
+  });
+
+  it('should return null when posting to nonexistent discussion', async () => {
+    const result = await discussionModel.postMessage(
+      new mongoose.Types.ObjectId().toString(),
+      'x',
+      'Y',
+      'Hello'
+    );
+    expect(result).toBeNull();
+  });
+
+  // ✅ findByUserId
+  it('should return discussions created by a specific user', async () => {
+    await discussionModel.create('userA', 'Nour', 'UAT Topic');
+    const userDiscussions = await discussionModel.findByUserId('userA', 10, 0);
+    expect(userDiscussions[0].userId).toBe('userA');
+  });
+
+  // ✅ count
+  it('should count all discussions', async () => {
+    await discussionModel.create('userA', 'Nour', 'CountTopic1');
+    await discussionModel.create('userA', 'Nour', 'CountTopic2');
+    const total = await discussionModel.count();
+    expect(total).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should count discussions matching a search query', async () => {
+    await discussionModel.create('u1', 'A', 'Searchable discussion');
+    const result = await discussionModel.count('Searchable');
+    expect(result).toBeGreaterThanOrEqual(1);
+  });
+
+  // ✅ countByUserId
+  it('should count discussions by userId', async () => {
+    await discussionModel.create('userX', 'Nour', 'Topic X');
+    const count = await discussionModel.countByUserId('userX');
+    expect(count).toBe(1);
+  });
+
+  // ✅ deleteMany
+  it('should delete discussions using a query', async () => {
+    await discussionModel.create('userA', 'Nour', 'DeleteTopic');
+    const res = await discussionModel.deleteMany({ userId: 'userA' });
+    expect(res.acknowledged).toBe(true);
+  });
+
+  // ✅ findByIdAndDelete
+  it('should delete discussion by ID', async () => {
+    const created = await discussionModel.create('userA', 'Nour', 'ToDelete');
+    await discussionModel.findByIdAndDelete(created._id.toString());
+    const found = await discussionModel.findById(created._id.toString());
+    expect(found).toBeNull();
+  });
+
+  
+});
+

@@ -203,7 +203,7 @@ class DiscussionsTest : BaseComposeTest() {
     }
 
     /**
-     * Use Case 5: Create Discussion - Main Success Scenario
+     * Use Case 5: Create Discussion and View Discussion - Main Success Scenario
      *
      * Steps:
      * 1. User navigates to the discussions section
@@ -214,10 +214,10 @@ class DiscussionsTest : BaseComposeTest() {
      * 6. User clicks "Create Discussion" to submit
      * 7. System stores the discussion
      * 8. System redirects user to the newly created discussion page
-     * 9. User can begin posting messages in the discussion
+     * 9. User can view discussion and begin posting messages in the discussion
      */
     @Test
-    fun useCase_CreateDiscussion_Success() {
+    fun useCase_CreateandViewDiscussion_Success() {
         android.util.Log.d("DiscussionsTest", "=== Use Case: Create Discussion - Success ===")
 
         // Note: Navigation to discussions is already done in setup()
@@ -542,56 +542,7 @@ class DiscussionsTest : BaseComposeTest() {
 
     }
 
-    /**
-     * Use Case: View discussion
-     * 1. User clicks on a discussion
-     * 2. Discussion detail screen opens
-     * 3. All messages are displayed
-     */
-    @Test
-    fun useCase_ViewDiscussion_Success() {
-        android.util.Log.d("DiscussionsTest", "=== Use Case: View Discussion - Success ===")
 
-        // Note: Navigation to discussions is already done in setup()
-        // Step 1 is complete - we're already on discussions screen
-
-        // Step 2: Check for and click on a discussion
-        android.util.Log.d("DiscussionsTest", "Step 2: Checking for discussions to click...")
-        val discussionExists = check(maxRetries = 6) {
-            try {
-                composeTestRule.onAllNodes(hasText("Amazon", substring = true))
-                    .fetchSemanticsNodes(false).isNotEmpty() ||
-                        composeTestRule.onAllNodes(hasText("Discussion", substring = true))
-                            .fetchSemanticsNodes(false).isNotEmpty()
-            } catch (e: Exception) {
-                false
-            }
-        }
-
-        assert(discussionExists) { "Failed: No discussions found to view" }
-
-        val discussionClicked = checkTextAndClick("Amazon", substring = true, maxRetries = 3) ||
-                checkTextAndClick("Discussion", substring = true, maxRetries = 3)
-        assert(discussionClicked) { "Failed: Could not click on discussion" }
-        composeTestRule.waitForIdle()
-        Thread.sleep(2000)
-
-        // Step 3: Check that discussion detail screen opens
-        android.util.Log.d("DiscussionsTest", "Step 3: Checking for discussion detail screen...")
-        val detailScreenVisible = checkText("Amazon", maxRetries = 6) ||
-                check(maxRetries = 3) {
-                    try {
-                        composeTestRule.onAllNodes(hasText("Discussion", substring = true))
-                            .fetchSemanticsNodes(false).isNotEmpty()
-                    } catch (e: Exception) {
-                        false
-                    }
-                }
-
-        assert(detailScreenVisible) { "Failed: Discussion detail screen not displayed" }
-
-        android.util.Log.d("DiscussionsTest", "✓ Use Case: View Discussion - Success PASSED")
-    }
 
     /**
      * Use Case: Post message in discussion

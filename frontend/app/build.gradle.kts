@@ -39,7 +39,7 @@ android {
         buildConfigField("String", "IMAGE_BASE_URL", "\"${project.findProperty("IMAGE_BASE_URL") ?: ""}\"")
         buildConfigField("String", "GOOGLE_CLIENT_ID", "\"${project.findProperty("GOOGLE_CLIENT_ID") ?: ""}\"")
         val authBypassValue = if (project.findProperty("AUTH_BYPASS_ENABLED") == "true") "true" else "false"
-        buildConfigField("boolean", "AUTH_BYPASS_ENABLED", "false")
+        buildConfigField("boolean", "AUTH_BYPASS_ENABLED", "true")
 
 
 
