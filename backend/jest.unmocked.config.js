@@ -3,7 +3,7 @@ const path = require('path');
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  roots: ['<rootDir>/tests/unmock'],
+  roots: ['<rootDir>/tests/unmock','<rootDir>/tests/nfr'],
   testMatch: ['**/?(*.)+(spec|test).ts'],
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
   setupFilesAfterEnv: [path.resolve(__dirname, 'tests/setup.unmocked.ts')],
