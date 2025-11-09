@@ -4,12 +4,14 @@ import { questionModel } from '../../src/models/question.model';
 import { jobApplicationModel } from '../../src/models/jobApplication.model';
 import { sessionModel } from '../../src/models/session.model';
 import { openaiService } from '../../src/services/openai.service';
+import { generateQuestions as generateTechnicalQuestionTopics } from '../../src/services/generateQuestions.service';
 import { QuestionType, QuestionStatus } from '../../src/types/questions.types';
 
 jest.mock('../../src/models/question.model');
 jest.mock('../../src/models/jobApplication.model');
 jest.mock('../../src/models/session.model');
 jest.mock('../../src/services/openai.service');
+jest.mock('../../src/services/generateQuestions.service');
 jest.mock('../../src/config/database', () => ({
   connectDB: jest.fn()
 }));
@@ -37,6 +39,7 @@ jest.mock('../../src/middleware/auth.middleware', () => ({
 describe('QuestionsController', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        (generateTechnicalQuestionTopics as jest.Mock).mockResolvedValue([]);
     });
 
     afterAll(async () => {
@@ -58,6 +61,20 @@ describe('QuestionsController', () => {
                 company: 'Tech Corp',
                 description: 'Develop software applications'
             };
+
+            const mockTechnicalTopics = [
+                {
+                    topic: 'Arrays',
+                    questions: [
+                        {
+                            title: 'Two Sum',
+                            url: 'https://leetcode.com/problems/two-sum/',
+                            difficulty: 'Easy',
+                            tags: ['Array']
+                        }
+                    ]
+                }
+            ];
 
             const mockGeneratedQuestions = [
                 {
@@ -83,6 +100,7 @@ describe('QuestionsController', () => {
             (openaiService.generateBehavioralQuestions as jest.Mock).mockResolvedValue([
                 { question: 'Tell me about a time you faced a challenge', context: 'Behavioral question about challenges', tips: ['leadership', 'problem-solving'] }
             ]);
+            (generateTechnicalQuestionTopics as jest.Mock).mockResolvedValue(mockTechnicalTopics);
 
             const response = await request(app)
                 .post('/api/questions/generate')
@@ -94,6 +112,7 @@ describe('QuestionsController', () => {
             expect(response.body.data).toHaveProperty('behavioralQuestions');
             expect(response.body.data).toHaveProperty('technicalQuestions');
             expect(response.body.data).toHaveProperty('totalQuestions');
+            expect(generateTechnicalQuestionTopics).toHaveBeenCalledWith(mockJobApplication.description);
         });
 
         it('should return 400 if job ID is missing', async () => {
