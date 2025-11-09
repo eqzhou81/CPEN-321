@@ -305,6 +305,50 @@ describe('POST /api/discussions/:id/messages - Database Errors (Mocked)', () => 
     expect(res.text || res.body).toBeDefined();
   });
 
+  it('should log error if Socket.IO emit fails', async () => {
+    // Mock a valid discussion
+    (discussionModel.findById as jest.Mock).mockResolvedValue({
+      _id: '123',
+      userId: 'user1',
+      topic: 'Test',
+      description: 'desc',
+      messageCount: 0,
+      participantCount: 0,
+      messages: [],
+    });
+
+    // Mock postMessage to return updated discussion with messages
+    (discussionModel.postMessage as jest.Mock).mockResolvedValue({
+      messages: [
+        {
+          _id: 'm1',
+          userId: 'user1',
+          userName: 'Nour',
+          content: 'hello',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ],
+    });
+
+    // Force Socket.IO emit to throw
+    const ioMock = {
+      to: jest.fn().mockReturnThis(),
+      emit: jest.fn(() => {
+        throw new Error('Socket fail');
+      }),
+    };
+    app.set('io', ioMock);
+
+    const res = await request(app)
+      .post('/api/discussions/123/messages')
+      .set('Authorization', 'Bearer mock-jwt-token')
+      .send({ content: 'hello' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+  });
+
 });
 
 /* ==================================================================== */

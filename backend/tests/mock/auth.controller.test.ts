@@ -553,4 +553,40 @@ describe('AuthController', () => {
             expect(response.body.data.token).toBe('different-jwt-token');
         });
     });
+describe('Unhandled Errors and Logging (Fallback Coverage)', () => {
+  it('should handle unexpected errors in signup via next(error)', async () => {
+    const requestData = { idToken: 'valid-google-id-token' };
+
+    // Force an unexpected error message that doesn't match any "if" condition
+    (authService.signUpWithGoogle as jest.Mock).mockRejectedValue(
+      new Error('Unexpected failure from Google API')
+    );
+
+    const response = await request(app)
+      .post('/api/auth/signup')
+      .send(requestData);
+
+    // Fallback hits next(error) and error middleware returns 500
+    expect(response.status).toBe(500);
+    expect(response.body).toHaveProperty('message');
+  });
+
+  it('should handle unexpected errors in signin via next(error)', async () => {
+    const requestData = { idToken: 'valid-google-id-token' };
+
+    (authService.signInWithGoogle as jest.Mock).mockRejectedValue(
+      new Error('Random backend error')
+    );
+
+    const response = await request(app)
+      .post('/api/auth/signin')
+      .send(requestData);
+
+    // Should also fall back to global error handler → 500
+    expect(response.status).toBe(500);
+    expect(response.body).toHaveProperty('message');
+  });
 });
+
+});
+

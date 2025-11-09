@@ -32,22 +32,19 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        
-//        buildConfigField("String", "API_KEY", "\"${project.findProperty("API_KEY") ?: ""}\"")
-//        buildConfigField("String", "API_BASE_URL", "\"http://206.12.181.242:3000/api/\"")
-//        buildConfigField("String", "IMAGE_BASE_URL", "\"http://206.12.181.242:3000\"")
-//    buildConfigField("String", "GOOGLE_CLIENT_ID", "\"228280808099-q9229bfrdhgt9rjor3uv66vdaomhup7t.apps.googleusercontent.com\"")
-//    buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"228280808099-9v5feggkb4sag0ij88mk3o4j39j22bv8.apps.googleusercontent.com\"")
+
 
         buildConfigField("String", "API_KEY", "\"${project.findProperty("API_KEY") ?: ""}\"")
-        buildConfigField("String", "API_BASE_URL", "\"http://20.9.137.129:3000/api/\"")
-        buildConfigField("String", "IMAGE_BASE_URL", "\"http://20.9.137.129:3000\"")
-        buildConfigField("String", "GOOGLE_CLIENT_ID", "\"228280808099-q9229bfrdhgt9rjor3uv66vdaomhup7t.apps.googleusercontent.com\"")
-        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"228280808099-9v5feggkb4sag0ij88mk3o4j39j22bv8.apps.googleusercontent.com\"")
+        buildConfigField("String", "API_BASE_URL", "\"${project.findProperty("API_BASE_URL") ?: ""}\"")
+        buildConfigField("String", "IMAGE_BASE_URL", "\"${project.findProperty("IMAGE_BASE_URL") ?: ""}\"")
+        buildConfigField("String", "GOOGLE_CLIENT_ID", "\"${project.findProperty("GOOGLE_CLIENT_ID") ?: ""}\"")
+        val authBypassValue = if (project.findProperty("AUTH_BYPASS_ENABLED") == "true") "true" else "false"
         buildConfigField("boolean", "AUTH_BYPASS_ENABLED", "false")
-        
+
+
+
         // Test configuration
-        buildConfigField("String", "STAGING_BASE_URL", "\"http://10.0.2.2:3000/api/\"")
+        buildConfigField("String", "STAGING_BASE_URL", "\"${project.findProperty("API_BASE_URL") ?: ""}\"")
         buildConfigField("String", "TEST_USER_EMAIL", "\"test@example.com\"")
         buildConfigField("String", "TEST_USER_PASSWORD", "\"testpassword\"")
     }
@@ -55,7 +52,7 @@ android {
     buildTypes {
         debug {
             // Enable auth bypass for debug builds (used by tests)
-            buildConfigField("boolean", "AUTH_BYPASS_ENABLED", "true")
+//            buildConfigField("boolean", "AUTH_BYPASS_ENABLED", "true")
         }
         
         release {

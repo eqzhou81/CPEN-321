@@ -148,12 +148,9 @@ export class DiscussionsController {
       console.error("❌ Validation failed:", validationError);
 
       // ✅ Defensive parsing of Zod errors
-      const firstError =
-        Array.isArray(validationError.issues) && validationError.issues.length > 0
-          ? validationError.issues[0]
-          : null;
+      const firstError = validationError.issues?.[0];
 
-      const errorMessage = firstError?.message || "Invalid input data.";
+      const errorMessage = firstError?.message;
 
       // ✅ Custom, readable error messages
       if (errorMessage.includes("required") || !topic?.trim()) {
