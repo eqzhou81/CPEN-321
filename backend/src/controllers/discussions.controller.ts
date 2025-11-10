@@ -50,7 +50,7 @@ export class DiscussionsController {
             topic: d.topic,
             description: d.description,
             creatorId: d.userId,
-            creatorName: creator?.name || 'Unknown User',
+            creatorName: creator?.name ?? 'Unknown User',
             messageCount: d.messageCount,
             participantCount: d.participantCount,
             lastActivityAt: d.lastActivityAt.toISOString(),
@@ -144,43 +144,52 @@ export class DiscussionsController {
     // ✅ Validate input safely with Zod schema
     try {
       createDiscussionSchema.parse({ topic, description });
-    } catch (validationError: any) {
+    } catch (validationError: unknown) {
       console.error("❌ Validation failed:", validationError);
 
-      // ✅ Defensive parsing of Zod errors
-      const firstError = validationError.issues?.[0];
+      if (validationError && typeof validationError === "object" && "issues" in validationError) {
+        const zodError = validationError as { issues?: { message?: string }[] };
+        const firstError = zodError.issues?.[0];
+        const errorMessage = firstError?.message || "Invalid input data.";
 
-      const errorMessage = firstError?.message;
+        // ✅ Custom, readable error messages
+        if (errorMessage.includes("required") || !topic?.trim()) {
+          return res.status(400).json({
+            success: false,
+            message: "Topic cannot be empty.",
+            error: "EmptyTopicException",
+          });
+        }
 
-      // ✅ Custom, readable error messages
-      if (errorMessage.includes("required") || !topic?.trim()) {
+        if (errorMessage.includes("100 characters")) {
+          return res.status(400).json({
+            success: false,
+            message: "Topic cannot exceed 100 characters.",
+            error: "TopicTooLongException",
+          });
+        }
+
+        if (errorMessage.includes("500 characters")) {
+          return res.status(400).json({
+            success: false,
+            message: "Description cannot exceed 500 characters.",
+            error: "DescriptionTooLongException",
+          });
+        }
+
+        // ✅ Fallback for any other validation issue
         return res.status(400).json({
           success: false,
-          message: "Topic cannot be empty.",
-          error: "EmptyTopicException",
+          message: errorMessage,
+          error: "ValidationError",
         });
       }
 
-      if (errorMessage.includes("100 characters")) {
-        return res.status(400).json({
-          success: false,
-          message: "Topic cannot exceed 100 characters.",
-          error: "TopicTooLongException",
-        });
-      }
-
-      if (errorMessage.includes("500 characters")) {
-        return res.status(400).json({
-          success: false,
-          message: "Description cannot exceed 500 characters.",
-          error: "DescriptionTooLongException",
-        });
-      }
-
-      // ✅ Fallback for any other validation issue
+      // ✅ If error is not a Zod error
+      console.error("Unexpected validation error:", validationError);
       return res.status(400).json({
         success: false,
-        message: errorMessage,
+        message: "Invalid input data.",
         error: "ValidationError",
       });
     }
@@ -195,32 +204,25 @@ export class DiscussionsController {
 
     logger.info(`Discussion created: ${discussion._id} by user ${user._id}`);
 
-    //emit discussion to socket 
+    // ✅ Emit discussion to socket (optional)
     try {
-      const io = req.app.get('io');
-      if (io) {
-        io.emit('newDiscussion', {
-          id: discussion._id.toString(),
-          topic: discussion.topic,
-          description: discussion.description,
-          creatorId: discussion.userId,
-          creatorName: user.name,
-          messageCount: discussion.messageCount,
-          participantCount: discussion.participantCount,
-          lastActivityAt: discussion.lastActivityAt.toISOString(),
-          createdAt: discussion.createdAt.toISOString(),
-        });
-      }
-    } catch (socketError) {
-      // Log but don't fail the main request
-     
-    const err = socketError as Error;
-    console.error('Socket.IO notification failed:', err.message);
-
-      // Continue with successful response - this is key!
+      const io = req.app.get("io");
+      io?.emit("newDiscussion", {
+        id: discussion._id.toString(),
+        topic: discussion.topic,
+        description: discussion.description,
+        creatorId: discussion.userId,
+        creatorName: user.name,
+        messageCount: discussion.messageCount,
+        participantCount: discussion.participantCount,
+        lastActivityAt: discussion.lastActivityAt.toISOString(),
+        createdAt: discussion.createdAt.toISOString(),
+      });
+    } catch (socketError: unknown) {
+      const err = socketError as Error;
+      console.error("Socket.IO notification failed:", err.message);
+      // Continue with success — don’t block user flow
     }
-
-    console.log("   discussion._id.toString():", discussion._id?.toString());
 
     const response: CreateDiscussionResponse = {
       success: true,
@@ -228,10 +230,8 @@ export class DiscussionsController {
       message: "Discussion created successfully",
     };
 
-    res.status(201).json(response);
+    return res.status(201).json(response);
   } catch (error) {
-    
-    // ✅ Fallback for unhandled server errors
     logger.error("Failed to create discussion:", error);
     return res.status(500).json({
       success: false,
@@ -240,7 +240,6 @@ export class DiscussionsController {
     });
   }
 }
-
 
   /**
    * Post a message to a discussion

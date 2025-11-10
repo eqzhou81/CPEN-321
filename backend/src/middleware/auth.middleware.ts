@@ -2,6 +2,7 @@ import { NextFunction, Request, RequestHandler, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { userModel } from '../models/user.model';
+import { IUser } from '../types/users.types';
 
 export const authenticateToken: RequestHandler = async (
   req: Request,
@@ -11,22 +12,20 @@ export const authenticateToken: RequestHandler = async (
   try {
     // Local development auth bypass
     if (process.env.BYPASS_AUTH === 'true') {
-      console.log('🔓 Auth bypass enabled for local development');
-      
-      // Create a mock user object
       req.user = {
-        _id: new mongoose.Types.ObjectId(process.env.MOCK_USER_ID || '507f1f77bcf86cd799439011').toString(),
-        email: process.env.MOCK_USER_EMAIL || 'test@example.com',
-        name: process.env.MOCK_USER_NAME || 'Test User',
+        _id: new mongoose.Types.ObjectId(process.env.MOCK_USER_ID ?? '507f1f77bcf86cd799439011').toString(),
+        email: process.env.MOCK_USER_EMAIL ?? 'test@example.com',
+        name: process.env.MOCK_USER_NAME ?? 'Test User',
         googleId: 'mock-google-id',
-        profilePicture: 'https://via.placeholder.com/150',
-        bio: 'Test user for local development',
-        hobbies: ['coding', 'testing'],
+        profilePicture: 'https://example.com/profile.jpg',
+        bio: 'Mock bio for development',
+        hobbies: [],
         savedJobs: [],
         savedQuestions: [],
         createdAt: new Date(),
-        updatedAt: new Date()
-      } as any;
+        updatedAt: new Date(),
+      } as unknown as IUser; 
+
       
       next();
       return;
@@ -47,7 +46,7 @@ export const authenticateToken: RequestHandler = async (
       id: mongoose.Types.ObjectId;
     };
 
-    if (!decoded || !decoded.id) {
+    if (!decoded?.id) {
       res.status(401).json({
         error: 'Invalid token',
         message: 'Token verification failed',

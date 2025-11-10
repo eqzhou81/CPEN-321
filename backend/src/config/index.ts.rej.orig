@@ -1,0 +1,3 @@
+@@ -38,1 +38,1 @@
+-  socket.on('disconnect', () => console.log('ð´ User disconnected:', socket.id));
++  socket.on('disconnect', () => { console.log('ð´ User disconnected:', socket.id); });

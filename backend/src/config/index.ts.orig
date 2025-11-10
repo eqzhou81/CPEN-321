@@ -35,11 +35,11 @@ io.on('connection', (socket) => {
     socket.join(discussionId);
     console.log(`📥 ${socket.id} joined ${discussionId}`);
   });
-  socket.on('disconnect', () => { console.log('🔴 User disconnected:', socket.id); });
+  socket.on('disconnect', () => console.log('🔴 User disconnected:', socket.id));
 });
 
 
-void connectDB();
+connectDB();
 
 // Start BOTH Express + Socket.IO
 server.listen(PORT, () => {
