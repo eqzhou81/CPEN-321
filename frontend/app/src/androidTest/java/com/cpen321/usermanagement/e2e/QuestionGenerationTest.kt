@@ -1,8 +1,12 @@
 package com.cpen321.usermanagement.e2e
 
+import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTextInput
 import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.util.BaseComposeTest
 import org.junit.Before
@@ -38,6 +42,110 @@ class QuestionGenerationTest : BaseComposeTest() {
     }
 
     /**
+     * Helper function to ensure a job exists in the list
+     * Creates a test job if none exists using tag-based selectors (with text fallback) and scrolling
+     */
+    private fun ensureJobExists() {
+        android.util.Log.d("QuestionGenerationTest", "Ensuring a job exists in the list...")
+        
+        // Check if any job exists (try tag first, then text fallback)
+        val hasJobByTag = check(maxRetries = 2) {
+            try {
+                composeTestRule.onAllNodes(hasTestTag("job_list_item"))
+                    .fetchSemanticsNodes(false).isNotEmpty()
+            } catch (_: Throwable) {
+                false
+            }
+        }
+        
+        val hasJobByText = check(maxRetries = 2) {
+            try {
+                composeTestRule.onAllNodes(hasText("Software Engineer", substring = true))
+                    .fetchSemanticsNodes(false).isNotEmpty() ||
+                composeTestRule.onAllNodes(hasText("Engineer", substring = true))
+                    .fetchSemanticsNodes(false).isNotEmpty() ||
+                composeTestRule.onAllNodes(hasText("Job", substring = true))
+                    .fetchSemanticsNodes(false).isNotEmpty()
+            } catch (_: Throwable) {
+                false
+            }
+        }
+        
+        if (hasJobByTag || hasJobByText) {
+            android.util.Log.d("QuestionGenerationTest", "✓ Job already exists")
+            return
+        }
+        
+        android.util.Log.d("QuestionGenerationTest", "No job found. Creating a test job via UI...")
+        
+        // Open Add dialog using tag
+        val opened = checkTagAndClick("add_job_button", maxRetries = 3)
+        assert(opened) { "Failed: Add Job button not clickable" }
+        composeTestRule.waitForIdle()
+        
+        // Wait for dialog using tag (fallback to text if tag not available)
+        val dialogExists = checkTag("add_job_dialog", maxRetries = 6) ||
+                         checkText("Add Job Application", maxRetries = 6) ||
+                         checkText("Add Job", maxRetries = 6)
+        assert(dialogExists) { "Failed: Add Job dialog not shown" }
+        composeTestRule.waitForIdle()
+        
+        // Type text into the dedicated input (scroll if needed)
+        val jobText = """
+            Software Engineer
+            Test Company
+            Looking for SE with Java/Python/React; build scalable apps; REST APIs; DB design.
+        """.trimIndent()
+        
+        try {
+            // Try scroll container first (if present)
+            try {
+                composeTestRule.onNode(hasScrollToNodeAction())
+                    .performScrollToNode(hasTestTag("job_paste_text"))
+            } catch (_: Throwable) {
+                // Not in scrollable or tag not found - continue
+            }
+            
+            // Use tag-based input if available, fallback to text placeholder
+            try {
+                composeTestRule.onNodeWithTag("job_paste_text")
+                    .performTextInput(jobText)
+            } catch (e: Exception) {
+                // Fallback to text placeholder
+                composeTestRule.onAllNodes(hasText("Paste the job posting details", substring = true))
+                    .onFirst()
+                    .performTextInput(jobText)
+            }
+            composeTestRule.waitForIdle()
+        } catch (e: Exception) {
+            throw AssertionError("Failed: Could not input job text: ${e.message}")
+        }
+        
+        // Submit using tag (fallback to text)
+        val submitted = checkTagAndClick("add_job_submit", maxRetries = 3) ||
+                       checkTextAndClick("Add to Portfolio", maxRetries = 3)
+        assert(submitted) { "Failed: Add Job submit not clickable" }
+        composeTestRule.waitForIdle()
+        
+        // Wait for at least one list item to appear (deterministic wait)
+        // Try tag first, then fallback to text
+        val created = check(maxRetries = 24) { // Allow for network + normalization
+            try {
+                composeTestRule.onAllNodes(hasTestTag("job_list_item"))
+                    .fetchSemanticsNodes(false).isNotEmpty() ||
+                composeTestRule.onAllNodes(hasText("Software Engineer", substring = true))
+                    .fetchSemanticsNodes(false).isNotEmpty() ||
+                composeTestRule.onAllNodes(hasText("Test Company", substring = true))
+                    .fetchSemanticsNodes(false).isNotEmpty()
+            } catch (_: Throwable) {
+                false
+            }
+        }
+        assert(created) { "Failed: Job not visible after creation" }
+        android.util.Log.d("QuestionGenerationTest", "✓ Test job created successfully")
+    }
+
+    /**
      * Use Case 1: Generate Questions for a Saved Job - Main Success Scenario
      * 
      * Steps:
@@ -52,155 +160,111 @@ class QuestionGenerationTest : BaseComposeTest() {
      */
     @Test
     fun useCase_GenerateQuestions_Success() {
-        android.util.Log.d("QuestionGenerationTest", "=== Use Case 1: Generate Questions - Main Success Scenario ===")
+        android.util.Log.d("QuestionGenerationTest", "=== Generate Questions – Success ===")
         
-        // Step 1: Navigate to job applications list
-        android.util.Log.d("QuestionGenerationTest", "Step 1: Checking for 'My Job Applications' screen...")
-        assert(checkText("My Job Applications", maxRetries = 6)) {
-            "Failed: Main screen 'My Job Applications' not found"
-        }
+        // App ready (handled in BaseComposeTest via app_ready)
+        // Ensure at least one job exists
+        ensureJobExists()
         composeTestRule.waitForIdle()
-        Thread.sleep(1000)
         
-        // Step 2: Select a saved job application
-        android.util.Log.d("QuestionGenerationTest", "Step 2: Checking for job to select...")
-        val jobFound = check(maxRetries = 6) {
+        // Open any job: click the first job (try tag first, then text fallback)
+        android.util.Log.d("QuestionGenerationTest", "Clicking on a job...")
+        val jobClicked = checkAndClick(maxRetries = 6) {
             try {
-                composeTestRule.onAllNodes(hasText("Test Job", substring = true))
-                    .fetchSemanticsNodes(false).isNotEmpty() ||
-                composeTestRule.onAllNodes(hasText("Job", substring = true))
-                    .fetchSemanticsNodes(false).isNotEmpty()
-            } catch (e: Exception) {
-                false
+                composeTestRule.onAllNodes(hasTestTag("job_list_item")).onFirst()
+            } catch (_: Throwable) {
+                null
             }
-        }
-        
-        assert(jobFound) { "Failed: No jobs found in the list" }
-        
-        android.util.Log.d("QuestionGenerationTest", "Clicking on job...")
-        val jobClicked = checkTextAndClick("Test Job", substring = true, maxRetries = 3) ||
-                        checkTextAndClick("Job", substring = true, maxRetries = 3)
-        
-        assert(jobClicked) { "Failed: Could not click on job" }
+        } || checkTextAndClick("Software Engineer", substring = true, maxRetries = 6) ||
+        checkTextAndClick("Engineer", substring = true, maxRetries = 6) ||
+        checkTextAndClick("Test Company", substring = true, maxRetries = 6)
+        assert(jobClicked) { "Failed: Could not click a job" }
         composeTestRule.waitForIdle()
-        Thread.sleep(2000)
         
-        // Step 3: Click on "Generate Questions" button
-        android.util.Log.d("QuestionGenerationTest", "Step 3: Checking for 'Job Details' screen...")
-        assert(checkText("Job Details", maxRetries = 6)) {
-            "Failed: Job Details screen not found"
-        }
+        // On Job Details (tag-based check, fallback to text)
+        android.util.Log.d("QuestionGenerationTest", "Verifying Job Details screen...")
+        val onJobDetails = checkTag("job_details_screen", maxRetries = 6) ||
+                          checkText("Job Details", maxRetries = 6)
+        assert(onJobDetails) { "Job Details screen not found" }
         composeTestRule.waitForIdle()
-        Thread.sleep(2000)
         
-        android.util.Log.d("QuestionGenerationTest", "Step 3: Checking for 'Generate Questions' button...")
-        assert(checkTag("generate_questions_button", maxRetries = 6)) {
-            "Failed: Generate Questions button not found"
-        }
-        
-        val generateClicked = checkTagAndClick("generate_questions_button", maxRetries = 3)
-        assert(generateClicked) { "Failed: Could not click Generate Questions button" }
+        // Click Generate
+        android.util.Log.d("QuestionGenerationTest", "Clicking Generate Questions button...")
+        val generated = checkTagAndClick("generate_questions_button", maxRetries = 6)
+        assert(generated) { "Failed: Generate Questions click" }
         composeTestRule.waitForIdle()
-        Thread.sleep(3000)
         
-        // Step 4-6: System generates and stores questions (Steps 4-6 happen on backend)
-        android.util.Log.d("QuestionGenerationTest", "Step 4-6: Waiting for question generation to complete...")
-        assert(checkText("Interview Questions", maxRetries = 6)) {
-            "Failed: Interview Questions screen not found"
-        }
+        // Interview Questions screen (tag-based check, fallback to text)
+        android.util.Log.d("QuestionGenerationTest", "Waiting for Interview Questions screen...")
+        val onQuestionsScreen = checkTag("interview_questions_screen", maxRetries = 12) ||
+                                checkText("Interview Questions", maxRetries = 12)
+        assert(onQuestionsScreen) { "Interview Questions screen not found" }
         composeTestRule.waitForIdle()
-        Thread.sleep(3000)
         
-        val loadingFinished = check(maxRetries = 12) { // Up to 60 seconds for loading
+        // Wait for loading off (tag-based, fallback to text)
+        android.util.Log.d("QuestionGenerationTest", "Waiting for question generation to complete...")
+        val finished = check(maxRetries = 24) { // Up to 2 minutes
             try {
-                !composeTestRule.onAllNodes(hasText("Generating your interview questions", substring = true))
+                // Check if loading tag exists - if not found, assume loading is done
+                val loadingTagExists = composeTestRule.onAllNodes(hasTestTag("interview_questions_loading"))
                     .fetchSemanticsNodes(false).isNotEmpty()
-            } catch (e: Exception) {
-                true
+                // Also check for loading text as fallback
+                val loadingTextExists = composeTestRule.onAllNodes(hasText("Generating", substring = true))
+                    .fetchSemanticsNodes(false).isNotEmpty()
+                !loadingTagExists && !loadingTextExists
+            } catch (_: Throwable) {
+                true // If check fails, assume loading is done
             }
         }
-        
-        assert(loadingFinished) { "Failed: Question generation loading did not complete" }
+        assert(finished) { "Generation did not finish" }
         composeTestRule.waitForIdle()
-        Thread.sleep(3000)
         
-        // Step 7: System displays "Behavioral Questions" and "Technical Questions" buttons
-        android.util.Log.d("QuestionGenerationTest", "Step 7: Checking for question type buttons...")
-        val hasBehavioral = checkText("Behavioral Questions", maxRetries = 12) ||
-                           checkText("Behavioral", maxRetries = 12)
-        val hasTechnical = checkText("Technical Questions", maxRetries = 12) ||
-                          checkText("Technical", maxRetries = 12)
+        // Buttons presence (at least one) - tag-based, fallback to text
+        android.util.Log.d("QuestionGenerationTest", "Checking for question category buttons...")
+        val hasBehavioralBtn = checkTag("behavioral_questions_button", maxRetries = 3) ||
+                              checkText("Behavioral Questions", maxRetries = 3) ||
+                              checkText("Behavioral", maxRetries = 3)
+        val hasTechnicalBtn = checkTag("technical_questions_button", maxRetries = 3) ||
+                             checkText("Technical Questions", maxRetries = 3) ||
+                             checkText("Technical", maxRetries = 3)
         
-        assert(hasBehavioral || hasTechnical) {
-            "Failed: Neither Behavioral nor Technical questions were generated. " +
-            "Check backend logs for errors in question generation API."
+        assert(hasBehavioralBtn || hasTechnicalBtn) {
+            "No question category buttons; check backend generation"
         }
         
-        // Step 8: User can click either button to view the respective list of generated questions
-        android.util.Log.d("QuestionGenerationTest", "Step 8: Testing navigation to question lists...")
-        
-        // Test Behavioral Questions navigation
-        if (hasBehavioral) {
-            android.util.Log.d("QuestionGenerationTest", "Clicking on 'Behavioral Questions' button...")
-            val behavioralClicked = checkTextAndClick("Behavioral Questions", substring = true, maxRetries = 3) ||
-                                  checkTextAndClick("Behavioral", substring = true, maxRetries = 3)
+        // Navigate into Behavioral (if present)
+        if (hasBehavioralBtn) {
+            android.util.Log.d("QuestionGenerationTest", "Navigating to Behavioral Questions...")
+            val ok = checkTagAndClick("behavioral_questions_button", maxRetries = 3) ||
+                    checkTextAndClick("Behavioral Questions", maxRetries = 3) ||
+                    checkTextAndClick("Behavioral", maxRetries = 3)
+            assert(ok) { "Cannot open Behavioral Questions" }
+            composeTestRule.waitForIdle()
             
-            if (behavioralClicked) {
-                composeTestRule.waitForIdle()
-                Thread.sleep(2000)
-                
-                // Verify we navigated to Behavioral Questions screen
-                // The screen should show behavioral questions list
-                val onBehavioralScreen = check(maxRetries = 3) {
-                    try {
-                        // Check for any indication we're on the behavioral questions screen
-                        // This could be a title, question items, or navigation back button
-                        composeTestRule.onAllNodes(hasText("Behavioral", substring = true))
-                            .fetchSemanticsNodes(false).isNotEmpty()
-                    } catch (e: Exception) {
-                        false
-                    }
-                }
-                
-                if (onBehavioralScreen) {
-                    android.util.Log.d("QuestionGenerationTest", "✓ Successfully navigated to Behavioral Questions screen")
-                }
-                
-                // Navigate back to questions dashboard
-                pressBack()
-                composeTestRule.waitForIdle()
-                Thread.sleep(2000)
-            }
+            // Optional: verify screen content via a tag, e.g., "behavioral_questions_list"
+            // For now, just navigate back
+            pressBack()
+            composeTestRule.waitForIdle()
+            
+            // Verify we're back on Interview Questions screen
+            val backToDashboard = checkTag("interview_questions_screen", maxRetries = 6) ||
+                                 checkText("Interview Questions", maxRetries = 6)
+            assert(backToDashboard) { "Failed: Did not return to Interview Questions screen" }
         }
         
-        // Test Technical Questions navigation
-        if (hasTechnical) {
-            android.util.Log.d("QuestionGenerationTest", "Clicking on 'Technical Questions' button...")
-            val technicalClicked = checkTextAndClick("Technical Questions", substring = true, maxRetries = 3) ||
-                                 checkTextAndClick("Technical", maxRetries = 3)
-            
-            if (technicalClicked) {
-                composeTestRule.waitForIdle()
-                Thread.sleep(2000)
-                
-                // Verify we navigated to Technical Questions screen
-                val onTechnicalScreen = check(maxRetries = 3) {
-                    try {
-                        composeTestRule.onAllNodes(hasText("Technical", substring = true))
-                            .fetchSemanticsNodes(false).isNotEmpty()
-                    } catch (e: Exception) {
-                        false
-                    }
-                }
-                
-                if (onTechnicalScreen) {
-                    android.util.Log.d("QuestionGenerationTest", "✓ Successfully navigated to Technical Questions screen")
-                }
-            }
+        // Navigate into Technical (if present)
+        if (hasTechnicalBtn) {
+            android.util.Log.d("QuestionGenerationTest", "Navigating to Technical Questions...")
+            val ok = checkTagAndClick("technical_questions_button", maxRetries = 3) ||
+                    checkTextAndClick("Technical Questions", maxRetries = 3) ||
+                    checkTextAndClick("Technical", maxRetries = 3)
+            assert(ok) { "Cannot open Technical Questions" }
+            composeTestRule.waitForIdle()
         }
         
         android.util.Log.d("QuestionGenerationTest", "✓ Use Case 1: Generate Questions - Main Success Scenario PASSED")
     }
+    
 
     /**
      * Use Case 1 - Failure Scenario 4a: No job description content available
@@ -220,9 +284,16 @@ class QuestionGenerationTest : BaseComposeTest() {
         composeTestRule.waitForIdle()
         Thread.sleep(1000)
         
-        // Step 2: Find and click on a job (ideally one with empty description)
-        val jobClicked = checkTextAndClick("Test Job", substring = true, maxRetries = 3) ||
-                        checkTextAndClick("Job", substring = true, maxRetries = 3)
+        // Ensure a job exists (create one if needed)
+        ensureJobExists()
+        composeTestRule.waitForIdle()
+        Thread.sleep(2000)
+        
+        // Step 2: Find and click on a job
+        val jobClicked = checkTextAndClick("Software Engineer", substring = true, maxRetries = 6) ||
+                        checkTextAndClick("Test Company", substring = true, maxRetries = 6) ||
+                        checkTextAndClick("Engineer", substring = true, maxRetries = 6) ||
+                        checkTextAndClick("Job", substring = true, maxRetries = 6)
         assert(jobClicked) { "Failed: Could not click on job" }
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
@@ -325,42 +396,44 @@ class QuestionGenerationTest : BaseComposeTest() {
         android.util.Log.d("QuestionGenerationTest", "=== Use Case 1 - Failure Scenario 5a: OpenAI API Failure ===")
         
         // Navigate to job and generate questions
-        assert(checkText("My Job Applications", maxRetries = 6)) {
-            "Failed: Main screen not found"
-        }
+        ensureJobExists()
         composeTestRule.waitForIdle()
-        Thread.sleep(1000)
         
-        val jobClicked = checkTextAndClick("Test Job", substring = true, maxRetries = 3) ||
-                        checkTextAndClick("Job", substring = true, maxRetries = 3)
+        // Click on a job list item
+        val jobClicked = checkAndClick(maxRetries = 6) {
+            try {
+                composeTestRule.onAllNodes(hasTestTag("job_list_item")).onFirst()
+            } catch (_: Throwable) {
+                null
+            }
+        }
         assert(jobClicked) { "Failed: Could not click on job" }
         composeTestRule.waitForIdle()
-        Thread.sleep(2000)
         
-        assert(checkText("Job Details", maxRetries = 6)) {
-            "Failed: Job Details screen not found"
-        }
+        val onJobDetails = checkTag("job_details_screen", maxRetries = 6) ||
+                          checkText("Job Details", maxRetries = 6)
+        assert(onJobDetails) { "Failed: Job Details screen not found" }
         composeTestRule.waitForIdle()
-        Thread.sleep(1000)
         
         val generateClicked = checkTagAndClick("generate_questions_button", maxRetries = 3)
         assert(generateClicked) { "Failed: Could not click Generate Questions button" }
         composeTestRule.waitForIdle()
-        Thread.sleep(3000)
         
-        assert(checkText("Interview Questions", maxRetries = 6)) {
-            "Failed: Interview Questions screen not found"
-        }
+        val onQuestionsScreen = checkTag("interview_questions_screen", maxRetries = 6) ||
+                                checkText("Interview Questions", maxRetries = 6)
+        assert(onQuestionsScreen) { "Failed: Interview Questions screen not found" }
         composeTestRule.waitForIdle()
-        Thread.sleep(5000)
         
-        // Wait for loading to finish (Step 5a2: System continues to step 6)
+        // Wait for loading to finish (tag-based, fallback to text)
         android.util.Log.d("QuestionGenerationTest", "Step 5a2: Waiting for question generation to complete...")
-        val loadingFinished = check(maxRetries = 12) {
+        val loadingFinished = check(maxRetries = 24) {
             try {
-                !composeTestRule.onAllNodes(hasText("Generating your interview questions", substring = true))
+                val loadingTagExists = composeTestRule.onAllNodes(hasTestTag("interview_questions_loading"))
                     .fetchSemanticsNodes(false).isNotEmpty()
-            } catch (e: Exception) {
+                val loadingTextExists = composeTestRule.onAllNodes(hasText("Generating", substring = true))
+                    .fetchSemanticsNodes(false).isNotEmpty()
+                !loadingTagExists && !loadingTextExists
+            } catch (_: Throwable) {
                 true
             }
         }
@@ -418,8 +491,15 @@ class QuestionGenerationTest : BaseComposeTest() {
         composeTestRule.waitForIdle()
         Thread.sleep(1000)
         
-        val jobClicked = checkTextAndClick("Test Job", substring = true, maxRetries = 3) ||
-                        checkTextAndClick("Job", substring = true, maxRetries = 3)
+        // Ensure a job exists
+        ensureJobExists()
+        composeTestRule.waitForIdle()
+        Thread.sleep(2000)
+        
+        val jobClicked = checkTextAndClick("Software Engineer", substring = true, maxRetries = 6) ||
+                        checkTextAndClick("Test Company", substring = true, maxRetries = 6) ||
+                        checkTextAndClick("Engineer", substring = true, maxRetries = 6) ||
+                        checkTextAndClick("Job", substring = true, maxRetries = 6)
         assert(jobClicked) { "Failed: Could not click on job" }
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
@@ -443,9 +523,11 @@ class QuestionGenerationTest : BaseComposeTest() {
         
         // Wait for loading to finish (Step 5b2: System continues to step 6)
         android.util.Log.d("QuestionGenerationTest", "Step 5b2: Waiting for question generation to complete...")
-        val loadingFinished = check(maxRetries = 12) {
+        val loadingFinished = check(maxRetries = 24) {
             try {
                 !composeTestRule.onAllNodes(hasText("Generating your interview questions", substring = true))
+                    .fetchSemanticsNodes(false).isNotEmpty() &&
+                !composeTestRule.onAllNodes(hasText("Generating", substring = true))
                     .fetchSemanticsNodes(false).isNotEmpty()
             } catch (e: Exception) {
                 true
@@ -504,8 +586,15 @@ class QuestionGenerationTest : BaseComposeTest() {
         composeTestRule.waitForIdle()
         Thread.sleep(1000)
         
-        val jobClicked = checkTextAndClick("Test Job", substring = true, maxRetries = 3) ||
-                        checkTextAndClick("Job", substring = true, maxRetries = 3)
+        // Ensure a job exists
+        ensureJobExists()
+        composeTestRule.waitForIdle()
+        Thread.sleep(2000)
+        
+        val jobClicked = checkTextAndClick("Software Engineer", substring = true, maxRetries = 6) ||
+                        checkTextAndClick("Test Company", substring = true, maxRetries = 6) ||
+                        checkTextAndClick("Engineer", substring = true, maxRetries = 6) ||
+                        checkTextAndClick("Job", substring = true, maxRetries = 6)
         assert(jobClicked) { "Failed: Could not click on job" }
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
@@ -529,9 +618,11 @@ class QuestionGenerationTest : BaseComposeTest() {
         
         // Wait for loading to finish
         android.util.Log.d("QuestionGenerationTest", "Waiting for question generation to complete...")
-        val loadingFinished = check(maxRetries = 12) {
+        val loadingFinished = check(maxRetries = 24) {
             try {
                 !composeTestRule.onAllNodes(hasText("Generating your interview questions", substring = true))
+                    .fetchSemanticsNodes(false).isNotEmpty() &&
+                !composeTestRule.onAllNodes(hasText("Generating", substring = true))
                     .fetchSemanticsNodes(false).isNotEmpty()
             } catch (e: Exception) {
                 true
@@ -590,8 +681,15 @@ class QuestionGenerationTest : BaseComposeTest() {
         composeTestRule.waitForIdle()
         Thread.sleep(1000)
         
-        val jobClicked = checkTextAndClick("Test Job", substring = true, maxRetries = 3) ||
-                        checkTextAndClick("Job", substring = true, maxRetries = 3)
+        // Ensure a job exists
+        ensureJobExists()
+        composeTestRule.waitForIdle()
+        Thread.sleep(2000)
+        
+        val jobClicked = checkTextAndClick("Software Engineer", substring = true, maxRetries = 6) ||
+                        checkTextAndClick("Test Company", substring = true, maxRetries = 6) ||
+                        checkTextAndClick("Engineer", substring = true, maxRetries = 6) ||
+                        checkTextAndClick("Job", substring = true, maxRetries = 6)
         assert(jobClicked) { "Failed: Could not click on job" }
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
@@ -615,9 +713,11 @@ class QuestionGenerationTest : BaseComposeTest() {
         
         // Wait for loading to finish
         android.util.Log.d("QuestionGenerationTest", "Waiting for question generation to complete...")
-        val loadingFinished = check(maxRetries = 12) {
+        val loadingFinished = check(maxRetries = 24) {
             try {
                 !composeTestRule.onAllNodes(hasText("Generating your interview questions", substring = true))
+                    .fetchSemanticsNodes(false).isNotEmpty() &&
+                !composeTestRule.onAllNodes(hasText("Generating", substring = true))
                     .fetchSemanticsNodes(false).isNotEmpty()
             } catch (e: Exception) {
                 true
@@ -675,8 +775,15 @@ class QuestionGenerationTest : BaseComposeTest() {
         composeTestRule.waitForIdle()
         Thread.sleep(1000)
         
-        val jobClicked = checkTextAndClick("Test Job", substring = true, maxRetries = 3) ||
-                        checkTextAndClick("Job", substring = true, maxRetries = 3)
+        // Ensure a job exists
+        ensureJobExists()
+        composeTestRule.waitForIdle()
+        Thread.sleep(2000)
+        
+        val jobClicked = checkTextAndClick("Software Engineer", substring = true, maxRetries = 6) ||
+                        checkTextAndClick("Test Company", substring = true, maxRetries = 6) ||
+                        checkTextAndClick("Engineer", substring = true, maxRetries = 6) ||
+                        checkTextAndClick("Job", substring = true, maxRetries = 6)
         assert(jobClicked) { "Failed: Could not click on job" }
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
@@ -700,9 +807,11 @@ class QuestionGenerationTest : BaseComposeTest() {
         
         // Wait for loading to finish
         android.util.Log.d("QuestionGenerationTest", "Waiting for question generation to complete...")
-        val loadingFinished = check(maxRetries = 12) {
+        val loadingFinished = check(maxRetries = 24) {
             try {
                 !composeTestRule.onAllNodes(hasText("Generating your interview questions", substring = true))
+                    .fetchSemanticsNodes(false).isNotEmpty() &&
+                !composeTestRule.onAllNodes(hasText("Generating", substring = true))
                     .fetchSemanticsNodes(false).isNotEmpty()
             } catch (e: Exception) {
                 true
@@ -739,3 +848,4 @@ class QuestionGenerationTest : BaseComposeTest() {
         android.util.Log.d("QuestionGenerationTest", "✓ Use Case 1 - Failure Scenario 6a: Question Processing Failure PASSED")
     }
 }
+
