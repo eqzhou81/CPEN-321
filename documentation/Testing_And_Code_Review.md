@@ -85,6 +85,7 @@ The location of the .yml file : [.github/workflows/backend-tests.yml](https://gi
 ---
 
 ### 2.4 Jest coverage report WITH MOCKING
+<img width="1119" height="884" alt="mocked_test_coverage" src="https://github.com/user-attachments/assets/a8d1eb46-b32a-419c-a468-6b3254904577" />
 
 ---
 
