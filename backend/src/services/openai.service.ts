@@ -194,4 +194,8 @@ Be constructive and encouraging while providing actionable advice.`;
 
 }
 
+// Export class for testing
+export { OpenAIService };
+
+// Export singleton instance for application use
 export const openaiService = new OpenAIService();
