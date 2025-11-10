@@ -155,17 +155,21 @@ When running frontend tests please ensure that the build.grade has auth bypassed
 
 ## 5. Automated code review results
 
-#### 5.1 Commit Hash
-The hash of the commit on the **main** branch where Codacy ran: f3e480b50bcdd6d7aac653b2393089cec4da8bd9
+## 5.1 Commit hash
 
-#### 5.2 Issues Breakdown by Category
+Codacy ran on main at commit **f3e480b50bcdd6d7aac653b2393089cec4da8bd9**.
+
+## 5.2 Issues breakdown by category
 The number of unfixed issues per Codacy category (copied from the **“Issues breakdown”** table in the Codacy *Overview* page):
 
-#### 5.3 Issues Breakdown by Code Pattern
+
+## 5.3 Issues breakdown by code pattern
+
 The number of unfixed issues per Codacy code pattern (copied from the **“Issues”** page):
 
-#### 5.4 Justification for Unfixed Issues
+## 5.4 Justification for unfixed issues
 The case **useCase\_PasteJobPostingLink\_InvalidUrl\_Failure()** is failing because the UI currently allows a malformed URL (e.g., `not-a-valid-url`) to pass through to submission, or the test can’t reliably target the URL field / validation state. In either case, the expected behavior (“submission rejected; no scraping or job creation”) isn’t deterministically enforced or asserted.
+
 
 **App-side fixes:**
 
@@ -184,32 +188,4 @@ The case **useCase\_PasteJobPostingLink\_InvalidUrl\_Failure()** is failing beca
     
 
 * * *
-
-# 5\. Automated code review results
-
-## 5.1 Commit hash
-
-Codacy ran on main at commit **f3e480b50bcdd6d7aac653b2393089cec4da8bd9**.
-
-## 5.2 Issues breakdown by category
-
-On this commit, Codacy reports outstanding issues across the standard categories. At the time of review, unresolved findings were present in **Code Style/Formatting**, **Best Practices/Maintainability**, **Complexity**, **Performance**, **Security**, and **Documentation/Comments**. The exact counts are as shown in the Codacy “Issues breakdown” table for this commit; these numbers fluctuate with rule set changes and file churn. For traceability, we reference the Codacy Overview page for the precise per-category totals corresponding to the hash above.
-
-## 5.3 Issues breakdown by code pattern
-
-The unresolved issues concentrate in recurring patterns surfaced by Codacy (e.g., **Long Method / High Cognitive Complexity**, **Magic Numbers**, **Dead/Unused Code**, **Duplicated Code Blocks**, **String Literals Duplications**, **Non-localized strings**, and **Inefficient calls in loops**). Exact counts for each pattern are available on the Codacy **Issues** page for this commit; these are environment-dependent and may change as rules are tuned.
-
-## 5.4 Justification for unfixed issues
-
-*   **Low risk / low impact:** Several style/formatting and documentation findings do not affect runtime behavior. They are queued behind functional fixes and test stabilization work (e.g., link-validation + deterministic test tags).
-    
-*   **Test and tooling code:** Some warnings originate in test utilities and E2E scaffolding (e.g., long methods in test flows, duplicated helper logic). We prioritize reliability first; we’ll refactor after flakiness is eliminated.
-    
-*   **Intentional complexity:** A few “complexity” flags are in coordinator/viewmodel layers where branching reflects explicit UX states. These will be reduced once feature toggles are removed and flows are consolidated.
-    
-*   **Third-party or generated code:** Findings in vendored or auto-generated stubs are left as-is to preserve upstream compatibility.
-    
-*   **Pending refactor tickets:** Duplications and magic numbers in legacy screens are covered by open refactor tasks (tracking IDs in our backlog). Addressing them now would create merge risk while the current features are still moving.
-    
-*   **Performance trade-offs validated:** A small number of “inefficient call” notices occur in code paths executed off the hot path or behind debounce; profiling shows no user-visible impact.
 
