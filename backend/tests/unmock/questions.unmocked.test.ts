@@ -819,4 +819,718 @@ describe('Questions Controller - Unmocked Integration Tests', () => {
       expect(technicalOnly[0].type).toBe(QuestionType.TECHNICAL);
     }, TEST_TIMEOUT);
   });
+
+  // Additional Question Model Tests for 100% Coverage
+  describe('Question Model - Direct Method Testing for Complete Coverage', () => {
+    beforeEach(async () => {
+      await mongoose.connection.collection('questions').deleteMany({});
+    });
+
+    describe('create method - Additional Coverage', () => {
+      it('should handle missing jobId', async () => {
+        await expect(
+          questionModel.create(testUserId, {
+            jobId: '' as any,
+            type: QuestionType.TECHNICAL,
+            title: 'Test Question'
+          })
+        ).rejects.toThrow('Job ID is required');
+      }, TEST_TIMEOUT);
+
+      it('should trim title whitespace', async () => {
+        const question = await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.TECHNICAL,
+          title: '  Whitespace Title  '
+        });
+
+        expect(question.title).toBe('Whitespace Title');
+      }, TEST_TIMEOUT);
+
+      it('should trim description whitespace', async () => {
+        const question = await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.BEHAVIORAL,
+          title: 'Test Question',
+          description: '  Whitespace Description  '
+        });
+
+        expect(question.description).toBe('Whitespace Description');
+      }, TEST_TIMEOUT);
+
+      it('should set default empty description when not provided', async () => {
+        const question = await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.TECHNICAL,
+          title: 'Test Question'
+        });
+
+        expect(question.description).toBe('');
+      }, TEST_TIMEOUT);
+
+      it('should handle all optional fields', async () => {
+        const question = await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.TECHNICAL,
+          title: 'Complete Question',
+          description: 'Complete description',
+          difficulty: 'hard',
+          tags: ['algorithms', 'data-structures'],
+          externalUrl: 'https://leetcode.com/problems/example'
+        });
+
+        expect(question.difficulty).toBe('hard');
+        expect(question.tags).toEqual(['algorithms', 'data-structures']);
+        expect(question.externalUrl).toBe('https://leetcode.com/problems/example');
+      }, TEST_TIMEOUT);
+
+      it('should set default empty array for tags when not provided', async () => {
+        const question = await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.TECHNICAL,
+          title: 'Test Question'
+        });
+
+        expect(question.tags).toEqual([]);
+      }, TEST_TIMEOUT);
+
+      it('should handle non-Error exceptions during create', async () => {
+        // Mock mongoose to throw a non-Error object
+        const originalSave = mongoose.Model.prototype.save;
+        mongoose.Model.prototype.save = jest.fn().mockRejectedValueOnce('String error');
+
+        await expect(
+          questionModel.create(testUserId, {
+            jobId: testJobId.toString(),
+            type: QuestionType.TECHNICAL,
+            title: 'Test Question'
+          })
+        ).rejects.toThrow('Failed to create question');
+
+        mongoose.Model.prototype.save = originalSave;
+      }, TEST_TIMEOUT);
+
+      it('should allow empty external URL', async () => {
+        const question = await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.TECHNICAL,
+          title: 'Test Question',
+          externalUrl: ''
+        });
+
+        expect(question.externalUrl).toBe('');
+      }, TEST_TIMEOUT);
+    });
+
+    describe('createMany method - Direct Testing', () => {
+      it('should create multiple questions successfully', async () => {
+        const questionsData = [
+          {
+            type: QuestionType.TECHNICAL,
+            title: 'Question 1',
+            difficulty: 'easy'
+          },
+          {
+            type: QuestionType.BEHAVIORAL,
+            title: 'Question 2',
+            description: 'Description 2',
+            difficulty: 'medium'
+          },
+          {
+            type: QuestionType.TECHNICAL,
+            title: 'Question 3',
+            tags: ['algorithms']
+          }
+        ];
+
+        const results = await questionModel.createMany(testUserId, testJobId, questionsData);
+
+        expect(results).toHaveLength(3);
+        expect(results[0].title).toBe('Question 1');
+        expect(results[1].title).toBe('Question 2');
+        expect(results[2].title).toBe('Question 3');
+        results.forEach(question => {
+          expect(question.userId.toString()).toBe(testUserId.toString());
+          expect(question.jobId.toString()).toBe(testJobId.toString());
+        });
+      }, TEST_TIMEOUT);
+
+      it('should handle empty array', async () => {
+        const results = await questionModel.createMany(testUserId, testJobId, []);
+
+        expect(results).toHaveLength(0);
+      }, TEST_TIMEOUT);
+
+      it('should handle database errors during createMany', async () => {
+        await mongoose.connection.close();
+
+        await expect(
+          questionModel.createMany(testUserId, testJobId, [
+            { type: QuestionType.TECHNICAL, title: 'Test' }
+          ])
+        ).rejects.toThrow('Failed to create questions');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('findByJobAndType method - Direct Testing', () => {
+      beforeEach(async () => {
+        // Create test questions
+        await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.TECHNICAL,
+          title: 'Technical 1',
+          difficulty: 'easy'
+        });
+
+        await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.TECHNICAL,
+          title: 'Technical 2',
+          difficulty: 'hard'
+        });
+
+        await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.BEHAVIORAL,
+          title: 'Behavioral 1',
+          description: 'Behavioral description'
+        });
+      });
+
+      it('should find all questions when type not specified', async () => {
+        const results = await questionModel.findByJobAndType(testJobId, testUserId);
+
+        expect(results.length).toBe(3);
+      }, TEST_TIMEOUT);
+
+      it('should find questions by specific type', async () => {
+        const technicalResults = await questionModel.findByJobAndType(
+          testJobId, 
+          testUserId, 
+          QuestionType.TECHNICAL
+        );
+
+        expect(technicalResults.length).toBe(2);
+        technicalResults.forEach(q => {
+          expect(q.type).toBe(QuestionType.TECHNICAL);
+        });
+      }, TEST_TIMEOUT);
+
+      it('should return questions sorted by createdAt descending', async () => {
+        const results = await questionModel.findByJobAndType(testJobId, testUserId);
+
+        // Results should be sorted newest first
+        for (let i = 0; i < results.length - 1; i++) {
+          expect(results[i].createdAt.getTime()).toBeGreaterThanOrEqual(
+            results[i + 1].createdAt.getTime()
+          );
+        }
+      }, TEST_TIMEOUT);
+
+      it('should handle database errors during findByJobAndType', async () => {
+        await mongoose.connection.close();
+
+        await expect(
+          questionModel.findByJobAndType(testJobId, testUserId)
+        ).rejects.toThrow('Failed to find questions');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('findById method - Direct Testing', () => {
+      let createdQuestionId: mongoose.Types.ObjectId;
+
+      beforeEach(async () => {
+        const question = await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.TECHNICAL,
+          title: 'Test Question for FindById'
+        });
+        createdQuestionId = question._id;
+      });
+
+      it('should find question by ID successfully', async () => {
+        const result = await questionModel.findById(createdQuestionId, testUserId);
+
+        expect(result).toBeTruthy();
+        expect(result!.title).toBe('Test Question for FindById');
+        expect(result!.userId.toString()).toBe(testUserId.toString());
+      }, TEST_TIMEOUT);
+
+      it('should return null when question not found', async () => {
+        const nonExistentId = new mongoose.Types.ObjectId();
+        const result = await questionModel.findById(nonExistentId, testUserId);
+
+        expect(result).toBeNull();
+      }, TEST_TIMEOUT);
+
+      it('should return null when question belongs to different user', async () => {
+        const differentUserId = new mongoose.Types.ObjectId();
+        const result = await questionModel.findById(createdQuestionId, differentUserId);
+
+        expect(result).toBeNull();
+      }, TEST_TIMEOUT);
+
+      it('should handle database errors during findById', async () => {
+        await mongoose.connection.close();
+
+        await expect(
+          questionModel.findById(createdQuestionId, testUserId)
+        ).rejects.toThrow('Failed to find question');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('updateStatus method - Direct Testing', () => {
+      let createdQuestionId: mongoose.Types.ObjectId;
+
+      beforeEach(async () => {
+        const question = await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.TECHNICAL,
+          title: 'Test Question for Update'
+        });
+        createdQuestionId = question._id;
+      });
+
+      it('should update question status successfully', async () => {
+        const result = await questionModel.updateStatus(
+          createdQuestionId,
+          testUserId,
+          QuestionStatus.COMPLETED
+        );
+
+        expect(result).toBeTruthy();
+        expect(result!.status).toBe(QuestionStatus.COMPLETED);
+      }, TEST_TIMEOUT);
+
+      it('should update all valid status values', async () => {
+        const statuses = [
+          QuestionStatus.PENDING,
+          QuestionStatus.COMPLETED
+        ];
+
+        for (const status of statuses) {
+          const result = await questionModel.updateStatus(
+            createdQuestionId,
+            testUserId,
+            status
+          );
+          expect(result!.status).toBe(status);
+        }
+      }, TEST_TIMEOUT);
+
+      it('should return null when question not found', async () => {
+        const nonExistentId = new mongoose.Types.ObjectId();
+        const result = await questionModel.updateStatus(
+          nonExistentId,
+          testUserId,
+          QuestionStatus.COMPLETED
+        );
+
+        expect(result).toBeNull();
+      }, TEST_TIMEOUT);
+
+      it('should return null when question belongs to different user', async () => {
+        const differentUserId = new mongoose.Types.ObjectId();
+        const result = await questionModel.updateStatus(
+          createdQuestionId,
+          differentUserId,
+          QuestionStatus.COMPLETED
+        );
+
+        expect(result).toBeNull();
+      }, TEST_TIMEOUT);
+
+      it('should update updatedAt timestamp', async () => {
+        const originalQuestion = await questionModel.findById(createdQuestionId, testUserId);
+        const originalUpdatedAt = originalQuestion!.updatedAt;
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const updated = await questionModel.updateStatus(
+          createdQuestionId,
+          testUserId,
+          QuestionStatus.COMPLETED
+        );
+
+        expect(updated!.updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime());
+      }, TEST_TIMEOUT);
+
+      it('should handle database errors during updateStatus', async () => {
+        await mongoose.connection.close();
+
+        await expect(
+          questionModel.updateStatus(createdQuestionId, testUserId, QuestionStatus.COMPLETED)
+        ).rejects.toThrow('Failed to update question status');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('findByJobId method - Direct Testing', () => {
+      beforeEach(async () => {
+        // Create multiple questions for the test job
+        await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.TECHNICAL,
+          title: 'Question 1'
+        });
+
+        await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.BEHAVIORAL,
+          title: 'Question 2',
+          description: 'Description 2'
+        });
+      });
+
+      it('should find all questions by job ID', async () => {
+        const results = await questionModel.findByJobId(testJobId, testUserId);
+
+        expect(results.length).toBe(2);
+        results.forEach(question => {
+          expect(question.jobId.toString()).toBe(testJobId.toString());
+          expect(question.userId.toString()).toBe(testUserId.toString());
+        });
+      }, TEST_TIMEOUT);
+
+      it('should return empty array for job with no questions', async () => {
+        const newJob = await jobApplicationModel.create(testUserId, {
+          ...testJobData,
+          title: 'New Job'
+        });
+
+        const results = await questionModel.findByJobId(newJob._id, testUserId);
+
+        expect(results).toEqual([]);
+      }, TEST_TIMEOUT);
+
+      it('should return empty array for different user', async () => {
+        const differentUserId = new mongoose.Types.ObjectId();
+        const results = await questionModel.findByJobId(testJobId, differentUserId);
+
+        expect(results).toEqual([]);
+      }, TEST_TIMEOUT);
+
+      it('should handle database errors during findByJobId', async () => {
+        await mongoose.connection.close();
+
+        await expect(
+          questionModel.findByJobId(testJobId, testUserId)
+        ).rejects.toThrow('Failed to find questions by job ID');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('getProgressByJob method - Direct Testing', () => {
+      beforeEach(async () => {
+        // Create mix of questions with different statuses
+        const questions = [
+          {
+            type: QuestionType.TECHNICAL,
+            title: 'Tech 1',
+            status: QuestionStatus.COMPLETED
+          },
+          {
+            type: QuestionType.TECHNICAL,
+            title: 'Tech 2',
+            status: QuestionStatus.PENDING
+          },
+          {
+            type: QuestionType.TECHNICAL,
+            title: 'Tech 3',
+            status: QuestionStatus.IN_PROGRESS
+          },
+          {
+            type: QuestionType.BEHAVIORAL,
+            title: 'Behavioral 1',
+            description: 'Desc 1',
+            status: QuestionStatus.COMPLETED
+          },
+          {
+            type: QuestionType.BEHAVIORAL,
+            title: 'Behavioral 2',
+            description: 'Desc 2',
+            status: QuestionStatus.COMPLETED
+          },
+          {
+            type: QuestionType.BEHAVIORAL,
+            title: 'Behavioral 3',
+            description: 'Desc 3',
+            status: QuestionStatus.SKIPPED
+          }
+        ];
+
+        for (const q of questions) {
+          const created = await questionModel.create(testUserId, {
+            jobId: testJobId.toString(),
+            ...q
+          });
+          if (q.status !== QuestionStatus.PENDING) {
+            await questionModel.updateStatus(created._id, testUserId, q.status);
+          }
+        }
+      });
+
+      it('should calculate progress correctly', async () => {
+        const progress = await questionModel.getProgressByJob(testJobId, testUserId);
+
+        expect(progress.technical.total).toBe(3);
+        expect(progress.technical.completed).toBe(1);
+        expect(progress.behavioral.total).toBe(3);
+        expect(progress.behavioral.completed).toBe(2);
+        expect(progress.overall.total).toBe(6);
+        expect(progress.overall.completed).toBe(3);
+      }, TEST_TIMEOUT);
+
+      it('should return zero progress for job with no questions', async () => {
+        const newJob = await jobApplicationModel.create(testUserId, {
+          ...testJobData,
+          title: 'Empty Job'
+        });
+
+        const progress = await questionModel.getProgressByJob(newJob._id, testUserId);
+
+        expect(progress.technical.total).toBe(0);
+        expect(progress.technical.completed).toBe(0);
+        expect(progress.behavioral.total).toBe(0);
+        expect(progress.behavioral.completed).toBe(0);
+        expect(progress.overall.total).toBe(0);
+        expect(progress.overall.completed).toBe(0);
+      }, TEST_TIMEOUT);
+
+      it('should only count COMPLETED status as completed', async () => {
+        await mongoose.connection.collection('questions').deleteMany({});
+
+        // Create questions with PENDING status (not completed)
+        const statuses = [
+          QuestionStatus.PENDING,
+          QuestionStatus.PENDING,
+          QuestionStatus.PENDING
+        ];
+
+        for (const status of statuses) {
+          const created = await questionModel.create(testUserId, {
+            jobId: testJobId.toString(),
+            type: QuestionType.TECHNICAL,
+            title: `Question ${status}`
+          });
+          await questionModel.updateStatus(created._id, testUserId, status);
+        }
+
+        const progress = await questionModel.getProgressByJob(testJobId, testUserId);
+
+        expect(progress.technical.total).toBe(3);
+        expect(progress.technical.completed).toBe(0);
+        expect(progress.overall.total).toBe(3);
+        expect(progress.overall.completed).toBe(0);
+      }, TEST_TIMEOUT);
+
+      it('should handle database errors during getProgressByJob', async () => {
+        await mongoose.connection.close();
+
+        await expect(
+          questionModel.getProgressByJob(testJobId, testUserId)
+        ).rejects.toThrow('Failed to get question progress');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('deleteByJobId method - Direct Testing', () => {
+      beforeEach(async () => {
+        // Create multiple questions
+        await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.TECHNICAL,
+          title: 'To Delete 1'
+        });
+
+        await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.BEHAVIORAL,
+          title: 'To Delete 2',
+          description: 'Description'
+        });
+
+        await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.TECHNICAL,
+          title: 'To Delete 3'
+        });
+      });
+
+      it('should delete all questions for a job', async () => {
+        const deletedCount = await questionModel.deleteByJobId(testJobId, testUserId);
+
+        expect(deletedCount).toBe(3);
+
+        const remaining = await questionModel.findByJobId(testJobId, testUserId);
+        expect(remaining).toEqual([]);
+      }, TEST_TIMEOUT);
+
+      it('should return 0 when no questions to delete', async () => {
+        const newJob = await jobApplicationModel.create(testUserId, {
+          ...testJobData,
+          title: 'Job with No Questions'
+        });
+
+        const deletedCount = await questionModel.deleteByJobId(newJob._id, testUserId);
+
+        expect(deletedCount).toBe(0);
+      }, TEST_TIMEOUT);
+
+      it('should not delete questions belonging to different user', async () => {
+        const differentUserId = new mongoose.Types.ObjectId();
+
+        const deletedCount = await questionModel.deleteByJobId(testJobId, differentUserId);
+
+        expect(deletedCount).toBe(0);
+
+        const remaining = await questionModel.findByJobId(testJobId, testUserId);
+        expect(remaining.length).toBe(3);
+      }, TEST_TIMEOUT);
+
+      it('should handle database errors during deleteByJobId', async () => {
+        await mongoose.connection.close();
+
+        await expect(
+          questionModel.deleteByJobId(testJobId, testUserId)
+        ).rejects.toThrow('Failed to delete questions');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('Schema Validation and Edge Cases', () => {
+      it('should enforce maxlength on title field', async () => {
+        const longTitle = 'A'.repeat(201);
+
+        await expect(
+          questionModel.create(testUserId, {
+            jobId: testJobId.toString(),
+            type: QuestionType.TECHNICAL,
+            title: longTitle
+          })
+        ).rejects.toThrow();
+      }, TEST_TIMEOUT);
+
+      it('should validate difficulty enum values', async () => {
+        const validDifficulties = ['easy', 'medium', 'hard'];
+
+        for (const difficulty of validDifficulties) {
+          const question = await questionModel.create(testUserId, {
+            jobId: testJobId.toString(),
+            type: QuestionType.TECHNICAL,
+            title: `Question ${difficulty}`,
+            difficulty: difficulty as any
+          });
+
+          expect(question.difficulty).toBe(difficulty);
+        }
+      }, TEST_TIMEOUT);
+
+      it('should set default PENDING status', async () => {
+        const question = await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.TECHNICAL,
+          title: 'Default Status Question'
+        });
+
+        expect(question.status).toBe(QuestionStatus.PENDING);
+      }, TEST_TIMEOUT);
+
+      it('should create timestamps automatically', async () => {
+        const question = await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.TECHNICAL,
+          title: 'Timestamped Question'
+        });
+
+        expect(question.createdAt).toBeDefined();
+        expect(question.updatedAt).toBeDefined();
+        expect(question.createdAt).toBeInstanceOf(Date);
+        expect(question.updatedAt).toBeInstanceOf(Date);
+      }, TEST_TIMEOUT);
+
+      it('should handle all QuestionType enum values', async () => {
+        const types = [QuestionType.TECHNICAL, QuestionType.BEHAVIORAL];
+
+        for (const type of types) {
+          const question = await questionModel.create(testUserId, {
+            jobId: testJobId.toString(),
+            type: type,
+            title: `Question ${type}`,
+            description: type === QuestionType.BEHAVIORAL ? 'Required description' : undefined
+          });
+
+          expect(question.type).toBe(type);
+        }
+      }, TEST_TIMEOUT);
+
+      it('should handle all QuestionStatus enum values', async () => {
+        const question = await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.TECHNICAL,
+          title: 'Status Test Question'
+        });
+
+        const statuses = [
+          QuestionStatus.PENDING,
+          QuestionStatus.COMPLETED
+        ];
+
+        for (const status of statuses) {
+          const updated = await questionModel.updateStatus(question._id, testUserId, status);
+          expect(updated!.status).toBe(status);
+        }
+      }, TEST_TIMEOUT);
+
+      it('should store tags as array', async () => {
+        const tags = ['algorithms', 'data-structures', 'dynamic-programming'];
+
+        const question = await questionModel.create(testUserId, {
+          jobId: testJobId.toString(),
+          type: QuestionType.TECHNICAL,
+          title: 'Tagged Question',
+          tags: tags
+        });
+
+        expect(question.tags).toEqual(tags);
+        expect(Array.isArray(question.tags)).toBe(true);
+      }, TEST_TIMEOUT);
+
+      it('should validate URL protocol in externalUrl', async () => {
+        const validUrls = [
+          'https://leetcode.com/problems/example',
+          'http://example.com/question',
+          'https://www.hackerrank.com/challenge'
+        ];
+
+        for (const url of validUrls) {
+          const question = await questionModel.create(testUserId, {
+            jobId: testJobId.toString(),
+            type: QuestionType.TECHNICAL,
+            title: 'URL Test',
+            externalUrl: url
+          });
+
+          expect(question.externalUrl).toBe(url);
+        }
+      }, TEST_TIMEOUT);
+    });
+  });
 });
