@@ -2344,4 +2344,583 @@ describe('DELETE /api/sessions/:sessionId - deleteSession (No Mocking)', () => {
   });
 });
 
+// Session Model - Direct Method Testing for 100% Coverage
+describe('Session Model - Complete Coverage Tests', () => {
+  const TEST_TIMEOUT = 30000;
+  let testUserId: mongoose.Types.ObjectId;
+  let testJobId: mongoose.Types.ObjectId;
+  let testQuestionIds: mongoose.Types.ObjectId[];
+
+  beforeAll(async () => {
+    testUserId = new mongoose.Types.ObjectId();
+    
+    const testJob = await jobApplicationModel.create(testUserId, {
+      title: 'Test Job for Session Model',
+      company: 'Test Company',
+      description: 'Test description',
+    });
+    testJobId = testJob._id;
+
+    // Create test questions
+    const question1 = await questionModel.create(testUserId, {
+      jobId: testJobId.toString(),
+      type: QuestionType.TECHNICAL,
+      title: 'Question 1',
+    });
+
+    const question2 = await questionModel.create(testUserId, {
+      jobId: testJobId.toString(),
+      type: QuestionType.BEHAVIORAL,
+      title: 'Question 2',
+      description: 'Question 2 description',
+    });
+
+    testQuestionIds = [question1._id, question2._id];
+  });
+
+  beforeEach(async () => {
+    await mongoose.connection.collection('sessions').deleteMany({});
+  });
+
+  afterAll(async () => {
+    await mongoose.connection.collection('sessions').deleteMany({});
+    await mongoose.connection.collection('questions').deleteMany({
+      jobId: testJobId,
+    });
+    await mongoose.connection.collection('jobapplications').deleteMany({
+      _id: testJobId,
+    });
+  });
+
+  describe('create method - Direct Testing', () => {
+    it('should create session with valid data', async () => {
+      const session = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+
+      expect(session.userId.toString()).toBe(testUserId.toString());
+      expect(session.jobId.toString()).toBe(testJobId.toString());
+      expect(session.questionIds).toHaveLength(2);
+      expect(session.totalQuestions).toBe(2);
+      expect(session.currentQuestionIndex).toBe(0);
+      expect(session.answeredQuestions).toBe(0);
+      expect(session.status).toBe(SessionStatus.ACTIVE);
+    }, TEST_TIMEOUT);
+
+    it('should throw error when no questions provided', async () => {
+      await expect(sessionModel.create(testUserId, testJobId, []))
+        .rejects
+        .toThrow('At least one question is required to start a session');
+    }, TEST_TIMEOUT);
+
+    it('should throw error when questions array is null', async () => {
+      await expect(sessionModel.create(testUserId, testJobId, null as any))
+        .rejects
+        .toThrow('At least one question is required to start a session');
+    }, TEST_TIMEOUT);
+
+    it('should throw error when active session already exists', async () => {
+      await sessionModel.create(testUserId, testJobId, testQuestionIds);
+
+      await expect(sessionModel.create(testUserId, testJobId, testQuestionIds))
+        .rejects
+        .toThrow('An active session already exists for this job');
+    }, TEST_TIMEOUT);
+
+    it('should handle non-Error exceptions during create', async () => {
+      // Create an active session first
+      await sessionModel.create(testUserId, testJobId, testQuestionIds);
+
+      // Mock the findActiveByJobId to throw a non-Error
+      const originalMethod = sessionModel.findActiveByJobId;
+      sessionModel.findActiveByJobId = jest.fn().mockRejectedValueOnce('String error');
+
+      await expect(sessionModel.create(testUserId, testJobId, testQuestionIds))
+        .rejects
+        .toThrow('Failed to create session');
+
+      sessionModel.findActiveByJobId = originalMethod;
+    }, TEST_TIMEOUT);
+  });
+
+  describe('findById method - Direct Testing', () => {
+    it('should find session by ID successfully', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+
+      const session = await sessionModel.findById(createdSession._id, testUserId);
+
+      expect(session).toBeTruthy();
+      expect(session!._id.toString()).toBe(createdSession._id.toString());
+      expect(session!.userId.toString()).toBe(testUserId.toString());
+    }, TEST_TIMEOUT);
+
+    it('should return null when session not found', async () => {
+      const nonExistentId = new mongoose.Types.ObjectId();
+      const session = await sessionModel.findById(nonExistentId, testUserId);
+
+      expect(session).toBeNull();
+    }, TEST_TIMEOUT);
+
+    it('should return null when session belongs to different user', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+      const differentUserId = new mongoose.Types.ObjectId();
+
+      const session = await sessionModel.findById(createdSession._id, differentUserId);
+
+      expect(session).toBeNull();
+    }, TEST_TIMEOUT);
+
+    it('should handle database errors during findById', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+      await mongoose.connection.close();
+
+      await expect(sessionModel.findById(createdSession._id, testUserId))
+        .rejects
+        .toThrow('Failed to find session');
+
+      const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+      await mongoose.connect(uri);
+    }, TEST_TIMEOUT);
+  });
+
+  describe('findActiveByJobId method - Direct Testing', () => {
+    it('should find active session by job ID', async () => {
+      await sessionModel.create(testUserId, testJobId, testQuestionIds);
+
+      const session = await sessionModel.findActiveByJobId(testJobId, testUserId);
+
+      expect(session).toBeTruthy();
+      expect(session!.jobId.toString()).toBe(testJobId.toString());
+      expect(session!.status).toBe(SessionStatus.ACTIVE);
+    }, TEST_TIMEOUT);
+
+    it('should return null when no active session exists', async () => {
+      const session = await sessionModel.findActiveByJobId(testJobId, testUserId);
+
+      expect(session).toBeNull();
+    }, TEST_TIMEOUT);
+
+    it('should return null for completed sessions', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+      await sessionModel.updateStatus(createdSession._id, testUserId, SessionStatus.COMPLETED);
+
+      const session = await sessionModel.findActiveByJobId(testJobId, testUserId);
+
+      expect(session).toBeNull();
+    }, TEST_TIMEOUT);
+
+    it('should handle database errors during findActiveByJobId', async () => {
+      await mongoose.connection.close();
+
+      await expect(sessionModel.findActiveByJobId(testJobId, testUserId))
+        .rejects
+        .toThrow('Failed to find active session');
+
+      const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+      await mongoose.connect(uri);
+    }, TEST_TIMEOUT);
+  });
+
+  describe('findByUserId method - Direct Testing', () => {
+    it('should find all sessions for a user', async () => {
+      await sessionModel.create(testUserId, testJobId, testQuestionIds);
+
+      const sessions = await sessionModel.findByUserId(testUserId);
+
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].userId.toString()).toBe(testUserId.toString());
+    }, TEST_TIMEOUT);
+
+    it('should respect limit parameter', async () => {
+      // Create multiple sessions with different jobs
+      for (let i = 0; i < 3; i++) {
+        const job = await jobApplicationModel.create(testUserId, {
+          title: `Test Job ${i}`,
+          company: 'Test Company',
+        });
+
+        const question = await questionModel.create(testUserId, {
+          jobId: job._id.toString(),
+          type: QuestionType.TECHNICAL,
+          title: `Question ${i}`,
+        });
+
+        await sessionModel.create(testUserId, job._id, [question._id]);
+      }
+
+      const sessions = await sessionModel.findByUserId(testUserId, 2);
+
+      expect(sessions).toHaveLength(2);
+    }, TEST_TIMEOUT);
+
+    it('should return sessions sorted by createdAt descending', async () => {
+      // Create multiple sessions
+      for (let i = 0; i < 3; i++) {
+        const job = await jobApplicationModel.create(testUserId, {
+          title: `Test Job ${i}`,
+          company: 'Test Company',
+        });
+
+        const question = await questionModel.create(testUserId, {
+          jobId: job._id.toString(),
+          type: QuestionType.TECHNICAL,
+          title: `Question ${i}`,
+        });
+
+        await sessionModel.create(testUserId, job._id, [question._id]);
+        await new Promise(resolve => setTimeout(resolve, 10)); // Small delay to ensure different timestamps
+      }
+
+      const sessions = await sessionModel.findByUserId(testUserId);
+
+      // Verify sorted by createdAt descending
+      for (let i = 0; i < sessions.length - 1; i++) {
+        expect(sessions[i].createdAt.getTime()).toBeGreaterThanOrEqual(
+          sessions[i + 1].createdAt.getTime()
+        );
+      }
+    }, TEST_TIMEOUT);
+
+    it('should handle database errors during findByUserId', async () => {
+      await mongoose.connection.close();
+
+      await expect(sessionModel.findByUserId(testUserId))
+        .rejects
+        .toThrow('Failed to find sessions');
+
+      const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+      await mongoose.connect(uri);
+    }, TEST_TIMEOUT);
+  });
+
+  describe('updateProgress method - Direct Testing', () => {
+    it('should update progress successfully', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+
+      const updatedSession = await sessionModel.updateProgress(
+        createdSession._id,
+        testUserId,
+        1,
+        1
+      );
+
+      expect(updatedSession).toBeTruthy();
+      expect(updatedSession!.answeredQuestions).toBe(1);
+      expect(updatedSession!.currentQuestionIndex).toBe(1);
+    }, TEST_TIMEOUT);
+
+    it('should update only answeredQuestions when currentQuestionIndex not provided', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+
+      const updatedSession = await sessionModel.updateProgress(
+        createdSession._id,
+        testUserId,
+        1
+      );
+
+      expect(updatedSession).toBeTruthy();
+      expect(updatedSession!.answeredQuestions).toBe(1);
+      expect(updatedSession!.currentQuestionIndex).toBe(0); // Should remain unchanged
+    }, TEST_TIMEOUT);
+
+    it('should return null when session not found', async () => {
+      const nonExistentId = new mongoose.Types.ObjectId();
+
+      const result = await sessionModel.updateProgress(nonExistentId, testUserId, 1);
+
+      expect(result).toBeNull();
+    }, TEST_TIMEOUT);
+
+    it('should handle database errors during updateProgress', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+      await mongoose.connection.close();
+
+      await expect(sessionModel.updateProgress(createdSession._id, testUserId, 1))
+        .rejects
+        .toThrow('Failed to update session progress');
+
+      const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+      await mongoose.connect(uri);
+    }, TEST_TIMEOUT);
+  });
+
+  describe('moveToNextQuestion method - Direct Testing', () => {
+    it('should move to next question successfully', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+
+      const updatedSession = await sessionModel.moveToNextQuestion(createdSession._id, testUserId);
+
+      expect(updatedSession).toBeTruthy();
+      expect(updatedSession!.currentQuestionIndex).toBe(1);
+      expect(updatedSession!.answeredQuestions).toBe(1);
+      expect(updatedSession!.status).toBe(SessionStatus.ACTIVE);
+    }, TEST_TIMEOUT);
+
+    it('should mark session as completed when all questions answered', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+
+      // Move to question 2
+      await sessionModel.moveToNextQuestion(createdSession._id, testUserId);
+
+      // Move past last question
+      const completedSession = await sessionModel.moveToNextQuestion(createdSession._id, testUserId);
+
+      expect(completedSession).toBeTruthy();
+      expect(completedSession!.currentQuestionIndex).toBe(2);
+      expect(completedSession!.answeredQuestions).toBe(2);
+      expect(completedSession!.status).toBe(SessionStatus.COMPLETED);
+      expect(completedSession!.completedAt).toBeTruthy();
+    }, TEST_TIMEOUT);
+
+    it('should throw error when session not found', async () => {
+      const nonExistentId = new mongoose.Types.ObjectId();
+
+      await expect(sessionModel.moveToNextQuestion(nonExistentId, testUserId))
+        .rejects
+        .toThrow('Failed to move to next question');
+    }, TEST_TIMEOUT);
+
+    it('should handle database errors during moveToNextQuestion', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+
+      // Mock findById to throw error
+      const originalFindById = sessionModel.findById;
+      sessionModel.findById = jest.fn().mockRejectedValueOnce(new Error('Database error'));
+
+      await expect(sessionModel.moveToNextQuestion(createdSession._id, testUserId))
+        .rejects
+        .toThrow('Failed to move to next question');
+
+      sessionModel.findById = originalFindById;
+    }, TEST_TIMEOUT);
+  });
+
+  describe('navigateToQuestion method - Direct Testing', () => {
+    it('should navigate to specific question successfully', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+
+      const updatedSession = await sessionModel.navigateToQuestion(
+        createdSession._id,
+        testUserId,
+        1
+      );
+
+      expect(updatedSession).toBeTruthy();
+      expect(updatedSession!.currentQuestionIndex).toBe(1);
+    }, TEST_TIMEOUT);
+
+    it('should throw error when session not found', async () => {
+      const nonExistentId = new mongoose.Types.ObjectId();
+
+      await expect(sessionModel.navigateToQuestion(nonExistentId, testUserId, 0))
+        .rejects
+        .toThrow('Session not found');
+    }, TEST_TIMEOUT);
+
+    it('should throw error when question index is negative', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+
+      await expect(sessionModel.navigateToQuestion(createdSession._id, testUserId, -1))
+        .rejects
+        .toThrow('Invalid question index');
+    }, TEST_TIMEOUT);
+
+    it('should throw error when question index exceeds total questions', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+
+      await expect(sessionModel.navigateToQuestion(createdSession._id, testUserId, 5))
+        .rejects
+        .toThrow('Invalid question index');
+    }, TEST_TIMEOUT);
+
+    it('should handle database errors during navigateToQuestion', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+
+      // Mock findById to return session, then mock findOneAndUpdate to throw
+      const originalFindById = sessionModel.findById;
+      sessionModel.findById = jest.fn().mockResolvedValueOnce({
+        _id: createdSession._id,
+        userId: testUserId,
+        totalQuestions: 2,
+      });
+
+      // Close connection to trigger database error on update
+      await mongoose.connection.close();
+
+      await expect(sessionModel.navigateToQuestion(createdSession._id, testUserId, 1))
+        .rejects
+        .toThrow('Failed to navigate to question');
+
+      sessionModel.findById = originalFindById;
+
+      const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+      await mongoose.connect(uri);
+    }, TEST_TIMEOUT);
+  });
+
+  describe('updateStatus method - Direct Testing', () => {
+    it('should update status to COMPLETED and set completedAt', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+
+      const updatedSession = await sessionModel.updateStatus(
+        createdSession._id,
+        testUserId,
+        SessionStatus.COMPLETED
+      );
+
+      expect(updatedSession).toBeTruthy();
+      expect(updatedSession!.status).toBe(SessionStatus.COMPLETED);
+      expect(updatedSession!.completedAt).toBeTruthy();
+    }, TEST_TIMEOUT);
+
+    it('should update status to PAUSED', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+
+      const updatedSession = await sessionModel.updateStatus(
+        createdSession._id,
+        testUserId,
+        SessionStatus.PAUSED
+      );
+
+      expect(updatedSession).toBeTruthy();
+      expect(updatedSession!.status).toBe(SessionStatus.PAUSED);
+    }, TEST_TIMEOUT);
+
+    it('should update status to CANCELLED', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+
+      const updatedSession = await sessionModel.updateStatus(
+        createdSession._id,
+        testUserId,
+        SessionStatus.CANCELLED
+      );
+
+      expect(updatedSession).toBeTruthy();
+      expect(updatedSession!.status).toBe(SessionStatus.CANCELLED);
+    }, TEST_TIMEOUT);
+
+    it('should return null when session not found', async () => {
+      const nonExistentId = new mongoose.Types.ObjectId();
+
+      const result = await sessionModel.updateStatus(
+        nonExistentId,
+        testUserId,
+        SessionStatus.COMPLETED
+      );
+
+      expect(result).toBeNull();
+    }, TEST_TIMEOUT);
+
+    it('should handle database errors during updateStatus', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+      await mongoose.connection.close();
+
+      await expect(sessionModel.updateStatus(createdSession._id, testUserId, SessionStatus.COMPLETED))
+        .rejects
+        .toThrow('Failed to update session status');
+
+      const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+      await mongoose.connect(uri);
+    }, TEST_TIMEOUT);
+  });
+
+  describe('getSessionStats method - Direct Testing', () => {
+    it('should calculate statistics correctly', async () => {
+      // Create multiple sessions with different statuses
+      const session1 = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+      await sessionModel.updateStatus(session1._id, testUserId, SessionStatus.COMPLETED);
+
+      const job2 = await jobApplicationModel.create(testUserId, {
+        title: 'Job 2',
+        company: 'Company 2',
+      });
+      const question2 = await questionModel.create(testUserId, {
+        jobId: job2._id.toString(),
+        type: QuestionType.TECHNICAL,
+        title: 'Question 2',
+      });
+      await sessionModel.create(testUserId, job2._id, [question2._id]);
+
+      const stats = await sessionModel.getSessionStats(testUserId);
+
+      expect(stats.total).toBe(2);
+      expect(stats.completed).toBe(1);
+      expect(stats.active).toBe(1);
+      expect(stats.averageProgress).toBeGreaterThanOrEqual(0);
+    }, TEST_TIMEOUT);
+
+    it('should return zero stats for user with no sessions', async () => {
+      const newUserId = new mongoose.Types.ObjectId();
+
+      const stats = await sessionModel.getSessionStats(newUserId);
+
+      expect(stats.total).toBe(0);
+      expect(stats.completed).toBe(0);
+      expect(stats.active).toBe(0);
+      expect(stats.averageProgress).toBe(0);
+    }, TEST_TIMEOUT);
+
+    it('should calculate average progress correctly', async () => {
+      // Create session with 50% progress
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+      await sessionModel.updateProgress(createdSession._id, testUserId, 1);
+
+      const stats = await sessionModel.getSessionStats(testUserId);
+
+      expect(stats.averageProgress).toBe(50);
+    }, TEST_TIMEOUT);
+
+    it('should handle database errors during getSessionStats', async () => {
+      await mongoose.connection.close();
+
+      await expect(sessionModel.getSessionStats(testUserId))
+        .rejects
+        .toThrow('Failed to get session statistics');
+
+      const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+      await mongoose.connect(uri);
+    }, TEST_TIMEOUT);
+  });
+
+  describe('delete method - Direct Testing', () => {
+    it('should delete session successfully', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+
+      const deleted = await sessionModel.delete(createdSession._id, testUserId);
+
+      expect(deleted).toBe(true);
+
+      const session = await sessionModel.findById(createdSession._id, testUserId);
+      expect(session).toBeNull();
+    }, TEST_TIMEOUT);
+
+    it('should return false when session not found', async () => {
+      const nonExistentId = new mongoose.Types.ObjectId();
+
+      const deleted = await sessionModel.delete(nonExistentId, testUserId);
+
+      expect(deleted).toBe(false);
+    }, TEST_TIMEOUT);
+
+    it('should return false when session belongs to different user', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+      const differentUserId = new mongoose.Types.ObjectId();
+
+      const deleted = await sessionModel.delete(createdSession._id, differentUserId);
+
+      expect(deleted).toBe(false);
+    }, TEST_TIMEOUT);
+
+    it('should handle database errors during delete', async () => {
+      const createdSession = await sessionModel.create(testUserId, testJobId, testQuestionIds);
+      await mongoose.connection.close();
+
+      await expect(sessionModel.delete(createdSession._id, testUserId))
+        .rejects
+        .toThrow('Failed to delete session');
+
+      const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+      await mongoose.connect(uri);
+    }, TEST_TIMEOUT);
+  });
+});
+
 

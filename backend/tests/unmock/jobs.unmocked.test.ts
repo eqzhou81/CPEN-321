@@ -2694,4 +2694,148 @@ describe('Job Controller - Unmocked Integration Tests', () => {
       }, TEST_TIMEOUT);
     });
   });
+
+  // Additional JobApplication Model Tests for 100% Coverage
+  describe('JobApplication Model - Complete Coverage Tests', () => {
+    beforeEach(async () => {
+      await mongoose.connection.collection('jobapplications').deleteMany({});
+    });
+
+    describe('update method - Complete Coverage', () => {
+      let createdJobId: mongoose.Types.ObjectId;
+
+      beforeEach(async () => {
+        const jobData = {
+          title: 'Original Title',
+          company: 'Original Company',
+          description: 'Original description',
+        };
+        const result = await jobApplicationModel.create(testUserId, jobData);
+        createdJobId = new mongoose.Types.ObjectId(result._id);
+      });
+
+      it('should handle Zod validation errors during update', async () => {
+        const invalidUpdateData = {
+          title: '', // Invalid empty title
+          jobType: 'invalid-type', // Invalid enum value
+        };
+
+        await expect(jobApplicationModel.update(createdJobId, testUserId, invalidUpdateData))
+          .rejects
+          .toThrow('Invalid update data');
+      }, TEST_TIMEOUT);
+
+      it('should handle database errors during update', async () => {
+        await mongoose.connection.close();
+
+        await expect(jobApplicationModel.update(createdJobId, testUserId, { title: 'Updated' }))
+          .rejects
+          .toThrow('Failed to update job application');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('delete method - Complete Coverage', () => {
+      it('should handle database errors during delete', async () => {
+        const jobData = {
+          title: 'Job to Delete',
+          company: 'Test Company',
+        };
+        const result = await jobApplicationModel.create(testUserId, jobData);
+        const jobId = new mongoose.Types.ObjectId(result._id);
+
+        await mongoose.connection.close();
+
+        await expect(jobApplicationModel.delete(jobId, testUserId))
+          .rejects
+          .toThrow('Failed to delete job application');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('findByUserId method - Complete Coverage', () => {
+      it('should handle database errors during findByUserId', async () => {
+        await mongoose.connection.close();
+
+        await expect(jobApplicationModel.findByUserId(testUserId, 10, 0))
+          .rejects
+          .toThrow('Failed to find job applications');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('searchByText method - Complete Coverage', () => {
+      it('should handle database errors during searchByText', async () => {
+        await mongoose.connection.close();
+
+        await expect(jobApplicationModel.searchByText(testUserId, 'test', 10, 0))
+          .rejects
+          .toThrow('Failed to search job applications');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('findByCompany method - Complete Coverage', () => {
+      it('should handle database errors during findByCompany', async () => {
+        await mongoose.connection.close();
+
+        await expect(jobApplicationModel.findByCompany(testUserId, 'TestCorp', 10, 0))
+          .rejects
+          .toThrow('Failed to find job applications by company');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('deleteAllByUserId method - Complete Coverage', () => {
+      it('should delete all job applications for a user', async () => {
+        // Create multiple job applications
+        await jobApplicationModel.create(testUserId, {
+          title: 'Job 1',
+          company: 'Company 1',
+        });
+        await jobApplicationModel.create(testUserId, {
+          title: 'Job 2',
+          company: 'Company 2',
+        });
+        await jobApplicationModel.create(testUserId, {
+          title: 'Job 3',
+          company: 'Company 3',
+        });
+
+        const deletedCount = await jobApplicationModel.deleteAllByUserId(testUserId);
+
+        expect(deletedCount).toBe(3);
+
+        const remaining = await jobApplicationModel.findByUserId(testUserId);
+        expect(remaining.jobApplications).toHaveLength(0);
+      }, TEST_TIMEOUT);
+
+      it('should return 0 when no job applications to delete', async () => {
+        const deletedCount = await jobApplicationModel.deleteAllByUserId(testUserId);
+
+        expect(deletedCount).toBe(0);
+      }, TEST_TIMEOUT);
+
+      it('should handle database errors during deleteAllByUserId', async () => {
+        await mongoose.connection.close();
+
+        await expect(jobApplicationModel.deleteAllByUserId(testUserId))
+          .rejects
+          .toThrow('Failed to delete job applications');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+  });
 });
