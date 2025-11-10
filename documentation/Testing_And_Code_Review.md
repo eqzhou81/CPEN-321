@@ -50,7 +50,7 @@
 
 #### 2.1.2 Commit Hash
 
-The tests were executed on the following commit on the `main` branch:
+The tests were executed on the following commit on the `main` branch: f3e480b50bcdd6d7aac653b2393089cec4da8bd9
 
 
 
@@ -149,7 +149,7 @@ When running frontend tests please ensure that the build.grade has auth bypassed
 ## 5. Automated code review results
 
 #### 5.1 Commit Hash
-The hash of the commit on the **main** branch where Codacy ran:
+The hash of the commit on the **main** branch where Codacy ran: f3e480b50bcdd6d7aac653b2393089cec4da8bd9
 
 #### 5.2 Issues Breakdown by Category
 The number of unfixed issues per Codacy category (copied from the **“Issues breakdown”** table in the Codacy *Overview* page):
