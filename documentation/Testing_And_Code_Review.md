@@ -160,12 +160,15 @@ When running frontend tests please ensure that the build.grade has auth bypassed
 Codacy ran on main at commit **f3e480b50bcdd6d7aac653b2393089cec4da8bd9**.
 
 ## 5.2 Issues breakdown by category
-The number of unfixed issues per Codacy category (copied from the **“Issues breakdown”** table in the Codacy *Overview* page):
+
+<img width="350" height="268" alt="Screenshot 2025-11-09 at 10 48 46 PM" src="https://github.com/user-attachments/assets/62106ed6-40ba-438e-839b-7fc1f7d72f98" />
+
 
 
 ## 5.3 Issues breakdown by code pattern
 
-The number of unfixed issues per Codacy code pattern (copied from the **“Issues”** page):
+<img width="1305" height="328" alt="Screenshot 2025-11-09 at 10 47 08 PM" src="https://github.com/user-attachments/assets/f52c7290-f434-4dbb-a99f-fe5dc6c238c3" />
+
 
 ## 5.4 Justification for unfixed issues
 The case **useCase\_PasteJobPostingLink\_InvalidUrl\_Failure()** is failing because the UI currently allows a malformed URL (e.g., `not-a-valid-url`) to pass through to submission, or the test can’t reliably target the URL field / validation state. In either case, the expected behavior (“submission rejected; no scraping or job creation”) isn’t deterministically enforced or asserted.
