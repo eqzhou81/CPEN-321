@@ -80,6 +80,7 @@ The location of the .yml file : [.github/workflows/backend-tests.yml](https://gi
 ---
 
 ### 2.3 Jest coverage report NO MOCKING
+<img width="1136" height="829" alt="unmocked_test_coverage" src="https://github.com/user-attachments/assets/49b2b43e-e561-4d1d-b27d-5957b9527096" />
 
 ---
 
@@ -88,8 +89,13 @@ The location of the .yml file : [.github/workflows/backend-tests.yml](https://gi
 ---
 
 ### 2.5 Jest coverage report WITH AND WITHOUT MOCKING
+<img width="1085" height="539" alt="combined_controllers" src="https://github.com/user-attachments/assets/703d217c-0625-48b3-9d9e-5dec357a0622" />
+<img width="1012" height="518" alt="combined_models" src="https://github.com/user-attachments/assets/29e3cdbf-90fd-44e8-888a-6d69a2a31c91" />
+<img width="1027" height="576" alt="combined_routes" src="https://github.com/user-attachments/assets/371a86e4-ae79-4874-be61-4aff85b0310c" />
+<img width="1063" height="744" alt="combined_services_middleware" src="https://github.com/user-attachments/assets/f1b5485a-5f57-444b-9fc5-3e8ee1538111" />
 
 ---
+
 
 
 ## 3. Back-end test specification : Tests of non-functional requirements
