@@ -113,9 +113,10 @@ The `nfr3-data-integrity.test.ts` suite runs against real MongoDB collections an
 
 ### 4.1. Location of Front-End Test Suite
 
-All front-end tests are located under the following directory: [frontend/app/src/androidTest/java/com/cpen321/usermanagement/e2e](https://github.com/eqzhou81/CPEN-321/blob/main/frontend/app/src/androidTest/java/com/cpen321/usermanagement/e2e) 
+All front-end tests are located under the following directory: [frontend/app/src/androidTest/java/com/cpen321/usermanagement/e2e](https://github.com/eqzhou81/CPEN-321/blob/main/frontend/app/src/androidTest/java/com/cpen321/usermanagement/e2e) on the feature/e2e tests branch. The main branch runs into some merge issues which was hard to fix, so please use the e2e branch for more accurate test results
 
 When running frontend tests please ensure that the build.grade has auth bypassed toggled to true, the VM backend also bypasses authentication.
+
 
 ### 4.2. Test Cases, Expected Behaviors, and Execution Logs
 
