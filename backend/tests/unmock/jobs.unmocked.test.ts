@@ -1742,4 +1742,956 @@ describe('Job Controller - Unmocked Integration Tests', () => {
       });
     });
   });
+
+  // AvailableJob Model - Direct Method Testing for 100% Coverage
+  describe('AvailableJob Model - Direct Method Testing', () => {
+    const { availableJobModel } = require('../../src/models/availableJob.model');
+
+    beforeEach(async () => {
+      await mongoose.connection.collection('availablejobs').deleteMany({});
+    });
+
+    describe('create method - Direct Testing', () => {
+      it('should create available job with valid data', async () => {
+        const validJobData = {
+          title: 'Senior React Developer',
+          company: 'TechCorp',
+          description: 'Exciting opportunity for React developers',
+          jobLocation: 'Vancouver, BC',
+          url: 'https://example.com/jobs/react-dev',
+          salary: '$90,000 - $120,000',
+          jobType: 'full-time',
+          experienceLevel: 'senior',
+          skills: ['React', 'TypeScript', 'Node.js'],
+          requirements: ['5+ years experience', 'Strong JavaScript'],
+          isRemote: true,
+        };
+
+        const result = await availableJobModel.create(validJobData);
+
+        expect(result.title).toBe(validJobData.title);
+        expect(result.company).toBe(validJobData.company);
+        expect(result.description).toBe(validJobData.description);
+        expect(result.jobLocation).toBe(validJobData.jobLocation);
+        expect(result.url).toBe(validJobData.url);
+        expect(result.salary).toBe(validJobData.salary);
+        expect(result.jobType).toBe(validJobData.jobType);
+        expect(result.experienceLevel).toBe(validJobData.experienceLevel);
+        expect(result.skills).toEqual(validJobData.skills);
+        expect(result.requirements).toEqual(validJobData.requirements);
+        expect(result.isRemote).toBe(true);
+      }, TEST_TIMEOUT);
+
+      it('should create job with minimal required fields', async () => {
+        const minimalJobData = {
+          title: 'Backend Developer',
+          company: 'StartupXYZ',
+          description: 'Backend development role',
+          jobLocation: 'Remote',
+          url: 'https://example.com/jobs/backend',
+        };
+
+        const result = await availableJobModel.create(minimalJobData);
+
+        expect(result.title).toBe(minimalJobData.title);
+        expect(result.company).toBe(minimalJobData.company);
+        expect(result.skills).toEqual([]);
+        expect(result.requirements).toEqual([]);
+        expect(result.isRemote).toBe(false);
+      }, TEST_TIMEOUT);
+
+      it('should reject invalid URL format', async () => {
+        const jobWithInvalidUrl = {
+          title: 'Test Job',
+          company: 'Test Company',
+          description: 'Test description',
+          jobLocation: 'Test Location',
+          url: 'not-a-valid-url',
+        };
+
+        await expect(availableJobModel.create(jobWithInvalidUrl))
+          .rejects
+          .toThrow();
+      }, TEST_TIMEOUT);
+
+      it('should reject missing required fields', async () => {
+        const incompleteJob = {
+          title: 'Test Job',
+          // Missing company, description, jobLocation, url
+        };
+
+        await expect(availableJobModel.create(incompleteJob))
+          .rejects
+          .toThrow();
+      }, TEST_TIMEOUT);
+
+      it('should handle all valid jobType enum values', async () => {
+        const jobTypes = ['full-time', 'part-time', 'contract', 'internship', 'remote'];
+
+        for (const jobType of jobTypes) {
+          const jobData = {
+            title: `Test ${jobType}`,
+            company: 'Test Company',
+            description: 'Test description',
+            jobLocation: 'Test Location',
+            url: `https://example.com/jobs/${jobType}`,
+            jobType: jobType,
+          };
+
+          const result = await availableJobModel.create(jobData);
+          expect(result.jobType).toBe(jobType);
+        }
+      }, TEST_TIMEOUT);
+
+      it('should handle all valid experienceLevel enum values', async () => {
+        const experienceLevels = ['entry', 'mid', 'senior', 'lead', 'executive'];
+
+        for (const level of experienceLevels) {
+          const jobData = {
+            title: `Test ${level}`,
+            company: 'Test Company',
+            description: 'Test description',
+            jobLocation: 'Test Location',
+            url: `https://example.com/jobs/${level}`,
+            experienceLevel: level,
+          };
+
+          const result = await availableJobModel.create(jobData);
+          expect(result.experienceLevel).toBe(level);
+        }
+      }, TEST_TIMEOUT);
+
+      it('should trim whitespace from string fields', async () => {
+        const jobWithWhitespace = {
+          title: '  Frontend Developer  ',
+          company: '  TechCorp  ',
+          description: '  Great opportunity  ',
+          jobLocation: '  Vancouver  ',
+          url: 'https://example.com/jobs/frontend',
+          salary: '  $80k - $100k  ',
+        };
+
+        const result = await availableJobModel.create(jobWithWhitespace);
+
+        expect(result.title).toBe('Frontend Developer');
+        expect(result.company).toBe('TechCorp');
+        expect(result.description).toBe('Great opportunity');
+        expect(result.jobLocation).toBe('Vancouver');
+        expect(result.salary).toBe('$80k - $100k');
+      }, TEST_TIMEOUT);
+
+      it('should enforce maxlength constraints', async () => {
+        const jobWithLongFields = {
+          title: 'A'.repeat(201), // Exceeds maxlength: 200
+          company: 'B'.repeat(101), // Exceeds maxlength: 100
+          description: 'Test description',
+          jobLocation: 'C'.repeat(201), // Exceeds maxlength: 200
+          url: 'https://example.com/jobs/long',
+          salary: 'D'.repeat(101), // Exceeds maxlength: 100
+        };
+
+        await expect(availableJobModel.create(jobWithLongFields))
+          .rejects
+          .toThrow();
+      }, TEST_TIMEOUT);
+    });
+
+    describe('findById method - Direct Testing', () => {
+      let createdJobId: mongoose.Types.ObjectId;
+
+      beforeEach(async () => {
+        const jobData = {
+          title: 'Test Job for FindById',
+          company: 'Test Company',
+          description: 'Test description',
+          jobLocation: 'Test Location',
+          url: 'https://example.com/jobs/test-findbyid',
+        };
+        const result = await availableJobModel.create(jobData);
+        createdJobId = new mongoose.Types.ObjectId(result._id);
+      });
+
+      it('should find job by ID successfully', async () => {
+        const result = await availableJobModel.findById(createdJobId);
+
+        expect(result).toBeTruthy();
+        expect(result!.title).toBe('Test Job for FindById');
+        expect(result!.company).toBe('Test Company');
+      }, TEST_TIMEOUT);
+
+      it('should return null when job not found', async () => {
+        const nonExistentId = new mongoose.Types.ObjectId();
+        const result = await availableJobModel.findById(nonExistentId);
+
+        expect(result).toBeNull();
+      }, TEST_TIMEOUT);
+
+      it('should handle database errors during findById', async () => {
+        await mongoose.connection.close();
+
+        await expect(availableJobModel.findById(createdJobId))
+          .rejects
+          .toThrow('Failed to find job by ID');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('findAll method - Direct Testing', () => {
+      beforeEach(async () => {
+        const jobsData = [
+          {
+            title: 'Job 1',
+            company: 'Company 1',
+            description: 'Description 1',
+            jobLocation: 'Location 1',
+            url: 'https://example.com/jobs/1',
+          },
+          {
+            title: 'Job 2',
+            company: 'Company 2',
+            description: 'Description 2',
+            jobLocation: 'Location 2',
+            url: 'https://example.com/jobs/2',
+          },
+          {
+            title: 'Job 3',
+            company: 'Company 3',
+            description: 'Description 3',
+            jobLocation: 'Location 3',
+            url: 'https://example.com/jobs/3',
+          },
+        ];
+
+        for (const jobData of jobsData) {
+          await availableJobModel.create(jobData);
+        }
+      });
+
+      it('should find all jobs successfully', async () => {
+        const result = await availableJobModel.findAll();
+
+        expect(result).toHaveLength(3);
+        expect(result[0].title).toBe('Job 3'); // Sorted by createdAt descending
+        expect(result[1].title).toBe('Job 2');
+        expect(result[2].title).toBe('Job 1');
+      }, TEST_TIMEOUT);
+
+      it('should return empty array when no jobs exist', async () => {
+        await availableJobModel.clearAll();
+        const result = await availableJobModel.findAll();
+
+        expect(result).toEqual([]);
+      }, TEST_TIMEOUT);
+
+      it('should handle database errors during findAll', async () => {
+        await mongoose.connection.close();
+
+        await expect(availableJobModel.findAll())
+          .rejects
+          .toThrow('Failed to find all jobs');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('findByCompany method - Direct Testing', () => {
+      beforeEach(async () => {
+        const jobsData = [
+          {
+            title: 'Job at TechCorp',
+            company: 'TechCorp Inc.',
+            description: 'Tech job',
+            jobLocation: 'Vancouver',
+            url: 'https://example.com/jobs/techcorp-1',
+          },
+          {
+            title: 'Another TechCorp Job',
+            company: 'TechCorp',
+            description: 'Another tech job',
+            jobLocation: 'Toronto',
+            url: 'https://example.com/jobs/techcorp-2',
+          },
+          {
+            title: 'Job at StartupXYZ',
+            company: 'StartupXYZ',
+            description: 'Startup job',
+            jobLocation: 'Montreal',
+            url: 'https://example.com/jobs/startup-1',
+          },
+        ];
+
+        for (const jobData of jobsData) {
+          await availableJobModel.create(jobData);
+        }
+      });
+
+      it('should find jobs by company with case-insensitive search', async () => {
+        const result = await availableJobModel.findByCompany('techcorp');
+
+        expect(result.length).toBeGreaterThanOrEqual(2);
+        result.forEach(job => {
+          expect(job.company.toLowerCase()).toContain('techcorp');
+        });
+      }, TEST_TIMEOUT);
+
+      it('should return empty array when company not found', async () => {
+        const result = await availableJobModel.findByCompany('NonExistentCompany');
+
+        expect(result).toEqual([]);
+      }, TEST_TIMEOUT);
+
+      it('should handle partial company name matches', async () => {
+        const result = await availableJobModel.findByCompany('Tech');
+
+        expect(result.length).toBeGreaterThanOrEqual(2);
+      }, TEST_TIMEOUT);
+
+      it('should handle database errors during findByCompany', async () => {
+        await mongoose.connection.close();
+
+        await expect(availableJobModel.findByCompany('TechCorp'))
+          .rejects
+          .toThrow('Failed to find jobs by company');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('findByLocation method - Direct Testing', () => {
+      beforeEach(async () => {
+        const jobsData = [
+          {
+            title: 'Job in Vancouver',
+            company: 'Company 1',
+            description: 'Vancouver job',
+            jobLocation: 'Vancouver, BC',
+            url: 'https://example.com/jobs/van-1',
+          },
+          {
+            title: 'Another Vancouver Job',
+            company: 'Company 2',
+            description: 'Another Vancouver job',
+            jobLocation: 'Vancouver',
+            url: 'https://example.com/jobs/van-2',
+          },
+          {
+            title: 'Job in Toronto',
+            company: 'Company 3',
+            description: 'Toronto job',
+            jobLocation: 'Toronto, ON',
+            url: 'https://example.com/jobs/tor-1',
+          },
+        ];
+
+        for (const jobData of jobsData) {
+          await availableJobModel.create(jobData);
+        }
+      });
+
+      it('should find jobs by location with case-insensitive search', async () => {
+        const result = await availableJobModel.findByLocation('vancouver');
+
+        expect(result.length).toBeGreaterThanOrEqual(2);
+        result.forEach(job => {
+          expect(job.jobLocation.toLowerCase()).toContain('vancouver');
+        });
+      }, TEST_TIMEOUT);
+
+      it('should return empty array when location not found', async () => {
+        const result = await availableJobModel.findByLocation('NonExistentCity');
+
+        expect(result).toEqual([]);
+      }, TEST_TIMEOUT);
+
+      it('should handle partial location matches', async () => {
+        const result = await availableJobModel.findByLocation('BC');
+
+        expect(result.length).toBeGreaterThanOrEqual(1);
+      }, TEST_TIMEOUT);
+
+      it('should handle database errors during findByLocation', async () => {
+        await mongoose.connection.close();
+
+        await expect(availableJobModel.findByLocation('Vancouver'))
+          .rejects
+          .toThrow('Failed to find jobs by location');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('searchJobs method - Direct Testing', () => {
+      beforeEach(async () => {
+        const jobsData = [
+          {
+            title: 'Senior React Developer',
+            company: 'TechCorp',
+            description: 'Build amazing React applications',
+            jobLocation: 'Vancouver, BC',
+            url: 'https://example.com/jobs/react-1',
+            jobType: 'full-time',
+            experienceLevel: 'senior',
+            isRemote: true,
+          },
+          {
+            title: 'Junior Backend Developer',
+            company: 'StartupXYZ',
+            description: 'Node.js backend development',
+            jobLocation: 'Toronto, ON',
+            url: 'https://example.com/jobs/backend-1',
+            jobType: 'full-time',
+            experienceLevel: 'entry',
+            isRemote: false,
+          },
+          {
+            title: 'Frontend Intern',
+            company: 'BigCorp',
+            description: 'Internship for frontend development',
+            jobLocation: 'Remote',
+            url: 'https://example.com/jobs/intern-1',
+            jobType: 'internship',
+            experienceLevel: 'entry',
+            isRemote: true,
+          },
+          {
+            title: 'DevOps Engineer',
+            company: 'TechCorp',
+            description: 'Manage cloud infrastructure',
+            jobLocation: 'Vancouver, BC',
+            url: 'https://example.com/jobs/devops-1',
+            jobType: 'full-time',
+            experienceLevel: 'mid',
+            isRemote: false,
+          },
+        ];
+
+        for (const jobData of jobsData) {
+          await availableJobModel.create(jobData);
+        }
+      });
+
+      it('should search jobs by title', async () => {
+        const result = await availableJobModel.searchJobs({ title: 'React' });
+
+        expect(result.length).toBeGreaterThanOrEqual(1);
+        expect(result[0].title.toLowerCase()).toContain('react');
+      }, TEST_TIMEOUT);
+
+      it('should search jobs by title in description', async () => {
+        const result = await availableJobModel.searchJobs({ title: 'Node.js' });
+
+        expect(result.length).toBeGreaterThanOrEqual(1);
+        expect(result[0].description.toLowerCase()).toContain('node.js');
+      }, TEST_TIMEOUT);
+
+      it('should search jobs by company', async () => {
+        const result = await availableJobModel.searchJobs({ company: 'TechCorp' });
+
+        expect(result.length).toBeGreaterThanOrEqual(2);
+        result.forEach(job => {
+          expect(job.company).toBe('TechCorp');
+        });
+      }, TEST_TIMEOUT);
+
+      it('should search jobs by location', async () => {
+        const result = await availableJobModel.searchJobs({ location: 'Vancouver' });
+
+        expect(result.length).toBeGreaterThanOrEqual(2);
+        result.forEach(job => {
+          expect(job.jobLocation.toLowerCase()).toContain('vancouver');
+        });
+      }, TEST_TIMEOUT);
+
+      it('should search jobs by jobType array', async () => {
+        const result = await availableJobModel.searchJobs({ 
+          jobType: ['full-time', 'internship'] 
+        });
+
+        expect(result.length).toBeGreaterThanOrEqual(3);
+        result.forEach(job => {
+          expect(['full-time', 'internship']).toContain(job.jobType);
+        });
+      }, TEST_TIMEOUT);
+
+      it('should search jobs by experienceLevel array', async () => {
+        const result = await availableJobModel.searchJobs({ 
+          experienceLevel: ['senior', 'mid'] 
+        });
+
+        expect(result.length).toBeGreaterThanOrEqual(2);
+        result.forEach(job => {
+          expect(['senior', 'mid']).toContain(job.experienceLevel);
+        });
+      }, TEST_TIMEOUT);
+
+      it('should search jobs by isRemote', async () => {
+        const result = await availableJobModel.searchJobs({ isRemote: true });
+
+        expect(result.length).toBeGreaterThanOrEqual(2);
+        result.forEach(job => {
+          expect(job.isRemote).toBe(true);
+        });
+      }, TEST_TIMEOUT);
+
+      it('should search jobs with multiple combined filters', async () => {
+        const result = await availableJobModel.searchJobs({
+          company: 'TechCorp',
+          location: 'Vancouver',
+          jobType: ['full-time'],
+          isRemote: false,
+        });
+
+        expect(result.length).toBeGreaterThanOrEqual(1);
+        result.forEach(job => {
+          expect(job.company).toBe('TechCorp');
+          expect(job.jobLocation.toLowerCase()).toContain('vancouver');
+          expect(job.jobType).toBe('full-time');
+          expect(job.isRemote).toBe(false);
+        });
+      }, TEST_TIMEOUT);
+
+      it('should respect limit parameter', async () => {
+        const result = await availableJobModel.searchJobs({ limit: 2 });
+
+        expect(result.length).toBeLessThanOrEqual(2);
+      }, TEST_TIMEOUT);
+
+      it('should use default limit of 20', async () => {
+        // Create more than 20 jobs
+        for (let i = 0; i < 25; i++) {
+          await availableJobModel.create({
+            title: `Job ${i}`,
+            company: `Company ${i}`,
+            description: `Description ${i}`,
+            jobLocation: `Location ${i}`,
+            url: `https://example.com/jobs/${i}`,
+          });
+        }
+
+        const result = await availableJobModel.searchJobs({});
+
+        expect(result.length).toBeLessThanOrEqual(20);
+      }, TEST_TIMEOUT);
+
+      it('should return empty array when no jobs match filters', async () => {
+        const result = await availableJobModel.searchJobs({
+          title: 'NonExistentJob',
+          company: 'NonExistentCompany',
+        });
+
+        expect(result).toEqual([]);
+      }, TEST_TIMEOUT);
+
+      it('should handle database errors during searchJobs', async () => {
+        await mongoose.connection.close();
+
+        await expect(availableJobModel.searchJobs({ title: 'Test' }))
+          .rejects
+          .toThrow('Failed to search jobs');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('updateById method - Direct Testing', () => {
+      let createdJobId: mongoose.Types.ObjectId;
+
+      beforeEach(async () => {
+        const jobData = {
+          title: 'Original Title',
+          company: 'Original Company',
+          description: 'Original description',
+          jobLocation: 'Original Location',
+          url: 'https://example.com/jobs/original',
+          salary: 'Original Salary',
+          jobType: 'full-time',
+          experienceLevel: 'mid',
+        };
+        const result = await availableJobModel.create(jobData);
+        createdJobId = new mongoose.Types.ObjectId(result._id);
+      });
+
+      it('should update job successfully', async () => {
+        const updateData = {
+          title: 'Updated Title',
+          company: 'Updated Company',
+          salary: 'Updated Salary',
+          jobType: 'part-time',
+          experienceLevel: 'senior',
+        };
+
+        const result = await availableJobModel.updateById(createdJobId, updateData);
+
+        expect(result).toBeTruthy();
+        expect(result!.title).toBe('Updated Title');
+        expect(result!.company).toBe('Updated Company');
+        expect(result!.salary).toBe('Updated Salary');
+        expect(result!.jobType).toBe('part-time');
+        expect(result!.experienceLevel).toBe('senior');
+      }, TEST_TIMEOUT);
+
+      it('should return null when job not found for update', async () => {
+        const nonExistentId = new mongoose.Types.ObjectId();
+        const updateData = { title: 'Updated Title' };
+
+        const result = await availableJobModel.updateById(nonExistentId, updateData);
+
+        expect(result).toBeNull();
+      }, TEST_TIMEOUT);
+
+      it('should handle partial updates', async () => {
+        const partialUpdateData = {
+          title: 'Partially Updated Title',
+        };
+
+        const result = await availableJobModel.updateById(createdJobId, partialUpdateData);
+
+        expect(result!.title).toBe('Partially Updated Title');
+        expect(result!.company).toBe('Original Company'); // Should remain unchanged
+      }, TEST_TIMEOUT);
+
+      it('should handle database errors during update', async () => {
+        await mongoose.connection.close();
+
+        const updateData = { title: 'Updated Title' };
+        await expect(availableJobModel.updateById(createdJobId, updateData))
+          .rejects
+          .toThrow('Failed to update job');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('deleteById method - Direct Testing', () => {
+      let createdJobId: mongoose.Types.ObjectId;
+
+      beforeEach(async () => {
+        const jobData = {
+          title: 'Job to Delete',
+          company: 'Company to Delete',
+          description: 'Description to delete',
+          jobLocation: 'Location to delete',
+          url: 'https://example.com/jobs/delete',
+        };
+        const result = await availableJobModel.create(jobData);
+        createdJobId = new mongoose.Types.ObjectId(result._id);
+      });
+
+      it('should delete job successfully', async () => {
+        const result = await availableJobModel.deleteById(createdJobId);
+
+        expect(result).toBe(true);
+
+        const deletedJob = await availableJobModel.findById(createdJobId);
+        expect(deletedJob).toBeNull();
+      }, TEST_TIMEOUT);
+
+      it('should return false when job not found for deletion', async () => {
+        const nonExistentId = new mongoose.Types.ObjectId();
+        const result = await availableJobModel.deleteById(nonExistentId);
+
+        expect(result).toBe(false);
+      }, TEST_TIMEOUT);
+
+      it('should handle database errors during deletion', async () => {
+        await mongoose.connection.close();
+
+        await expect(availableJobModel.deleteById(createdJobId))
+          .rejects
+          .toThrow('Failed to delete job');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('count method - Direct Testing', () => {
+      beforeEach(async () => {
+        const jobsData = [
+          {
+            title: 'Job 1',
+            company: 'Company 1',
+            description: 'Description 1',
+            jobLocation: 'Location 1',
+            url: 'https://example.com/jobs/count-1',
+          },
+          {
+            title: 'Job 2',
+            company: 'Company 2',
+            description: 'Description 2',
+            jobLocation: 'Location 2',
+            url: 'https://example.com/jobs/count-2',
+          },
+          {
+            title: 'Job 3',
+            company: 'Company 3',
+            description: 'Description 3',
+            jobLocation: 'Location 3',
+            url: 'https://example.com/jobs/count-3',
+          },
+        ];
+
+        for (const jobData of jobsData) {
+          await availableJobModel.create(jobData);
+        }
+      });
+
+      it('should count all jobs successfully', async () => {
+        const result = await availableJobModel.count();
+
+        expect(result).toBe(3);
+      }, TEST_TIMEOUT);
+
+      it('should return 0 when no jobs exist', async () => {
+        await availableJobModel.clearAll();
+        const result = await availableJobModel.count();
+
+        expect(result).toBe(0);
+      }, TEST_TIMEOUT);
+
+      it('should handle database errors during count', async () => {
+        await mongoose.connection.close();
+
+        await expect(availableJobModel.count())
+          .rejects
+          .toThrow('Failed to count jobs');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('clearAll method - Direct Testing', () => {
+      beforeEach(async () => {
+        const jobsData = [
+          {
+            title: 'Job 1',
+            company: 'Company 1',
+            description: 'Description 1',
+            jobLocation: 'Location 1',
+            url: 'https://example.com/jobs/clear-1',
+          },
+          {
+            title: 'Job 2',
+            company: 'Company 2',
+            description: 'Description 2',
+            jobLocation: 'Location 2',
+            url: 'https://example.com/jobs/clear-2',
+          },
+        ];
+
+        for (const jobData of jobsData) {
+          await availableJobModel.create(jobData);
+        }
+      });
+
+      it('should clear all jobs successfully', async () => {
+        const countBefore = await availableJobModel.count();
+        expect(countBefore).toBeGreaterThan(0);
+
+        await availableJobModel.clearAll();
+
+        const countAfter = await availableJobModel.count();
+        expect(countAfter).toBe(0);
+
+        const allJobs = await availableJobModel.findAll();
+        expect(allJobs).toEqual([]);
+      }, TEST_TIMEOUT);
+
+      it('should succeed when clearing already empty collection', async () => {
+        await availableJobModel.clearAll();
+        
+        await expect(availableJobModel.clearAll()).resolves.not.toThrow();
+
+        const count = await availableJobModel.count();
+        expect(count).toBe(0);
+      }, TEST_TIMEOUT);
+
+      it('should handle database errors during clearAll', async () => {
+        await mongoose.connection.close();
+
+        await expect(availableJobModel.clearAll())
+          .rejects
+          .toThrow('Failed to clear all jobs');
+
+        const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
+        await mongoose.connect(uri);
+      }, TEST_TIMEOUT);
+    });
+
+    describe('Edge Cases and Validation', () => {
+      it('should create timestamps automatically', async () => {
+        const jobData = {
+          title: 'Timestamped Job',
+          company: 'Timestamp Company',
+          description: 'Test description',
+          jobLocation: 'Test Location',
+          url: 'https://example.com/jobs/timestamp',
+        };
+
+        const result = await availableJobModel.create(jobData);
+
+        expect(result.createdAt).toBeDefined();
+        expect(result.updatedAt).toBeDefined();
+        expect(result.createdAt).toEqual(result.updatedAt);
+      }, TEST_TIMEOUT);
+
+      it('should update timestamps on modification', async () => {
+        const jobData = {
+          title: 'Original Job',
+          company: 'Original Company',
+          description: 'Original description',
+          jobLocation: 'Original Location',
+          url: 'https://example.com/jobs/timestamp-update',
+        };
+
+        const created = await availableJobModel.create(jobData);
+        const originalUpdatedAt = created.updatedAt;
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const updated = await availableJobModel.updateById(
+          new mongoose.Types.ObjectId(created._id),
+          { title: 'Updated Job' }
+        );
+
+        expect(updated!.updatedAt).not.toEqual(originalUpdatedAt);
+        expect(updated!.updatedAt > originalUpdatedAt).toBe(true);
+      }, TEST_TIMEOUT);
+
+      it('should set default postedDate', async () => {
+        const jobData = {
+          title: 'Job with Default Date',
+          company: 'Test Company',
+          description: 'Test description',
+          jobLocation: 'Test Location',
+          url: 'https://example.com/jobs/default-date',
+        };
+
+        const result = await availableJobModel.create(jobData);
+
+        expect(result.postedDate).toBeDefined();
+        expect(result.postedDate).toBeInstanceOf(Date);
+      }, TEST_TIMEOUT);
+
+      it('should allow custom postedDate', async () => {
+        const customDate = new Date('2024-01-01');
+        const jobData = {
+          title: 'Job with Custom Date',
+          company: 'Test Company',
+          description: 'Test description',
+          jobLocation: 'Test Location',
+          url: 'https://example.com/jobs/custom-date',
+          postedDate: customDate,
+        };
+
+        const result = await availableJobModel.create(jobData);
+
+        expect(result.postedDate.getTime()).toBe(customDate.getTime());
+      }, TEST_TIMEOUT);
+
+      it('should handle empty arrays for skills and requirements', async () => {
+        const jobData = {
+          title: 'Job with Empty Arrays',
+          company: 'Test Company',
+          description: 'Test description',
+          jobLocation: 'Test Location',
+          url: 'https://example.com/jobs/empty-arrays',
+          skills: [],
+          requirements: [],
+        };
+
+        const result = await availableJobModel.create(jobData);
+
+        expect(result.skills).toEqual([]);
+        expect(result.requirements).toEqual([]);
+      }, TEST_TIMEOUT);
+
+      it('should handle large arrays for skills and requirements', async () => {
+        const largeSkillsArray = Array.from({ length: 50 }, (_, i) => `Skill ${i + 1}`);
+        const largeRequirementsArray = Array.from({ length: 50 }, (_, i) => `Requirement ${i + 1}`);
+
+        const jobData = {
+          title: 'Job with Large Arrays',
+          company: 'Test Company',
+          description: 'Test description',
+          jobLocation: 'Test Location',
+          url: 'https://example.com/jobs/large-arrays',
+          skills: largeSkillsArray,
+          requirements: largeRequirementsArray,
+        };
+
+        const result = await availableJobModel.create(jobData);
+
+        expect(result.skills).toEqual(largeSkillsArray);
+        expect(result.requirements).toEqual(largeRequirementsArray);
+      }, TEST_TIMEOUT);
+
+      it('should handle boolean false for isRemote', async () => {
+        const jobData = {
+          title: 'Non-Remote Job',
+          company: 'Test Company',
+          description: 'Test description',
+          jobLocation: 'Test Location',
+          url: 'https://example.com/jobs/non-remote',
+          isRemote: false,
+        };
+
+        const result = await availableJobModel.create(jobData);
+
+        expect(result.isRemote).toBe(false);
+      }, TEST_TIMEOUT);
+
+      it('should validate URL protocol', async () => {
+        const validUrls = [
+          'https://example.com/job',
+          'http://example.com/job',
+          'https://subdomain.example.com/job',
+        ];
+
+        for (const url of validUrls) {
+          const jobData = {
+            title: 'Job with Valid URL',
+            company: 'Test Company',
+            description: 'Test description',
+            jobLocation: 'Test Location',
+            url: url,
+          };
+
+          const result = await availableJobModel.create(jobData);
+          expect(result.url).toBe(url);
+        }
+      }, TEST_TIMEOUT);
+
+      it('should reject malformed URLs', async () => {
+        const invalidUrls = [
+          'not-a-url-at-all',
+          '://example.com', // Missing protocol
+          'example.com/job', // Missing protocol entirely
+          '', // Empty string
+        ];
+
+        for (const url of invalidUrls) {
+          const jobData = {
+            title: 'Job with Invalid URL',
+            company: 'Test Company',
+            description: 'Test description',
+            jobLocation: 'Test Location',
+            url: url,
+          };
+
+          await expect(availableJobModel.create(jobData))
+            .rejects
+            .toThrow();
+        }
+      }, TEST_TIMEOUT);
+    });
+  });
 });
