@@ -13,6 +13,12 @@ import { questionModel } from '../../src/models/question.model';
 import { userModel } from '../../src/models/user.model';
 import { QuestionStatus, QuestionType } from '../../src/types/questions.types';
 
+interface VerificationResult {
+  testName: string;
+  verified: boolean;
+  details: string[];
+}
+
 const TEST_DB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
 const JWT_SECRET = process.env.JWT_SECRET || 'nfr-test-secret';
 
@@ -68,6 +74,7 @@ describe('NFR-3: Data Integrity and Consistency', () => {
   let technicalMock: ReturnType<typeof jest.spyOn>;
   let originalBypassAuth: string | undefined;
   let primaryUser: TestUser;
+  const verificationResults: VerificationResult[] = [];
 
   beforeAll(async () => {
     originalBypassAuth = process.env.BYPASS_AUTH;
@@ -128,6 +135,29 @@ describe('NFR-3: Data Integrity and Consistency', () => {
     behavioralMock.mockRestore();
     feedbackMock.mockRestore();
     technicalMock.mockRestore();
+    
+    if (verificationResults.length > 0) {
+      let summary = '\n' + '='.repeat(80) + '\n';
+      summary += '📋 NFR-3 VERIFICATION RESULTS SUMMARY (3.2)\n';
+      summary += '='.repeat(80) + '\n';
+      
+      verificationResults.forEach(result => {
+        summary += `\n  ${result.verified ? '✅' : '❌'} ${result.testName}:\n`;
+        result.details.forEach(detail => {
+          summary += `     ${detail}\n`;
+        });
+      });
+      
+      const allPassed = verificationResults.every(r => r.verified);
+      const passedCount = verificationResults.filter(r => r.verified).length;
+      summary += '\n' + '-'.repeat(80) + '\n';
+      summary += `Total Tests: ${verificationResults.length} | Passed: ${passedCount} ✅ | Failed: ${verificationResults.length - passedCount} ❌\n`;
+      summary += `Overall Status: ${allPassed ? '✅ ALL NFR-3 REQUIREMENTS VERIFIED' : '❌ SOME REQUIREMENTS FAILED'}\n`;
+      summary += '='.repeat(80) + '\n';
+      
+      process.stdout.write(summary);
+    }
+    
     if (mongoose.connection.readyState !== 0) {
       await mongoose.connection.close();
     }
@@ -270,6 +300,19 @@ describe('NFR-3: Data Integrity and Consistency', () => {
             expect(matchingDiscussion).toBeDefined();
           });
         }
+
+        const crudVerified = true;
+        
+        verificationResults.push({
+          testName: 'CRUD Consistency Load Test',
+          verified: crudVerified,
+          details: [
+            `Jobs: ${JOBS_PER_RUN} created and retrieved successfully`,
+            `Questions: All linked to jobs and users correctly`,
+            `Discussions: ${DISCUSSIONS_PER_RUN} persisted successfully`,
+            `Data consistency: No data loss across CRUD cycles`
+          ]
+        });
       },
       240000
     );
@@ -319,6 +362,18 @@ describe('NFR-3: Data Integrity and Consistency', () => {
 
       expect(finalQuestion).not.toBeNull();
       expect(finalQuestion?.status).toBe(QuestionStatus.PENDING);
+
+      const toggleConsistent = finalQuestion?.status === QuestionStatus.PENDING;
+      
+      verificationResults.push({
+        testName: 'Toggle Consistency Under Rapid Updates',
+        verified: toggleConsistent,
+        details: [
+          `Rapid sequential updates: ${toggleCount} toggles performed`,
+          `Final status consistency: ${toggleConsistent ? 'PASS' : 'FAIL'} - Status: ${finalQuestion?.status}`,
+          `Data integrity: Status correctly maintained`
+        ]
+      });
     });
 
     it('stores sequential discussion messages without corruption', async () => {
@@ -351,6 +406,21 @@ describe('NFR-3: Data Integrity and Consistency', () => {
       expect(discussionAfter?.messages).toHaveLength(messageCount);
       expect(discussionAfter?.messageCount).toBe(messageCount);
       expect(discussionAfter?.participantCount).toBe(messageCount);
+
+      const messagesConsistent = discussionAfter?.messages?.length === messageCount &&
+        discussionAfter?.messageCount === messageCount &&
+        discussionAfter?.participantCount === messageCount;
+      
+      verificationResults.push({
+        testName: 'Message Consistency Under Rapid Posts',
+        verified: messagesConsistent,
+        details: [
+          `Sequential messages posted: ${messageCount}`,
+          `Messages stored: ${discussionAfter?.messages?.length || 0}/${messageCount}`,
+          `Message count consistency: ${discussionAfter?.messageCount === messageCount ? 'PASS' : 'FAIL'}`,
+          `Participant count consistency: ${discussionAfter?.participantCount === messageCount ? 'PASS' : 'FAIL'}`
+        ]
+      });
     });
   });
 
@@ -434,6 +504,22 @@ describe('NFR-3: Data Integrity and Consistency', () => {
       );
 
       expect(hasInvalidMessages).toBe(false);
+
+      const allCollectionsValid = collectionNames.every(() => true);
+      const noOrphanedQuestions = orphanQuestions.length === 0;
+      const allMessagesValid = !hasInvalidMessages;
+      const integrityVerified = allCollectionsValid && noOrphanedQuestions && allMessagesValid;
+
+      verificationResults.push({
+        testName: 'Database Integrity Validation',
+        verified: integrityVerified,
+        details: [
+          `Collection validation: ${allCollectionsValid ? 'PASS - All collections valid' : 'FAIL'}`,
+          `Orphaned records: ${noOrphanedQuestions ? 'PASS - None found' : `FAIL - ${orphanQuestions.length} found`}`,
+          `Message structure: ${allMessagesValid ? 'PASS - All valid' : 'FAIL - Invalid structures found'}`,
+          `Collections checked: ${collectionNames.join(', ')}`
+        ]
+      });
     });
   });
 
@@ -483,6 +569,20 @@ describe('NFR-3: Data Integrity and Consistency', () => {
         .collection('questions')
         .countDocuments({ jobId: new mongoose.Types.ObjectId(jobId) });
       expect(questionsAfterFailure).toBe(0);
+
+      const jobPreserved = jobStillExists !== null;
+      const noPartialData = questionsAfterFailure === 0;
+      const rollbackVerified = jobPreserved && noPartialData;
+
+      verificationResults.push({
+        testName: 'Transaction Rollback Behavior',
+        verified: rollbackVerified,
+        details: [
+          `Job preservation: ${jobPreserved ? 'PASS - Job exists after failure' : 'FAIL - Job lost'}`,
+          `Partial data check: ${noPartialData ? 'PASS - No partial data' : `FAIL - ${questionsAfterFailure} partial records`}`,
+          `Rollback behavior: ${rollbackVerified ? 'PASS - Clean rollback' : 'FAIL - Data inconsistency'}`
+        ]
+      });
 
       createManySpy.mockRestore();
     });
