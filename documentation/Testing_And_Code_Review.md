@@ -112,8 +112,11 @@ The location of tests for data integrity: [backend/tests/nfr/nfr3-data-integrity
 
 The `nfr1-api-response-time.test.ts` suite simulates a normal load of 100 concurrent requests across representative endpoints (authentication, jobs, questions, sessions, user profile, discussions). For every run it records percentile statistics and asserts that the overall p95 latency stays at or below 3 seconds, average response time remains under 5 seconds, and that each individual endpoint meets the same p95 ≤ 3 second threshold. Passing this suite demonstrates that the response-time non-functional requirement is satisfied under the target concurrent load.
 
+<img width="572" height="213" alt="image" src="https://github.com/user-attachments/assets/7d5edc68-d0bf-4425-934b-c3525d9ae1ac" />
+
 The `nfr3-data-integrity.test.ts` suite runs against real MongoDB collections and covers create/read/update/delete loops, rapid status toggles, heavy discussion posting, and forced question-generation failures. It confirms that records stay intact, toggles return to a consistent state, every discussion message is saved, database validation succeeds, and failed operations leave no partial data. Passing all of these checks shows the data-integrity requirement holds during normal use, high churn, and error cases.
 
+<img width="577" height="378" alt="image" src="https://github.com/user-attachments/assets/4ba13ae4-a87a-4f26-b393-04a6c6c5db92" />
 
 ## 4. Front-end test specification
 

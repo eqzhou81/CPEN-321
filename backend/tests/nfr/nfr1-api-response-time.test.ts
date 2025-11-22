@@ -1,14 +1,43 @@
 import request from 'supertest';
 import { app } from '../../src/config/app';
 
+interface VerificationResult {
+  testName: string;
+  verified: boolean;
+  details: string[];
+}
+
 describe('NFR-1: API Response Time', () => {
   const originalBypassAuth = process.env.BYPASS_AUTH;
+  const verificationResults: VerificationResult[] = [];
   
   beforeAll(() => {
     process.env.BYPASS_AUTH = 'true';
   });
 
   afterAll(() => {
+    if (verificationResults.length > 0) {
+      let summary = '\n' + '='.repeat(80) + '\n';
+      summary += '📋 NFR-1 VERIFICATION RESULTS SUMMARY (3.2)\n';
+      summary += '='.repeat(80) + '\n';
+      
+      verificationResults.forEach(result => {
+        summary += `\n  ${result.verified ? '✅' : '❌'} ${result.testName}:\n`;
+        result.details.forEach(detail => {
+          summary += `     ${detail}\n`;
+        });
+      });
+      
+      const allPassed = verificationResults.every(r => r.verified);
+      const passedCount = verificationResults.filter(r => r.verified).length;
+      summary += '\n' + '-'.repeat(80) + '\n';
+      summary += `Total Tests: ${verificationResults.length} | Passed: ${passedCount} ✅ | Failed: ${verificationResults.length - passedCount} ❌\n`;
+      summary += `Overall Status: ${allPassed ? '✅ ALL NFR-1 REQUIREMENTS VERIFIED' : '❌ SOME REQUIREMENTS FAILED'}\n`;
+      summary += '='.repeat(80) + '\n';
+      
+      process.stdout.write(summary);
+    }
+    
     if (originalBypassAuth !== undefined) {
       process.env.BYPASS_AUTH = originalBypassAuth;
     } else {
@@ -230,6 +259,22 @@ describe('NFR-1: API Response Time', () => {
       });
     }
     
+    const p95RequirementMet = p95 <= 3000;
+    const avgRequirementMet = avg < 5000;
+    const allEndpointsMet = slowEndpoints.length === 0;
+    const nfr1Verified = p95RequirementMet && avgRequirementMet && allEndpointsMet;
+    
+    verificationResults.push({
+      testName: 'P95 Response Time Under Normal Load',
+      verified: nfr1Verified,
+      details: [
+        `Overall P95: ${p95}ms (requirement: ≤ 3000ms) - ${p95RequirementMet ? 'PASS' : 'FAIL'}`,
+        `Average: ${avg.toFixed(2)}ms (requirement: < 5000ms) - ${avgRequirementMet ? 'PASS' : 'FAIL'}`,
+        `Individual endpoints: ${allEndpointsMet ? 'ALL PASSED' : `${slowEndpoints.length} failed`}`,
+        `Total requests: ${allResponseTimes.length}`
+      ]
+    });
+    
     expect(p95).toBeLessThanOrEqual(3000);
     expect(allResponseTimes.length).toBeGreaterThan(0);
     expect(avg).toBeLessThan(5000);
@@ -272,6 +317,18 @@ describe('NFR-1: API Response Time', () => {
         console.log(`   ${m.endpoint}: P95 = ${m.p95}ms (threshold: 3000ms)`);
       });
     }
+    
+    const allEndpointsPassed = failingEndpoints.length === 0;
+    
+    verificationResults.push({
+      testName: 'Detailed Endpoint Performance Metrics',
+      verified: allEndpointsPassed,
+      details: [
+        `Endpoints tested: ${metrics.length}`,
+        `Passing P95 ≤ 3s: ${metrics.length - failingEndpoints.length}/${metrics.length}`,
+        failingEndpoints.length > 0 ? `Failing endpoints: ${failingEndpoints.map(e => e.endpoint).join(', ')}` : 'All endpoints passed'
+      ]
+    });
     
     expect(failingEndpoints.length).toBe(0);
   }, 60000);
