@@ -5,7 +5,8 @@
 | **Change Date**   | **Modified Sections** | **Rationale** |
 | ----------------- | --------------------- | ------------- |
 | . October 9th 2025| usecase diagram, usecase descriptions. formal use case specifications, backend components, high level design| Changed the use case diagram and the use cases to not have a step by step approach like discussed in lab. Changed the backend components based on separation of concerns and the high level design based on reviewed depdencies with the TA.
-| .October 27th 2025| High level design, backend components, NFRs,external modules, features| Added the session component as it simplified coding and provided a better separation of concern. Adding websocket and webscraper to extenrnal modules and to the high level design. Removed the overall progress tracker as it was redundant.
+| .October 27th 2025| High level design, backend components, NFRs,external modules, features| Added the session component as it simplified coding and provided a better separation of concern. Adding websocket and webscraper to extenrnal modules and to the high level design. Removed the overall progress tracker as it was redundant.|
+  .Nove 21 2025 | sequence diagrams | edited the sequence diagrams to be more accuarte to what is actually implemented, changed the interface and the uml features as per the TA's comments.
 
 ---
 
@@ -599,7 +600,7 @@ Any user can browse a list of active discussions and find discussions relevant t
 
 ### **4.6. Use Case Sequence Diagram (5 Most Major Use Cases)**
 #### **Use Case 1: Generate Questions for a Saved Job**
-![System Diagram](./images/final_usecase1.png)
+![System Diagram](./images/usecase1_fixed.png)
 #### **Use Case 2: Solve a Technical Question**
 ![System Diagram](./images/usecase2_fixed.png)
 #### **Use Case 3: Start Mock Interview**
