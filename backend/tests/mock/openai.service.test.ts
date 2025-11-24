@@ -653,12 +653,15 @@ describe('OpenAIService - Mocked Unit Tests', () => {
       const prompt = callArgs[0].messages[1].content;
 
       // Verify prompt structure
-      expect(prompt).toContain('Question: Describe a challenge');
-      expect(prompt).toContain('Answer: I faced a technical challenge...');
-      expect(prompt).toContain('Job Context: Backend Developer role');
+      expect(prompt).toContain('INTERVIEW QUESTION:');
+      expect(prompt).toContain('Describe a challenge');
+      expect(prompt).toContain('CANDIDATE\'S ANSWER:');
+      expect(prompt).toContain('I faced a technical challenge...');
+      expect(prompt).toContain('JOB CONTEXT:');
+      expect(prompt).toContain('Backend Developer role');
       expect(prompt).toContain('STAR method');
       expect(prompt).toContain('Specificity and detail');
-      expect(prompt).toContain('score from 1-10');
+      expect(prompt).toContain('number between 1-10');
     });
 
     it('should create feedback prompt without job context when not provided', async () => {
@@ -683,9 +686,11 @@ describe('OpenAIService - Mocked Unit Tests', () => {
       const callArgs = mockOpenAIInstance.chat.completions.create.mock.calls[0];
       const prompt = callArgs[0].messages[1].content;
 
-      expect(prompt).toContain('Question: Test question');
-      expect(prompt).toContain('Answer: Test answer');
-      expect(prompt).not.toContain('Job Context:');
+      expect(prompt).toContain('INTERVIEW QUESTION:');
+      expect(prompt).toContain('Test question');
+      expect(prompt).toContain('CANDIDATE\'S ANSWER:');
+      expect(prompt).toContain('Test answer');
+      expect(prompt).not.toContain('JOB CONTEXT:');
     });
   });
 

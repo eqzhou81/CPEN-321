@@ -94,7 +94,24 @@ class OpenAIService {
     jobContext?: string
   ): Promise<OpenAIFeedback> {
     try {
+      // Validate that answer is provided and not empty
+      if (!answer || answer.trim().length === 0) {
+        logger.error('Empty answer provided to generateAnswerFeedback');
+        throw new Error('Answer is required for feedback generation');
+      }
+
+      logger.info('Generating feedback for answer', {
+        question: question,
+        questionLength: question.length,
+        answer: answer,
+        answerLength: answer.length
+      });
+
       const prompt = this.createFeedbackPrompt(question, answer, jobContext);
+
+      logger.debug('Feedback prompt created', {
+        prompt: prompt
+      });
 
       const completion = await this.openai.chat.completions.create({
         model: 'gpt-4o-mini',
@@ -114,10 +131,31 @@ class OpenAIService {
 
       const response = completion.choices[0]?.message?.content;
       if (!response) {
+        logger.error('No response content from OpenAI');
         throw new Error('No response from OpenAI');
       }
 
-      const feedback = JSON.parse(response);
+      logger.debug('OpenAI response received', {
+        response: response
+      });
+
+      let feedback;
+      try {
+        feedback = JSON.parse(response);
+      } catch (parseError) {
+        logger.error('Failed to parse OpenAI response as JSON', {
+          error: parseError,
+          response: response.substring(0, 500)
+        });
+        throw new Error('Invalid JSON response from OpenAI');
+      }
+
+      logger.info('Feedback generated', {
+        score: feedback.score,
+        feedbackLength: feedback.feedback?.length || 0,
+        strengthsCount: feedback.strengths?.length || 0,
+        improvementsCount: feedback.improvements?.length || 0
+      });
       
       return {
         feedback: feedback.feedback || 'Good answer!',
@@ -167,29 +205,45 @@ Ensure the JSON is valid and properly formatted.`;
     answer: string,
     jobContext?: string
   ): string {
-    return `
-Analyze this behavioral interview answer and provide constructive feedback:
+    // Ensure answer is properly included and escaped
+    const sanitizedAnswer = answer.trim();
+    const sanitizedQuestion = question.trim();
+    
+    if (!sanitizedAnswer || sanitizedAnswer.length === 0) {
+      throw new Error('Answer cannot be empty when generating feedback');
+    }
 
-Question: ${question}
-Answer: ${answer}
-${jobContext ? `Job Context: ${jobContext}` : ''}
+    return `You are an expert interview coach. Analyze the following behavioral interview answer and provide detailed, specific feedback tailored to the actual content of the answer provided.
 
-Please evaluate the answer based on:
-1. Structure (STAR method usage)
-2. Specificity and detail
-3. Relevance to the question
-4. Professional communication
-5. Demonstration of skills/competencies
+INTERVIEW QUESTION:
+${sanitizedQuestion}
 
-Provide a score from 1-10 and return the response as JSON with this exact format:
+CANDIDATE'S ANSWER:
+${sanitizedAnswer}
+
+${jobContext ? `JOB CONTEXT: ${jobContext}` : ''}
+
+INSTRUCTIONS:
+Carefully read and analyze the candidate's answer above. Your feedback MUST be specific to the content of their answer. Do not provide generic feedback.
+
+Evaluate the answer based on:
+1. Structure (STAR method usage - Situation, Task, Action, Result)
+2. Specificity and detail - Does the answer include concrete examples?
+3. Relevance to the question - Does the answer address what was asked?
+4. Professional communication - Clarity, conciseness, professionalism
+5. Demonstration of skills/competencies - What skills does the answer showcase?
+
+IMPORTANT: Your feedback must reference specific details from the candidate's answer. Mention specific examples, situations, or points they made. Do not provide generic feedback that could apply to any answer.
+
+Return your response as valid JSON with this exact format:
 {
-  "feedback": "Detailed feedback paragraph...",
-  "score": 8,
-  "strengths": ["List of strengths"],
-  "improvements": ["List of areas for improvement"]
+  "feedback": "A detailed paragraph (3-5 sentences) that specifically references content from the candidate's answer. Mention specific examples they provided, what they did well, and what could be improved based on their actual response.",
+  "score": <number between 1-10>,
+  "strengths": ["Specific strength 1 based on their answer", "Specific strength 2 based on their answer", "Specific strength 3 based on their answer"],
+  "improvements": ["Specific improvement 1 based on their answer", "Specific improvement 2 based on their answer"]
 }
 
-Be constructive and encouraging while providing actionable advice.`;
+Be constructive, encouraging, and provide actionable advice that is tailored to their specific answer.`;
   }
 
 }
