@@ -26,7 +26,7 @@ export const authenticateToken: RequestHandler = async (
         savedQuestions: [],
         createdAt: new Date(),
         updatedAt: new Date()
-      } as any;
+      } as unknown;
       
       next();
       return;

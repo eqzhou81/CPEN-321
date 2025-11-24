@@ -23,10 +23,10 @@ export interface SubmitSessionAnswerRequest {
 export interface SessionResponse {
   message: string;
   data?: {
-    session?: ISessionWithQuestions;
+    session?: ISessionWithQuestions | SessionProgress;
     sessions?: ISessionWithQuestions[];
     stats?: SessionStats;
-    currentQuestion?: IQuestion;
+    currentQuestion?: IQuestion | null;
     feedback?: SessionAnswerFeedback;
   };
 }

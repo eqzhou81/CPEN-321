@@ -66,7 +66,7 @@ export interface QuestionResponse {
     technicalQuestions?: IQuestion[];
     total?: number;
     totalQuestions?: number;
-    jobApplication?: any;
+    jobApplication?: unknown;
   };
 }
 

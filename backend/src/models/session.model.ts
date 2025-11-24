@@ -192,7 +192,7 @@ export class SessionModel {
     currentQuestionIndex?: number
   ): Promise<ISession | null> {
     try {
-      const updateData: any = { answeredQuestions };
+      const updateData: unknown = { answeredQuestions };
       
       if (currentQuestionIndex !== undefined) {
         updateData.currentQuestionIndex = currentQuestionIndex;
@@ -289,7 +289,7 @@ export class SessionModel {
     status: SessionStatus
   ): Promise<ISession | null> {
     try {
-      const updateData: any = { status };
+      const updateData: unknown = { status };
       
       if (status === SessionStatus.COMPLETED) {
         updateData.completedAt = new Date();

@@ -25,7 +25,20 @@ export class LeetCodeService {
     // Expecting array-like response; fallback to empty
     if (!Array.isArray(data)) return [];
 
-    const results: ExternalQuestion[] = data.map((item: any) => ({
+    interface LeetCodeAPIResponse {
+      id?: string;
+      slug?: string;
+      title?: string;
+      name?: string;
+      url?: string;
+      link?: string;
+      leetcodeUrl?: string;
+      difficulty?: string;
+      level?: string;
+      tags?: string[];
+      topicTags?: string[];
+    }
+    const results: ExternalQuestion[] = data.map((item: LeetCodeAPIResponse) => ({
       id: item.id ?? item.slug ?? item.title ?? String(Math.random()),
       title: item.title ?? item.name ?? item.slug ?? '',
       url: item.url ?? item.link ?? item.leetcodeUrl ?? item.title ?? '',

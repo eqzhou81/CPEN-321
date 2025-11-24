@@ -1966,6 +1966,8 @@ describe('Job Controller - Unmocked Integration Tests', () => {
 
         for (const jobData of jobsData) {
           await availableJobModel.create(jobData);
+          // Small delay to ensure different timestamps
+          await new Promise(resolve => setTimeout(resolve, 10));
         }
       });
 

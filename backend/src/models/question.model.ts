@@ -133,7 +133,7 @@ export class QuestionModel {
   async createMany(
     userId: mongoose.Types.ObjectId,
     jobId: mongoose.Types.ObjectId,
-    questionsData: any[]
+    questionsData: Omit<CreateQuestionRequest, 'jobId'>[]
   ): Promise<IQuestion[]> {
     try {
       const questions = questionsData.map((data) => ({
@@ -156,7 +156,7 @@ export class QuestionModel {
     type?: QuestionType
   ): Promise<IQuestion[]> {
     try {
-      const query: any = { jobId, userId };
+      const query: unknown = { jobId, userId };
       if (type) {
         query.type = type;
       }
