@@ -159,16 +159,16 @@ export class SessionsController {
       const populatedSession = await sessionModel.findById(session._id, new mongoose.Types.ObjectId(user._id));
 
       // Get the first question for the response
-      let currentQuestion: IQuestion | undefined = undefined;
+      let currentQuestion: IQuestion | undefined;
       if (questionIds.length > 0) {
-        currentQuestion = await questionModel.findById(questionIds[0], new mongoose.Types.ObjectId(user._id)) || undefined;
+        currentQuestion = await questionModel.findById(questionIds[0], new mongoose.Types.ObjectId(user._id)) ?? undefined;
       }
 
       res.status(201).json({
         message: 'Mock interview session created successfully',
         data: {
           session: this.formatSessionResponse(populatedSession),
-          currentQuestion: currentQuestion,
+          currentQuestion,
         },
       });
     } catch (error) {
@@ -339,9 +339,9 @@ export class SessionsController {
 
           feedback = {
             feedback: aiFeedback.feedback || 'Good answer!',
-            score: aiFeedback.score || 7,
-            strengths: aiFeedback.strengths || [],
-            improvements: aiFeedback.improvements || [],
+            score: aiFeedback.score ?? 7,
+            strengths: aiFeedback.strengths ?? [],
+            improvements: aiFeedback.improvements ?? [],
             isLastQuestion: false,
             sessionCompleted: false,
           };

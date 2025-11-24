@@ -116,7 +116,7 @@ export class QuestionModel {
         title: questionData.title.trim(),
         description: questionData.description ? questionData.description.trim() : '',
         difficulty: questionData.difficulty,
-        tags: questionData.tags || [],
+        tags: questionData.tags ?? [],
         externalUrl: questionData.externalUrl,
       });
 

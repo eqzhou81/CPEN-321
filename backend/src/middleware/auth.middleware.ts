@@ -15,9 +15,9 @@ export const authenticateToken: RequestHandler = async (
       
       // Create a mock user object
       req.user = {
-        _id: new mongoose.Types.ObjectId(process.env.MOCK_USER_ID || '507f1f77bcf86cd799439011').toString(),
-        email: process.env.MOCK_USER_EMAIL || 'test@example.com',
-        name: process.env.MOCK_USER_NAME || 'Test User',
+        _id: new mongoose.Types.ObjectId(process.env.MOCK_USER_ID ?? '507f1f77bcf86cd799439011').toString(),
+        email: process.env.MOCK_USER_EMAIL ?? 'test@example.com',
+        name: process.env.MOCK_USER_NAME ?? 'Test User',
         googleId: 'mock-google-id',
         profilePicture: 'https://via.placeholder.com/150',
         bio: 'Test user for local development',
@@ -47,7 +47,7 @@ export const authenticateToken: RequestHandler = async (
       id: mongoose.Types.ObjectId;
     };
 
-    if (!decoded || !decoded.id) {
+    if (!decoded?.id) {
       res.status(401).json({
         error: 'Invalid token',
         message: 'Token verification failed',

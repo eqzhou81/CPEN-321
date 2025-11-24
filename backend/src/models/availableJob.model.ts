@@ -194,7 +194,7 @@ export class AvailableJobModel {
         query.isRemote = searchParams.isRemote;
       }
 
-      const limit = searchParams.limit || 20;
+      const limit = searchParams.limit ?? 20;
       return await this.availableJob.find(query).limit(limit).sort({ createdAt: -1 });
     } catch (error) {
       throw new Error(`Failed to search jobs: ${error}`);
