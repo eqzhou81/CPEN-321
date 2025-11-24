@@ -22,13 +22,13 @@ export async function generateQuestions(jobDescription: string): Promise<Generat
     const openAIResponse = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
-        model: process.env.OPENAI_MODEL || 'gpt-4o',
+        model: process.env.OPENAI_MODEL ?? 'gpt-4o',
         messages: [
           { role: 'system', content: 'You are a helpful assistant for interview preparation. Try to structure the response to be technical and concise.' },
           { role: 'user', content: openAIPrompt },
         ],
-        max_tokens: parseInt(process.env.OPENAI_MAX_TOKENS || '100'),
-        temperature: parseFloat(process.env.OPENAI_TEMPERATURE || '0.5'),
+        max_tokens: parseInt(process.env.OPENAI_MAX_TOKENS ?? '100'),
+        temperature: parseFloat(process.env.OPENAI_TEMPERATURE ?? '0.5'),
       },
       {
         headers: {
@@ -52,7 +52,7 @@ export async function generateQuestions(jobDescription: string): Promise<Generat
 
     // 2. For each type, call LeetCode search API to get questions (no difficulty split)
     const dbResults: GenerateQuestionsResult[] = [];
-    const questionsPerTopic = parseInt(process.env.QUESTIONS_PER_TOPIC || '6');
+    const questionsPerTopic = parseInt(process.env.QUESTIONS_PER_TOPIC ?? '6');
     for (const topic of suggestedTypes) {
       const questions = await leetcodeSearch({ topic, limit: questionsPerTopic });
       dbResults.push({ topic, questions });

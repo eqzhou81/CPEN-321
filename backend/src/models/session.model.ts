@@ -171,7 +171,7 @@ export class SessionModel {
   }
 
   // Get all sessions for a user
-  async findByUserId(userId: mongoose.Types.ObjectId, limit: number = 20): Promise<ISession[]> {
+  async findByUserId(userId: mongoose.Types.ObjectId, limit = 20): Promise<ISession[]> {
     try {
       return await Session.find({ userId })
         .sort({ createdAt: -1 })

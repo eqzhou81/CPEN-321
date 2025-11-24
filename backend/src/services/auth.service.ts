@@ -53,7 +53,7 @@ export class AuthService {
 
       logger.info('🔍 Verifying Google ID token...');
       logger.info('Using CLIENT_ID:', process.env.GOOGLE_CLIENT_ID);
-      logger.info('Using first 30 chars of idToken:', idToken?.slice(0, 30));
+      logger.info('Using first 30 chars of idToken:', idToken.slice(0, 30));
 
       // Check if user already exists
       const existingUser = await userModel.findByGoogleId(

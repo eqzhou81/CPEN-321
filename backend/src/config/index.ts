@@ -18,7 +18,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: [
-      process.env.FRONTEND_URL || 'http://localhost:3001',
+      process.env.FRONTEND_URL ?? 'http://localhost:3001',
       'http://localhost:3000',
       'http://10.0.2.2:8081'
     ],
@@ -35,7 +35,9 @@ io.on('connection', (socket) => {
     socket.join(discussionId);
     console.log(`📥 ${socket.id} joined ${discussionId}`);
   });
-  socket.on('disconnect', () => console.log('🔴 User disconnected:', socket.id));
+  socket.on('disconnect', () => {
+    console.log('🔴 User disconnected.');
+  });
 });
 
 

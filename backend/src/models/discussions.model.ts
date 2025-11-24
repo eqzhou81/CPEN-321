@@ -209,7 +209,7 @@ export const discussionModel = {
   /**
    * Delete discussions by query (for testing cleanup)
    */
-  async deleteMany(query: unknown): Promise<any> {
+  async deleteMany(query: unknown): Promise<unknown> {
     return await Discussion.deleteMany(query).exec();
   },
 

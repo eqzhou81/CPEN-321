@@ -7,7 +7,7 @@ export interface AuthenticateUserRequest {
   idToken: string;
 }
 
-export type AuthenticateUserResponse = {
+export interface AuthenticateUserResponse {
   message: string;
   data?: AuthResult;
 };
@@ -20,7 +20,7 @@ export const authenticateUserSchema = z.object({
 
 // Generic types
 // ------------------------------------------------------------
-export type AuthResult = {
+export interface AuthResult {
   token: string;
   user: IUser;
 };

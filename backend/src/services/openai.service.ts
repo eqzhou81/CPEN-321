@@ -18,7 +18,7 @@ class OpenAIService {
     }
 
     this.openai = new OpenAI({
-      apiKey: apiKey,
+      apiKey,
     });
   }
 
@@ -35,7 +35,7 @@ class OpenAIService {
 
   async generateBehavioralQuestions(
   jobApplication: IJobApplication,
-  count: number = 10
+  count = 10
 ): Promise<OpenAIBehavioralQuestion[]> {
   try {
     const title = this.sanitizeText(jobApplication.title);
@@ -91,9 +91,9 @@ class OpenAIService {
     
     const questions = JSON.parse(content) as OpenAIQuestionResponse[];
     return questions.map((q: OpenAIQuestionResponse): OpenAIBehavioralQuestion => ({
-      question: q.question || q.title || '',
-      context: q.context || '',
-      tips: q.tips || []
+      question: (q.question ?? q.title) || '',
+      context: q.context ?? '',
+      tips: q.tips ?? []
     }));
   } catch (error) {
     logger.error('Error generating behavioral questions:', error);
@@ -158,8 +158,8 @@ Generate ${count} behavioral interview questions for the following job position:
 Job Title: ${jobApplication.title}
 Company: ${jobApplication.company}
 Job Description: ${jobApplication.description}
-Required Skills: ${jobApplication.skills?.join(', ') || 'Not specified'}
-Experience Level: ${jobApplication.experienceLevel || 'Not specified'}
+    Required Skills: ${jobApplication.skills?.join(', ') || 'Not specified'}
+    Experience Level: ${jobApplication.experienceLevel || 'Not specified'}
 
 Please create questions that are:
 1. Relevant to the job role and industry
