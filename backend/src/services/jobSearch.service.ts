@@ -16,6 +16,17 @@ import {
 import { LocationUtils } from '../utils/location.util';
 import logger from '../utils/logger.util';
 
+// Interface for raw scraped job data
+interface RawScrapedJob {
+  title: string;
+  company: string;
+  description: string;
+  location: string;
+  url: string;
+  salary?: string;
+  postedDate?: string | Date;
+}
+
 export class JobSearchService {
   private readonly scraperConfigs: Record<string, IScraperConfig> = {
     indeed: {
@@ -162,7 +173,7 @@ export class JobSearchService {
    * Search for similar jobs based on a job application
    */
   async searchSimilarJobs(
-    jobApplication: unknown,
+    jobApplication: IJobApplication,
     searchParams: Partial<IJobSearchParams> = {}
   ): Promise<ISimilarJob[]> {
     try {
@@ -180,9 +191,9 @@ export class JobSearchService {
 
       // Search multiple job sites in parallel with timeout
       const searchPromises = Object.keys(this.scraperConfigs).map(source =>
-        Promise.race([
+        Promise.race<IScraperResult>([
           this.scrapeJobSite(source, params),
-          new Promise((_, reject) => 
+          new Promise<IScraperResult>((_, reject) =>
             setTimeout(() => { reject(new Error(`Timeout for ${source}`)); }, 30000) // 30 second timeout
           )
         ])
@@ -194,8 +205,8 @@ export class JobSearchService {
       let allJobs: ISimilarJob[] = [];
       
       results.forEach((result, index) => {
-        if (result.status === 'fulfilled' && (result.value as unknown).jobs) {
-          allJobs = allJobs.concat((result.value as unknown).jobs);
+        if (result.status === 'fulfilled' && result.value.jobs) {
+          allJobs = allJobs.concat(result.value.jobs);
         } else {
           logger.warn(`Failed to scrape ${Object.keys(this.scraperConfigs)[index]}:`, result);
         }
@@ -251,7 +262,8 @@ export class JobSearchService {
             setTimeout(() => { reject(new Error(`${source.name} timeout`)); }, 15000) // 15 second timeout per source
           )
         ]).catch((error: unknown) => {
-          logger.warn(`Failed to scrape from ${source.name}: ${error.message}`);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          logger.warn(`Failed to scrape from ${source.name}: ${errorMessage}`);
           return [];
         })
       );
@@ -293,7 +305,7 @@ export class JobSearchService {
   /**
    * Extract search keywords from a job for finding similar positions
    */
-  private extractSearchKeywords(job: unknown): string[] {
+  private extractSearchKeywords(job: IJobApplication): string[] {
     const keywords: string[] = [];
     
     // Extract from title
@@ -416,7 +428,7 @@ export class JobSearchService {
           return jobs;
         });
         
-        jobs.push(...jobData.map(job => ({ ...job, score: 0 })));
+        jobs.push(...jobData.map(job => ({ ...job, score: 0, source: 'indeed' as const })));
         logger.info(`Scraped ${jobs.length} jobs from Indeed`);
         
       } catch (pageError) {
@@ -491,7 +503,7 @@ export class JobSearchService {
           return jobs;
         });
         
-        jobs.push(...jobData.map(job => ({ ...job, score: 0 })));
+        jobs.push(...jobData.map(job => ({ ...job, score: 0, source: 'linkedin' as const })));
         logger.info(`Scraped ${jobs.length} jobs from LinkedIn`);
         
       } catch (pageError) {
@@ -566,7 +578,7 @@ export class JobSearchService {
           return jobs;
         });
         
-        jobs.push(...jobData.map(job => ({ ...job, score: 0 })));
+        jobs.push(...jobData.map(job => ({ ...job, score: 0, source: 'glassdoor' as const })));
         logger.info(`Scraped ${jobs.length} jobs from Glassdoor`);
         
       } catch (pageError) {
@@ -739,8 +751,13 @@ export class JobSearchService {
           return jobs;
         });
         
-        jobs.push(...jobData.map(job => ({ ...job, score: 0 })));
-        
+        jobs.push(...jobData.map(job => ({
+          ...job,
+          score: 0,
+          source: 'ziprecruiter' as const,
+          postedDate: new Date(job.postedDate)
+        })));
+
       } catch (pageError) {
         logger.warn('Wellfound page scraping failed:', pageError instanceof Error ? pageError.message : String(pageError));
       } finally {
@@ -823,7 +840,12 @@ export class JobSearchService {
                 return jobs;
               }, searchQuery);
               
-              jobs.push(...jobData.map(job => ({ ...job, score: 0 })));
+              jobs.push(...jobData.map(job => ({
+          ...job,
+          score: 0,
+          source: 'ziprecruiter' as const,
+          postedDate: new Date(job.postedDate)
+        })));
               break; // Found jobs, no need to try other URLs
               
             } catch (urlError) {
@@ -905,7 +927,7 @@ export class JobSearchService {
   /**
    * Get job by ID (helper method)
    */
-  private async getJobById(jobId: string, userId: string): Promise<unknown> {
+  private async getJobById(jobId: string, userId: string): Promise<IJobApplication | null> {
     try {
       const { jobApplicationModel } = await import('../models/jobApplication.model');
       return await jobApplicationModel.findById(new mongoose.Types.ObjectId(jobId), new mongoose.Types.ObjectId(userId));
@@ -920,7 +942,7 @@ export class JobSearchService {
    * This searches the pre-populated Amazon/Microsoft Vancouver jobs
    */
   async findSimilarJobsFromDatabase(
-    jobApplication: IJobApplication | Partial<IJobApplication>,
+    jobApplication: IJobApplication,
     limit: number = 5
   ): Promise<ISimilarJob[]> {
     try {
@@ -959,7 +981,7 @@ export class JobSearchService {
    * Calculate similarity score between two job applications
    * Uses weighted criteria for manual similarity calculation
    */
-  private calculateJobSimilarity(job1: unknown, job2: any): number {
+  private calculateJobSimilarity(job1: IJobApplication, job2: IAvailableJob): number {
     const weights = {
       title: 0.4,      // 40% - Job title similarity
       company: 0.2,    // 20% - Company similarity  
@@ -983,11 +1005,11 @@ export class JobSearchService {
     totalScore += descriptionScore * weights.description;
     
     // Location similarity
-    const locationScore = this.compareLocations(job1.location, job2.location);
+    const locationScore = this.compareLocations(job1.location ?? '', job2.jobLocation ?? '');
     totalScore += locationScore * weights.location;
-    
+
     // Skills similarity (if available)
-    const skillsScore = this.compareSkills(job1.skills, job2.skills);
+    const skillsScore = this.compareSkills(job1.skills ?? [], job2.skills ?? []);
     totalScore += skillsScore * weights.skills;
     
     return Math.min(totalScore, 1.0); // Cap at 1.0
@@ -1085,7 +1107,7 @@ export class JobSearchService {
             source: string;
           }
           const jobCards = document.querySelectorAll(selectors.jobCard);
-          const jobs: unknown[] = [];
+          const jobs: RawJobData[] = [];
           
           jobCards.forEach((card: Element) => {
             try {
@@ -1108,7 +1130,7 @@ export class JobSearchService {
               const postedEl = selectors.postedDate ? findElement(selectors.postedDate) : null;
               
               if (titleEl && companyEl) {
-                const job: unknown = {
+                const job: RawJobData = {
                   title: (titleEl.textContent ?? '').trim(),
                   company: (companyEl.textContent ?? '').trim(),
                   location: (locationEl?.textContent ?? '').trim(),
@@ -1118,12 +1140,12 @@ export class JobSearchService {
                   postedDate: postedEl?.textContent?.trim(),
                   source
                 };
-                
+
                 // Make URL absolute if it's relative
                 if (job.url && !job.url.startsWith('http')) {
                   job.url = new URL(job.url, window.location.origin).href;
                 }
-                
+
                 jobs.push(job);
               } else if (source === 'amazon') {
                 // For Amazon, try a more flexible approach - assume it's Amazon if no company found
@@ -1171,8 +1193,11 @@ export class JobSearchService {
           source: string;
         }
         const processedJobs = jobList
-          .filter((job: unknown) => job.title && job.company)
-          .map((job: unknown) => this.processJobData(job, source));
+          .filter((job: unknown): job is RawScrapedJob => {
+            const j = job as Partial<RawScrapedJob>;
+            return !!(j.title && j.company);
+          })
+          .map((job) => this.processJobData(job, source));
         
         logger.info(`Scraped ${processedJobs.length} jobs from ${source}`);
         
@@ -1243,7 +1268,7 @@ export class JobSearchService {
   /**
    * Process raw job data from scraping
    */
-  private processJobData(rawJob: unknown, source: string): ISimilarJob {
+  private processJobData(rawJob: RawScrapedJob, source: string): ISimilarJob {
     return {
       title: rawJob.title,
       company: rawJob.company,
@@ -1253,7 +1278,7 @@ export class JobSearchService {
       salary: rawJob.salary,
       jobType: this.extractJobType(rawJob.title, rawJob.description),
       experienceLevel: this.extractExperienceLevel(rawJob.title, rawJob.description),
-      source: source as unknown,
+      source: source as ISimilarJob['source'],
       postedDate: rawJob.postedDate ? new Date(rawJob.postedDate) : undefined
     };
   }
@@ -1307,8 +1332,8 @@ export class JobSearchService {
    * Calculate similarity scores for jobs
    */
   private async calculateSimilarityScores(
-    jobs: ISimilarJob[], 
-    originalJob: unknown
+    jobs: ISimilarJob[],
+    originalJob: IJobApplication
   ): Promise<IJobSimilarityScore[]> {
     const scoredJobs: IJobSimilarityScore[] = [];
     
@@ -1699,13 +1724,13 @@ export class JobSearchService {
   /**
    * Fetch candidate jobs from database using smart search strategy
    */
-  private async fetchCandidateJobs(jobApplication: unknown): Promise<any[]> {
+  private async fetchCandidateJobs(jobApplication: IJobApplication): Promise<IAvailableJob[]> {
     const searches = [];
     
     // Extract search terms
     const titleKeywords = this.extractMainKeywords(jobApplication.title);
     const companyName = this.normalizeCompanyName(jobApplication.company);
-    const location = this.normalizeLocation(jobApplication.jobLocation || jobApplication.location);
+    const location = this.normalizeLocation(jobApplication.location || '');
     
     // Strategy 1: Search by job title keywords
     if (titleKeywords) {
@@ -1743,7 +1768,7 @@ export class JobSearchService {
   /**
    * Convert database job to ISimilarJob format
    */
-  private convertToSimilarJob(job: unknown): ISimilarJob {
+  private convertToSimilarJob(job: IAvailableJob): ISimilarJob {
     return {
       title: job.title,
       company: job.company,

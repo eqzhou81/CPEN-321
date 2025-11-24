@@ -14,9 +14,18 @@ const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
 (global as any).beforeAll(async () => {
   console.log('🔧 Unmocked test setup - mongoose type:', typeof mongoose.connect);
   console.log('🔧 Unmocked test setup - connection type:', typeof mongoose.connection.collection);
-  
+
   if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(uri);
+    try {
+      await mongoose.connect(uri, {
+        serverSelectionTimeoutMS: 5000, // Timeout after 5s
+        socketTimeoutMS: 45000,
+      });
+      console.log('✅ Test database connected');
+    } catch (error) {
+      console.error('❌ Test database connection failed:', error);
+      throw error;
+    }
   }
 });
 

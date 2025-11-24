@@ -156,7 +156,7 @@ export class QuestionModel {
     type?: QuestionType
   ): Promise<IQuestion[]> {
     try {
-      const query: unknown = { jobId, userId };
+      const query: Record<string, unknown> = { jobId, userId };
       if (type) {
         query.type = type;
       }

@@ -2,6 +2,7 @@ import { NextFunction, Request, RequestHandler, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { userModel } from '../models/user.model';
+import { IUser } from '../types/users.types';
 
 export const authenticateToken: RequestHandler = async (
   req: Request,
@@ -20,13 +21,11 @@ export const authenticateToken: RequestHandler = async (
         name: process.env.MOCK_USER_NAME ?? 'Test User',
         googleId: 'mock-google-id',
         profilePicture: 'https://via.placeholder.com/150',
-        bio: 'Test user for local development',
-        hobbies: ['coding', 'testing'],
         savedJobs: [],
         savedQuestions: [],
         createdAt: new Date(),
         updatedAt: new Date()
-      } as unknown;
+      } as unknown as IUser;
       
       next();
       return;

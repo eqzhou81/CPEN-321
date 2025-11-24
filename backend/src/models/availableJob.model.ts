@@ -165,7 +165,7 @@ export class AvailableJobModel {
     limit?: number;
   }): Promise<IAvailableJob[]> {
     try {
-      const query: unknown = {};
+      const query: Record<string, unknown> = {};
 
       if (searchParams.title) {
         query.$or = [
@@ -195,7 +195,8 @@ export class AvailableJobModel {
       }
 
       const limit = searchParams.limit ?? 20;
-      return await this.availableJob.find(query).limit(limit).sort({ createdAt: -1 });
+      const results = await this.availableJob.find(query).limit(limit).sort({ createdAt: -1 });
+      return results as IAvailableJob[];
     } catch (error) {
       throw new Error(`Failed to search jobs: ${error}`);
     }
