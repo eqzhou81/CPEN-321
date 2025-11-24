@@ -144,15 +144,17 @@ export class DiscussionsController {
     // ✅ Validate input safely with Zod schema
     try {
       createDiscussionSchema.parse({ topic, description });
-    } catch (validationError: any) {
+    } catch (validationError: unknown) {
       console.error("❌ Validation failed:", validationError);
 
       // ✅ Defensive parsing of Zod errors
-      const firstError = validationError.issues?.[0];
+      const zodError = validationError as { issues?: { message?: string }[] };
+      const firstError = zodError.issues?.[0];
 
-      const errorMessage = firstError?.message;
+      const errorMessage = firstError?.message ?? 'Validation error';
 
       // ✅ Custom, readable error messages
+      // errorMessage is always a string (either firstError?.message or 'Validation error')
       if (errorMessage.includes("required") || !topic?.trim()) {
         return res.status(400).json({
           success: false,
@@ -219,8 +221,6 @@ export class DiscussionsController {
 
       // Continue with successful response - this is key!
     }
-
-    console.log("   discussion._id.toString():", discussion._id?.toString());
 
     const response: CreateDiscussionResponse = {
       success: true,

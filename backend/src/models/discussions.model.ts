@@ -121,13 +121,13 @@ export const discussionModel = {
     limit = 20,
     skip = 0
   ): Promise<IDiscussion[]> {
-    const query: any = {};
+    const query: unknown = {};
 
     if (search) {
-      query.$text = { $search: search };
+      (query as { $text?: { $search: string } }).$text = { $search: search };
     }
 
-    const sort: any = sortBy === 'popular' 
+    const sort: unknown = sortBy === 'popular' 
       ? { messageCount: -1, lastActivityAt: -1 }
       : { lastActivityAt: -1 };
 
@@ -192,7 +192,7 @@ export const discussionModel = {
    * Get total count of discussions
    */
   async count(search?: string): Promise<number> {
-    const query: any = {};
+    const query: { $text?: { $search: string } } = {};
     if (search) {
       query.$text = { $search: search };
     }
@@ -209,7 +209,7 @@ export const discussionModel = {
   /**
    * Delete discussions by query (for testing cleanup)
    */
-  async deleteMany(query: any): Promise<any> {
+  async deleteMany(query: unknown): Promise<any> {
     return await Discussion.deleteMany(query).exec();
   },
 

@@ -102,7 +102,7 @@ export class JobApplicationModel {
 
   async create(
     userId: mongoose.Types.ObjectId,
-    jobData: any
+    jobData: unknown
   ): Promise<IJobApplication> {
     try {
       const validatedData = createJobApplicationSchema.parse(jobData);
@@ -164,7 +164,7 @@ export class JobApplicationModel {
   async update(
     jobId: mongoose.Types.ObjectId,
     userId: mongoose.Types.ObjectId,
-    updateData: any
+    updateData: unknown
   ): Promise<IJobApplication | null> {
     try {
       const validatedData = updateJobApplicationSchema.parse(updateData);

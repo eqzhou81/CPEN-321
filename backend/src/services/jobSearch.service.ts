@@ -4,8 +4,9 @@ import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 import * as cheerio from 'cheerio';
-import { availableJobModel } from '../models/availableJob.model';
+import { availableJobModel, IAvailableJob } from '../models/availableJob.model';
 import {
+  IJobApplication,
   IJobSearchParams,
   IJobSimilarityScore,
   IScraperConfig,
@@ -161,7 +162,7 @@ export class JobSearchService {
    * Search for similar jobs based on a job application
    */
   async searchSimilarJobs(
-    jobApplication: any,
+    jobApplication: unknown,
     searchParams: Partial<IJobSearchParams> = {}
   ): Promise<ISimilarJob[]> {
     try {
@@ -193,8 +194,8 @@ export class JobSearchService {
       let allJobs: ISimilarJob[] = [];
       
       results.forEach((result, index) => {
-        if (result.status === 'fulfilled' && (result.value as any).jobs) {
-          allJobs = allJobs.concat((result.value as any).jobs);
+        if (result.status === 'fulfilled' && (result.value as unknown).jobs) {
+          allJobs = allJobs.concat((result.value as unknown).jobs);
         } else {
           logger.warn(`Failed to scrape ${Object.keys(this.scraperConfigs)[index]}:`, result);
         }
@@ -292,7 +293,7 @@ export class JobSearchService {
   /**
    * Extract search keywords from a job for finding similar positions
    */
-  private extractSearchKeywords(job: any): string[] {
+  private extractSearchKeywords(job: unknown): string[] {
     const keywords: string[] = [];
     
     // Extract from title
@@ -379,7 +380,17 @@ export class JobSearchService {
         });
         
         const jobData = await page.evaluate(() => {
-          const jobs: any[] = [];
+          interface RawJobData {
+            title: string;
+            company: string;
+            location: string;
+            description: string;
+            url: string;
+            salary: string;
+            postedDate: Date;
+            source: string;
+          }
+          const jobs: RawJobData[] = [];
           const jobCards = document.querySelectorAll('[data-jk], .job_seen_beacon, .jobsearch-SerpJobCard');
           
           for (const card of Array.from(jobCards).slice(0, 5)) {
@@ -444,7 +455,17 @@ export class JobSearchService {
         });
         
         const jobData = await page.evaluate(() => {
-          const jobs: any[] = [];
+          interface RawJobData {
+            title: string;
+            company: string;
+            location: string;
+            description: string;
+            url: string;
+            salary: string;
+            postedDate: Date;
+            source: string;
+          }
+          const jobs: RawJobData[] = [];
           const jobCards = document.querySelectorAll('.jobs-search-results__list-item, .job-search-card, [data-job-id]');
           
           for (const card of Array.from(jobCards).slice(0, 5)) {
@@ -509,7 +530,17 @@ export class JobSearchService {
         });
         
         const jobData = await page.evaluate(() => {
-          const jobs: any[] = [];
+          interface RawJobData {
+            title: string;
+            company: string;
+            location: string;
+            description: string;
+            url: string;
+            salary: string;
+            postedDate: Date;
+            source: string;
+          }
+          const jobs: RawJobData[] = [];
           const jobCards = document.querySelectorAll('[data-test="job-listing"], .jobContainer, .jobListing');
           
           for (const card of Array.from(jobCards).slice(0, 5)) {
@@ -672,7 +703,17 @@ export class JobSearchService {
         });
         
         const jobData = await page.evaluate(() => {
-          const jobs: any[] = [];
+          interface RawJobData {
+            title: string;
+            company: string;
+            location: string;
+            description: string;
+            url: string;
+            salary: string;
+            postedDate: string;
+            source: string;
+          }
+          const jobs: RawJobData[] = [];
           const jobCards = document.querySelectorAll('[data-test="JobCard"], .job-card, .job-listing');
           
           for (const card of Array.from(jobCards).slice(0, 5)) {
@@ -746,8 +787,18 @@ export class JobSearchService {
             try {
               await page.goto(url, { waitUntil: 'networkidle2', timeout: 5000 });
               
-              const jobData = await page.evaluate((query) => {
-                const jobs: any[] = [];
+              const jobData = await page.evaluate((query: string) => {
+                interface RawJobData {
+                  title: string;
+                  company: string;
+                  location: string;
+                  description: string;
+                  url: string;
+                  salary: string;
+                  postedDate: string;
+                  source: string;
+                }
+                const jobs: RawJobData[] = [];
                 const jobElements = document.querySelectorAll('.job, .position, .opening, [data-job]');
                 
                 for (const element of Array.from(jobElements).slice(0, 3)) {
@@ -854,7 +905,7 @@ export class JobSearchService {
   /**
    * Get job by ID (helper method)
    */
-  private async getJobById(jobId: string, userId: string): Promise<any> {
+  private async getJobById(jobId: string, userId: string): Promise<unknown> {
     try {
       const { jobApplicationModel } = await import('../models/jobApplication.model');
       return await jobApplicationModel.findById(new mongoose.Types.ObjectId(jobId), new mongoose.Types.ObjectId(userId));
@@ -869,7 +920,7 @@ export class JobSearchService {
    * This searches the pre-populated Amazon/Microsoft Vancouver jobs
    */
   async findSimilarJobsFromDatabase(
-    jobApplication: any,
+    jobApplication: IJobApplication | Partial<IJobApplication>,
     limit: number = 5
   ): Promise<ISimilarJob[]> {
     try {
@@ -908,7 +959,7 @@ export class JobSearchService {
    * Calculate similarity score between two job applications
    * Uses weighted criteria for manual similarity calculation
    */
-  private calculateJobSimilarity(job1: any, job2: any): number {
+  private calculateJobSimilarity(job1: unknown, job2: any): number {
     const weights = {
       title: 0.4,      // 40% - Job title similarity
       company: 0.2,    // 20% - Company similarity  
@@ -1022,9 +1073,19 @@ export class JobSearchService {
         }
         
         // Extract job data
-        const jobs = await page.evaluate((selectors, source) => {
+        const jobs = await page.evaluate((selectors: IScraperConfig['selectors'], source: string) => {
+          interface RawJobData {
+            title: string;
+            company: string;
+            location: string;
+            description: string;
+            url: string;
+            salary?: string;
+            postedDate?: string;
+            source: string;
+          }
           const jobCards = document.querySelectorAll(selectors.jobCard);
-          const jobs: any[] = [];
+          const jobs: unknown[] = [];
           
           jobCards.forEach((card: Element) => {
             try {
@@ -1047,7 +1108,7 @@ export class JobSearchService {
               const postedEl = selectors.postedDate ? findElement(selectors.postedDate) : null;
               
               if (titleEl && companyEl) {
-                const job: any = {
+                const job: unknown = {
                   title: (titleEl.textContent || '').trim(),
                   company: (companyEl.textContent || '').trim(),
                   location: (locationEl?.textContent || '').trim(),
@@ -1067,7 +1128,7 @@ export class JobSearchService {
               } else if (source === 'amazon') {
                 // For Amazon, try a more flexible approach - assume it's Amazon if no company found
                 if (titleEl && titleEl.textContent?.trim()) {
-                  const job: any = {
+                  const job: RawJobData = {
                     title: (titleEl.textContent || '').trim(),
                     company: 'Amazon', // Default to Amazon since we're on amazon.jobs
                     location: (locationEl?.textContent || '').trim(),
@@ -1099,9 +1160,19 @@ export class JobSearchService {
         await browser.close();
         
         // Process and validate jobs
+        interface RawJobData {
+          title: string;
+          company: string;
+          location?: string;
+          description?: string;
+          url?: string;
+          salary?: string;
+          postedDate?: string;
+          source: string;
+        }
         const processedJobs = jobList
-          .filter((job: any) => job.title && job.company)
-          .map((job: any) => this.processJobData(job, source));
+          .filter((job: unknown) => job.title && job.company)
+          .map((job: unknown) => this.processJobData(job, source));
         
         logger.info(`Scraped ${processedJobs.length} jobs from ${source}`);
         
@@ -1172,7 +1243,7 @@ export class JobSearchService {
   /**
    * Process raw job data from scraping
    */
-  private processJobData(rawJob: any, source: string): ISimilarJob {
+  private processJobData(rawJob: unknown, source: string): ISimilarJob {
     return {
       title: rawJob.title,
       company: rawJob.company,
@@ -1182,7 +1253,7 @@ export class JobSearchService {
       salary: rawJob.salary,
       jobType: this.extractJobType(rawJob.title, rawJob.description),
       experienceLevel: this.extractExperienceLevel(rawJob.title, rawJob.description),
-      source: source as any,
+      source: source as unknown,
       postedDate: rawJob.postedDate ? new Date(rawJob.postedDate) : undefined
     };
   }
@@ -1237,7 +1308,7 @@ export class JobSearchService {
    */
   private async calculateSimilarityScores(
     jobs: ISimilarJob[], 
-    originalJob: any
+    originalJob: unknown
   ): Promise<IJobSimilarityScore[]> {
     const scoredJobs: IJobSimilarityScore[] = [];
     
@@ -1352,7 +1423,7 @@ export class JobSearchService {
   /**
    * Scrape job details from a specific URL
    */
-  async scrapeJobDetails(url: string): Promise<any> {
+  async scrapeJobDetails(url: string): Promise<unknown> {
   try {
     // ===== SANITIZE URL =====
     logger.info(`[DEBUG] Raw URL: "${url}"`);
@@ -1495,9 +1566,10 @@ export class JobSearchService {
     logger.info('Successfully scraped:', { title: result.title, company: result.company });
     return result;
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error scraping job details:', error);
-    throw new Error(`Scraping failed: ${error.message}`);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Scraping failed: ${errorMessage}`);
   }
 }
 
@@ -1523,7 +1595,14 @@ export class JobSearchService {
       await page.goto(url, { waitUntil: 'networkidle2', timeout: 10000 });
       
       const stackJobs = await page.evaluate(() => {
-        const jobs: any[] = [];
+        interface RawStackJob {
+          title: string;
+          company: string;
+          location: string;
+          description: string;
+          url: string;
+        }
+        const jobs: RawStackJob[] = [];
         const jobElements = document.querySelectorAll('.job-summary');
         
         for (let i = 0; i < Math.min(jobElements.length, 10); i++) {
@@ -1620,7 +1699,7 @@ export class JobSearchService {
   /**
    * Fetch candidate jobs from database using smart search strategy
    */
-  private async fetchCandidateJobs(jobApplication: any): Promise<any[]> {
+  private async fetchCandidateJobs(jobApplication: unknown): Promise<any[]> {
     const searches = [];
     
     // Extract search terms
@@ -1664,7 +1743,7 @@ export class JobSearchService {
   /**
    * Convert database job to ISimilarJob format
    */
-  private convertToSimilarJob(job: any): ISimilarJob {
+  private convertToSimilarJob(job: unknown): ISimilarJob {
     return {
       title: job.title,
       company: job.company,

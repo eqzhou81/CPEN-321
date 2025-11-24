@@ -3,13 +3,14 @@ import mongoose from 'mongoose';
 
 import { jobApplicationModel } from '../models/jobApplication.model';
 import { questionModel } from '../models/question.model';
-import { sessionModel, SessionStatus } from '../models/session.model';
+import { ISession, sessionModel, SessionStatus } from '../models/session.model';
 import { openaiService } from '../services/openai.service';
 import { IQuestion, QuestionStatus, QuestionType } from '../types/questions.types';
 import {
   CreateSessionRequest,
   ISessionWithQuestions,
   SessionAnswerFeedback,
+  SessionProgress,
   SessionResponse,
   SubmitSessionAnswerRequest,
   UpdateSessionStatusRequest,
@@ -17,14 +18,15 @@ import {
 import logger from '../utils/logger.util';
 
 export class SessionsController {
-  private formatSessionResponse(session: any): ISessionWithQuestions {
+  private formatSessionResponse(session: unknown): ISessionWithQuestions {
+    const s = session as ISession & { questionIds: IQuestion[] };
     return {
-      ...session.toObject(),
-      progressPercentage: Math.round((session.answeredQuestions / session.totalQuestions) * 100),
-      currentQuestion: session.currentQuestionIndex < session.questionIds.length 
-        ? session.questionIds[session.currentQuestionIndex] 
+      ...s.toObject(),
+      progressPercentage: Math.round((s.answeredQuestions / s.totalQuestions) * 100),
+      currentQuestion: s.currentQuestionIndex < s.questionIds.length 
+        ? s.questionIds[s.currentQuestionIndex] 
         : null,
-      remainingQuestions: session.totalQuestions - session.answeredQuestions,
+      remainingQuestions: s.totalQuestions - s.answeredQuestions,
     };
   }
   async createSession(
@@ -207,7 +209,7 @@ export class SessionsController {
         message: 'Session retrieved successfully',
         data: {
           session: this.formatSessionResponse(session),
-          currentQuestion: currentQuestion as any,
+          currentQuestion: currentQuestion ? (currentQuestion as unknown as IQuestion) : null,
         },
       });
     } catch (error) {
@@ -299,14 +301,17 @@ export class SessionsController {
         });
       }
 
-      const questionInSession = session.questionIds.some((q: any) => 
-        q._id.toString() === questionId
-      );
+      const questionInSession = session.questionIds.some((q: unknown) => {
+        const question = q as { _id?: { toString: () => string } } | null;
+        return question?._id?.toString() === questionId;
+      });
       
       if (!questionInSession) {
         logger.error('Question verification failed:', {
           questionId,
-          sessionQuestionIds: session.questionIds.map((q: any) => q._id.toString())
+          sessionQuestionIds: session.questionIds.map(q =>
+            q._id.toString()
+          ),
         });
         return res.status(400).json({
           message: 'Question does not belong to this session',
@@ -512,7 +517,7 @@ export class SessionsController {
         message: 'Navigation successful',
         data: {
           session: this.formatSessionResponse(session),
-          currentQuestion: currentQuestion as any,
+          currentQuestion: currentQuestion ? (currentQuestion as unknown as IQuestion) : null,
         },
       });
     } catch (error) {
@@ -566,7 +571,7 @@ export class SessionsController {
       res.status(200).json({
         message: 'Session progress retrieved successfully',
         data: {
-          session: progress as any,
+          session: progress as SessionProgress,
         },
       });
     } catch (error) {

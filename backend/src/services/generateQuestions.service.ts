@@ -61,11 +61,15 @@ export async function generateQuestions(jobDescription: string): Promise<Generat
     // (No additional LeetCode search by difficulty)
 
     return dbResults;
-  } catch (error: any) {
-    console.error('[generateQuestions] Error calling OpenAI API:', error.message);
-    if (error.response) {
-      console.error('[generateQuestions] OpenAI Response Status:', error.response.status);
-      console.error('[generateQuestions] OpenAI Response Data:', JSON.stringify(error.response.data, null, 2));
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[generateQuestions] Error calling OpenAI API:', errorMessage);
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response?: { status?: number; data?: unknown } };
+      if (axiosError.response) {
+        console.error('[generateQuestions] OpenAI Response Status:', axiosError.response.status);
+        console.error('[generateQuestions] OpenAI Response Data:', JSON.stringify(axiosError.response.data, null, 2));
+      }
     }
     throw error;
   }

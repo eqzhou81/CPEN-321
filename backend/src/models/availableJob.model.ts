@@ -133,7 +133,7 @@ export class AvailableJobModel {
 
   async findAll(): Promise<IAvailableJob[]> {
     try {
-      return await this.availableJob.find().sort({ createdAt: -1 });
+      return await this.availableJob.find().sort({ createdAt: -1, _id: -1 });
     } catch (error) {
       throw new Error(`Failed to find all jobs: ${error}`);
     }
@@ -165,7 +165,7 @@ export class AvailableJobModel {
     limit?: number;
   }): Promise<IAvailableJob[]> {
     try {
-      const query: any = {};
+      const query: unknown = {};
 
       if (searchParams.title) {
         query.$or = [

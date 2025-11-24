@@ -74,10 +74,23 @@ class OpenAIService {
     );
 
     const content = response.data.choices[0]?.message?.content;
-    if (!content) throw new Error('No response from OpenAI');
+    if (!content) {
+      throw new Error('No response from OpenAI');
+    }
+    
+    if (typeof content !== 'string') {
+      throw new Error('Invalid response format from OpenAI');
+    }
 
-    const questions = JSON.parse(content);
-    return questions.map((q: any) => ({
+    interface OpenAIQuestionResponse {
+      question?: string;
+      title?: string;
+      context?: string;
+      tips?: string[];
+    }
+    
+    const questions = JSON.parse(content) as OpenAIQuestionResponse[];
+    return questions.map((q: OpenAIQuestionResponse): OpenAIBehavioralQuestion => ({
       question: q.question || q.title || '',
       context: q.context || '',
       tips: q.tips || []
@@ -115,6 +128,10 @@ class OpenAIService {
       const response = completion.choices[0]?.message?.content;
       if (!response) {
         throw new Error('No response from OpenAI');
+      }
+      
+      if (typeof response !== 'string') {
+        throw new Error('Invalid response format from OpenAI');
       }
 
       const feedback = JSON.parse(response);
