@@ -268,26 +268,36 @@ private fun parseJobText(text: String): CreateJobApplicationRequest {
     // Try to find title and company using common patterns
     var title = "New Position"
     var company = "Company Name"
-    
+
+    fun isValidJobTitle(line: String): Boolean {
+        val hasValidLength = line.length in 6..99
+        val containsJobKeyword = line.contains("Engineer") || line.contains("Developer") ||
+             line.contains("Manager") || line.contains("Analyst") ||
+             line.contains("Designer") || line.contains("Specialist") ||
+             line.contains("Coordinator") || line.contains("Director")
+        return hasValidLength && containsJobKeyword
+    }
+
+    fun isValidCompanyName(line: String): Boolean {
+        val hasValidLength = line.length in 3..49
+        val noEmailOrUrl = !line.contains("@") && !line.contains("http")
+        val noJobDescriptionKeywords = !line.contains("Salary") && !line.contains("Location") &&
+            !line.contains("Requirements") && !line.contains("Responsibilities")
+        return hasValidLength && noEmailOrUrl && noJobDescriptionKeywords
+    }
+
     // Look for common patterns
     for (i in 0 until minOf(lines.size, 10)) {
         val line = lines[i].trim()
-        
+
         // Look for job title patterns
-        if (line.length > 5 && line.length < 100 && 
-            (line.contains("Engineer") || line.contains("Developer") || 
-             line.contains("Manager") || line.contains("Analyst") ||
-             line.contains("Designer") || line.contains("Specialist") ||
-             line.contains("Coordinator") || line.contains("Director"))) {
+        if (isValidJobTitle(line)) {
             title = line
             continue
         }
-        
+
         // Look for company patterns
-        if (line.length > 2 && line.length < 50 && 
-            !line.contains("@") && !line.contains("http") &&
-            !line.contains("Salary") && !line.contains("Location") &&
-            !line.contains("Requirements") && !line.contains("Responsibilities")) {
+        if (isValidCompanyName(line)) {
             company = line
             break
         }

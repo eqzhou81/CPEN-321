@@ -28,7 +28,5 @@ interface UserInterface {
     ): Response<DeleteProfileResponse>
 }
 
-interface ImageInterface{}
-
 
 
