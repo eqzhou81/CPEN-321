@@ -205,8 +205,8 @@ export class JobSearchService {
       let allJobs: ISimilarJob[] = [];
       
       results.forEach((result, index) => {
-        if (result.status === 'fulfilled' && result.value.jobs) {
-          allJobs = allJobs.concat(result.value.jobs);
+        if (result.status === 'fulfilled' && (result.value).jobs) {
+          allJobs = allJobs.concat((result.value).jobs);
         } else {
           logger.warn(`Failed to scrape ${Object.keys(this.scraperConfigs)[index]}:`, result);
         }
@@ -488,11 +488,11 @@ export class JobSearchService {
             
             if (titleEl && companyEl) {
               jobs.push({
-                title: titleEl.textContent?.trim() || '',
-                company: companyEl.textContent?.trim() || '',
-                location: locationEl?.textContent?.trim() || 'Not specified',
+                title: titleEl.textContent?.trim() ?? '',
+                company: companyEl.textContent?.trim() ?? '',
+                location: locationEl?.textContent?.trim() ?? 'Not specified',
                 description: '',
-                url: (linkEl as HTMLAnchorElement)?.href || '',
+                url: (linkEl as HTMLAnchorElement).href || '',
                 salary: '',
                 postedDate: new Date(),
                 source: 'linkedin'
@@ -567,7 +567,7 @@ export class JobSearchService {
                 company: companyEl.textContent?.trim() || '',
                 location: locationEl?.textContent?.trim() || 'Not specified',
                 description: '',
-                url: (linkEl as HTMLAnchorElement)?.href || '',
+                url: (linkEl!)?.href || '',
                 salary: '',
                 postedDate: new Date(),
                 source: 'glassdoor'
@@ -827,7 +827,7 @@ export class JobSearchService {
                     jobs.push({
                       title: titleEl.textContent.trim() || '',
                       company: company.charAt(0).toUpperCase() + company.slice(1),
-                      location: locationEl?.textContent?.trim() || 'Remote',
+                      location: locationEl?.textContent?.trim() ?? 'Remote',
                       description: '',
                       url: linkEl?.href ?? url,
                       salary: '',
@@ -943,7 +943,7 @@ export class JobSearchService {
    */
   async findSimilarJobsFromDatabase(
     jobApplication: IJobApplication,
-    limit: number = 5
+    limit = 5
   ): Promise<ISimilarJob[]> {
     try {
       logger.info('Finding similar jobs for:', jobApplication.title);
@@ -1151,14 +1151,14 @@ export class JobSearchService {
                 // For Amazon, try a more flexible approach - assume it's Amazon if no company found
                 if (titleEl?.textContent?.trim()) {
                   const job: RawJobData = {
-                    title: (titleEl.textContent || '').trim(),
+                    title: (titleEl.textContent ?? '').trim(),
                     company: 'Amazon', // Default to Amazon since we're on amazon.jobs
-                    location: (locationEl?.textContent || '').trim(),
-                    description: (descriptionEl?.textContent || '').trim(),
-                    url: urlEl?.getAttribute('href') || '',
+                    location: (locationEl?.textContent ?? '').trim(),
+                    description: (descriptionEl?.textContent ?? '').trim(),
+                    url: urlEl?.getAttribute('href') ?? '',
                     salary: salaryEl?.textContent?.trim(),
                     postedDate: postedEl?.textContent?.trim(),
-                    source: source
+                    source
                   };
                   
                   // Make URL absolute if it's relative
@@ -1871,7 +1871,7 @@ export class JobSearchService {
    * Compare skills arrays
    */
   private compareSkills(skills1: string[], skills2: string[]): number {
-    if (!skills1?.length || !skills2?.length) return 0;
+    if (!skills1.length || !skills2?.length) return 0;
     
     const s1 = new Set(skills1.map(s => s.toLowerCase()));
     const s2 = new Set(skills2.map(s => s.toLowerCase()));

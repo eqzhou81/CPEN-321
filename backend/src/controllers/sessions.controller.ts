@@ -323,11 +323,10 @@ export class SessionsController {
       if (question.type === QuestionType.BEHAVIORAL) {
         try {
           logger.info('Submitting behavioral answer for feedback', {
-            questionId: questionId,
+            questionId,
             questionTitle: question.title,
             answerLength: answer.length,
-            answer: answer
-          });
+            answer          });
 
           const aiFeedback = await openaiService.generateAnswerFeedback(
             question.title,

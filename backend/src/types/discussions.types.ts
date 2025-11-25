@@ -1,4 +1,5 @@
 import { Document } from 'mongoose';
+import { z } from 'zod';
 
 // ==================== DISCUSSION MODEL INTERFACE ====================
 export interface IDiscussion extends Document {
@@ -92,7 +93,6 @@ export interface PostMessageResponse {
 }
 
 // ==================== VALIDATION SCHEMAS ====================
-import { z } from 'zod';
 
 export const createDiscussionSchema = z.object({
   topic: z.string()

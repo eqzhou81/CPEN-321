@@ -39,7 +39,7 @@ io.on('connection', (socket) => {
 });
 
 
-connectDB();
+void connectDB();
 
 // Start BOTH Express + Socket.IO
 server.listen(PORT, () => {

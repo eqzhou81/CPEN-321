@@ -207,7 +207,7 @@ export class JobApplicationModel {
     userId: mongoose.Types.ObjectId,
     searchTerm: string,
     limit = 20,
-    skip: number = 0
+    skip = 0
   ): Promise<{ jobApplications: IJobApplication[]; total: number }> {
     try {
       const searchQuery = {
@@ -234,7 +234,7 @@ export class JobApplicationModel {
   async findByCompany(
     userId: mongoose.Types.ObjectId,
     company: string,
-    limit: number = 20,
+    limit = 20,
     skip: number = 0
   ): Promise<{ jobApplications: IJobApplication[]; total: number }> {
     try {
