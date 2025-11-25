@@ -26,7 +26,10 @@ export class UserController {
   }
 
   getProfile(req: Request, res: Response<{ data: { user: GetProfileResponse } }>) {
-    const user = req.user!;
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: 'User not authenticated' } as never);
+    }
 
     const profileResponse = this.transformUserToResponse(user);
 
@@ -43,7 +46,13 @@ export class UserController {
     next: NextFunction
   ) {
     try {
-      const user = req.user!;
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not authenticated'
+        } as never);
+      }
 
       const updatedUser = await userModel.update(user._id, req.body);
 

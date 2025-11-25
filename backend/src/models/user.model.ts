@@ -206,9 +206,7 @@ class UserModel {
   async findOrCreate(userData: CreateUserInput): Promise<IUser> {
     let user = await this.findByGoogleId(userData.googleId);
 
-    if (!user) {
-      user = await this.create(userData);
-    }
+    user ??= await this.create(userData);
 
     return user;
   }

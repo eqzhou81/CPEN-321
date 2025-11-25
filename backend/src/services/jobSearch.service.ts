@@ -1,8 +1,6 @@
 import mongoose from 'mongoose';
 import axios from 'axios';
 import puppeteer from 'puppeteer';
-import fs from 'fs';
-import path from 'path';
 import * as cheerio from 'cheerio';
 import { availableJobModel, IAvailableJob } from '../models/availableJob.model';
 import {
@@ -567,7 +565,7 @@ export class JobSearchService {
                 company: companyEl.textContent?.trim() || '',
                 location: locationEl?.textContent?.trim() || 'Not specified',
                 description: '',
-                url: (linkEl!)?.href || '',
+                url: (linkEl)?.href || '',
                 salary: '',
                 postedDate: new Date(),
                 source: 'glassdoor'
@@ -740,7 +738,7 @@ export class JobSearchService {
                 company: companyEl.textContent?.trim() || '',
                 location: locationEl?.textContent?.trim() ?? 'Remote',
                 description: '',
-                url: (linkEl as HTMLAnchorElement)?.href || '',
+                url: (linkEl)?.href || '',
                 salary: '',
                 postedDate: new Date().toISOString(),
                 source: 'wellfound'
@@ -1749,7 +1747,7 @@ export class JobSearchService {
     // Strategy 3: Search by location
     if (location) {
       searches.push(
-        availableJobModel.searchJobs({ location: location, limit: 100 })
+        availableJobModel.searchJobs({ location, limit: 100 })
       );
     }
     

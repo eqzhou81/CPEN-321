@@ -23,7 +23,11 @@ export class QuestionsController {
     res: Response<QuestionResponse>
   ) {
     try {
-      const user = req.user!;
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+
       const { jobId, types, count = 10 } = req.body;
 
       if (!jobId) {
@@ -31,7 +35,7 @@ export class QuestionsController {
           message: 'Job ID is required',
         });
       }
-      if (!types || !Array.isArray(types) || types.length === 0) {
+      if (!Array.isArray(types) || types.length === 0) {
         return res.status(400).json({
           message: 'At least one question type is required',
         });

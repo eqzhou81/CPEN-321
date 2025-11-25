@@ -27,6 +27,7 @@ class OpenAIService {
 +   */
   private sanitizeText(text: string | undefined): string {
     if (!text) return '';
+    // eslint-disable-next-line no-control-regex
     return text
       .replace(/[\r\n\t\f\v\u0000-\u001f\u007f-\u009f]/g, ' ')  // Remove all control characters
       .replace(/\s+/g, ' ')  // Collapse multiple spaces
@@ -169,9 +170,9 @@ class OpenAIService {
 
       logger.info('Feedback generated', {
         score: feedback.score,
-        feedbackLength: feedback.feedback?.length || 0,
-        strengthsCount: feedback.strengths?.length || 0,
-        improvementsCount: feedback.improvements?.length || 0
+        feedbackLength: feedback.feedback?.length ?? 0,
+        strengthsCount: feedback.strengths?.length ?? 0,
+        improvementsCount: feedback.improvements?.length ?? 0
       });
       
       return {

@@ -20,11 +20,14 @@ import logger from '../utils/logger.util';
 export class SessionsController {
   private formatSessionResponse(session: unknown): ISessionWithQuestions {
     const s = session as ISession & { questionIds: IQuestion[] };
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const sessionObject = s.toObject();
     return {
-      ...s.toObject(),
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      ...sessionObject,
       progressPercentage: Math.round((s.answeredQuestions / s.totalQuestions) * 100),
-      currentQuestion: s.currentQuestionIndex < s.questionIds.length 
-        ? s.questionIds[s.currentQuestionIndex] 
+      currentQuestion: s.currentQuestionIndex < s.questionIds.length
+        ? s.questionIds[s.currentQuestionIndex]
         : null,
       remainingQuestions: s.totalQuestions - s.answeredQuestions,
     };
@@ -34,7 +37,10 @@ export class SessionsController {
     res: Response<SessionResponse>
   ) {
     try {
-      const user = req.user!;
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
       const { jobId, specificQuestionId } = req.body;
 
       if (!jobId || typeof jobId !== 'string') {

@@ -41,7 +41,7 @@ export class LeetCodeService {
     const results: ExternalQuestion[] = data.map((item: LeetCodeAPIResponse) => ({
       id: item.id ?? item.slug ?? item.title ?? String(Math.random()),
       title: item.title ?? item.name ?? item.slug ?? '',
-      url: item.url ?? item.link ?? item.leetcodeUrl ?? item.title ?? '',
+      url: item.url ?? item.link ?? item.leetcodeUrl ?? '',
       difficulty: item.difficulty ?? item.level ?? undefined,
       tags: item.tags ?? item.topicTags ?? undefined,
     }));

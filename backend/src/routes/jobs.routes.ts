@@ -12,7 +12,9 @@ const router = Router();
 const jobController = new JobController();
 
 // Apply authentication middleware to all routes
-router.use(authenticateToken);
+router.use((req, res, next) => {
+  void authenticateToken(req, res, next);
+});
 
 /**
  * @route POST /api/jobs
@@ -22,7 +24,9 @@ router.use(authenticateToken);
 router.post(
   '/',
   validateBody(createJobApplicationSchema),
-  jobController.createJobApplication.bind(jobController)
+  (req, res, next) => {
+    void jobController.createJobApplication(req, res, next);
+  }
 );
 
 /**

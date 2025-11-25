@@ -52,8 +52,9 @@ const availableJobSchema = new Schema<IAvailableJob>(
       validate: {
         validator: function (url: string) {
           try {
-            new URL(url);
-            return true;
+            // Using URL constructor for validation only
+            const validUrl = new URL(url);
+            return validUrl !== null;
           } catch {
             return false;
           }
@@ -119,7 +120,7 @@ export class AvailableJobModel {
       const job = new this.availableJob(jobData);
       return await job.save();
     } catch (error) {
-      throw new Error(`Failed to create available job: ${error}`);
+      throw new Error(`Failed to create available job: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

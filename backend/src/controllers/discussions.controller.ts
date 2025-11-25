@@ -1,5 +1,5 @@
-import { NextFunction, Request, Response } from 'express';
-import {
+import type { NextFunction, Request, Response } from 'express';
+import type {
   CreateDiscussionRequest,
   PostMessageRequest,
   GetDiscussionsQuery,
@@ -8,9 +8,8 @@ import {
   MessageResponse,
   CreateDiscussionResponse,
   PostMessageResponse,
-  EmptyTopicException,
-  TopicTooLongException,
-  DescriptionTooLongException,
+} from '../types/discussions.types';
+import {
   createDiscussionSchema,
   postMessageSchema,
 } from '../types/discussions.types';
@@ -141,7 +140,7 @@ export class DiscussionsController {
     const user = req.user;
 
     // Validate user is authenticated
-    if (!user || !user._id) {
+    if (!user?._id) {
       return res.status(401).json({
         success: false,
         message: 'User not authenticated',
@@ -266,7 +265,7 @@ export class DiscussionsController {
       const user = req.user;
 
       // Validate user is authenticated
-      if (!user || !user._id) {
+      if (!user?._id) {
         return res.status(401).json({
           success: false,
           message: 'User not authenticated',
@@ -348,7 +347,7 @@ export class DiscussionsController {
       const user = req.user;
 
       // Validate user is authenticated
-      if (!user || !user._id) {
+      if (!user?._id) {
         return res.status(401).json({
           success: false,
           message: 'User not authenticated',

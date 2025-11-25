@@ -111,7 +111,7 @@ export class SessionModel {
     questionIds: mongoose.Types.ObjectId[]
   ): Promise<ISession> {
     try {
-      if (!questionIds || questionIds.length === 0) {
+      if (questionIds.length === 0) {
         throw new Error('At least one question is required to start a session');
       }
 

@@ -1,3 +1,4 @@
+import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
 import { QuestionsController } from '../controllers/questions.controller';
 
@@ -6,10 +7,14 @@ const questionsController = new QuestionsController();
 
 router.post(
   '/generate',
-  questionsController.generateQuestions.bind(questionsController)
+  (req: Request, res: Response, next: NextFunction) => {
+    void questionsController.generateQuestions(req, res, next);
+  }
 );
 
-router.get('/job/:jobId', questionsController.getQuestions.bind(questionsController));
+router.get('/job/:jobId', (req: Request, res: Response, next: NextFunction) => {
+  void questionsController.getQuestions(req, res, next);
+});
 
 router.post('/behavioral/submit', questionsController.submitBehavioralAnswer.bind(questionsController));
 

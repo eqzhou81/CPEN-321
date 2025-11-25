@@ -1,3 +1,4 @@
+import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
 import { SessionsController } from '../controllers/sessions.controller';
 import { authenticateToken } from '../middleware/auth.middleware';
@@ -6,18 +7,24 @@ const router = Router();
 const sessionsController = new SessionsController();
 
 // Apply authentication middleware to all routes
-router.use(authenticateToken);
+router.use((req, res, next) => {
+  void authenticateToken(req, res, next);
+});
 
 // Create a new mock interview session
 router.post(
   '/create',
-  sessionsController.createSession.bind(sessionsController)
+  (req: Request, res: Response, next: NextFunction) => {
+    void sessionsController.createSession(req, res, next);
+  }
 );
 
 // Get all sessions for the authenticated user
 router.get(
   '/',
-  sessionsController.getUserSessions.bind(sessionsController)
+  (req: Request, res: Response, next: NextFunction) => {
+    void sessionsController.getUserSessions(req, res, next);
+  }
 );
 
 // Get specific session by ID

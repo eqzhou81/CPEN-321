@@ -18,7 +18,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: [
-      process.env.FRONTEND_URL || 'http://localhost:3001',
+      process.env.FRONTEND_URL ?? 'http://localhost:3001',
       'http://localhost:3000',
       'http://10.0.2.2:8081'
     ],
@@ -32,14 +32,17 @@ app.set('io', io); // <── important line
 io.on('connection', (socket) => {
   console.log('🟢 User connected:', socket.id);
   socket.on('joinDiscussion', (discussionId: string) => {
-    socket.join(discussionId);
+    void socket.join(discussionId);
     console.log(`📥 ${socket.id} joined ${discussionId}`);
   });
-  socket.on('disconnect', () => console.log('🔴 User disconnected:', socket.id));
+  socket.on('disconnect', () => { console.log('🔴 User disconnected:', socket.id); });
 });
 
 
-void connectDB();
+void connectDB().catch((error) => {
+  console.error('Failed to connect to database:', error);
+  throw error;
+});
 
 // Start BOTH Express + Socket.IO
 server.listen(PORT, () => {
@@ -51,7 +54,7 @@ process.on('SIGTERM', () => {
   console.log('SIGTERM received. Shutting down gracefully...');
   server.close(() => {
     console.log('✅ Server closed');
-    process.exit(0);
+    process.exitCode = 0;
   });
 });
 
@@ -59,7 +62,7 @@ process.on('SIGINT', () => {
   console.log('\nSIGINT received. Shutting down gracefully...');
   server.close(() => {
     console.log('✅ Server closed');
-    process.exit(0);
+    process.exitCode = 0;
   });
 });
 

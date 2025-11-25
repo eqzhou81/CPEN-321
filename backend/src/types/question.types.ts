@@ -1,4 +1,4 @@
-import mongoose, { Document } from 'mongoose';
+import type { Document } from 'mongoose';
 // ============================================
 // question.types.ts
 // ============================================

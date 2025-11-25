@@ -46,7 +46,7 @@ io.on('connection', (socket) => {
   console.log('🟢 User connected:', socket.id);
   
   socket.on('joinDiscussion', (discussionId: string) => {
-    socket.join(discussionId);
+    void socket.join(discussionId);
     console.log(`📥 ${socket.id} joined ${discussionId}`);
   });
   

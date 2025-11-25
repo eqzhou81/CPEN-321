@@ -1,12 +1,13 @@
+import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
 import { DiscussionsController } from '../controllers/discussions.controller';
-import { authenticateToken } from '../middleware/auth.middleware';
 
 const router = Router();
 const controller = new DiscussionsController();
 
-
-router.get('/', controller.getDiscussions.bind(controller));
+router.get('/', (req: Request, res: Response, next: NextFunction) => {
+  void controller.getDiscussions(req, res, next);
+});
 router.get('/:id', controller.getDiscussionById.bind(controller));
 router.post('/', controller.createDiscussion.bind(controller));
 router.post('/:id/messages', controller.postMessage.bind(controller));

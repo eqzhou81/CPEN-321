@@ -42,7 +42,12 @@ export class AuthService {
   }
 
   private generateAccessToken(user: IUser): string {
-    return jwt.sign({ id: user._id }, process.env.JWT_SECRET!, {
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET environment variable is not defined');
+    }
+
+    return jwt.sign({ id: user._id }, jwtSecret, {
       expiresIn: '19h',
     });
   }
@@ -98,15 +103,12 @@ export class AuthService {
     try {
       // Check if user already exists
       let user = await userModel.findByGoogleId(userData.googleId);
-      
-      if (!user) {
-        // Create new user
-        user = await userModel.create({
-          googleId: userData.googleId,
-          email: userData.email,
-          name: userData.name,
-        });
-      }
+
+      user ??= await userModel.create({
+        googleId: userData.googleId,
+        email: userData.email,
+        name: userData.name,
+      });
 
       return user;
     } catch (error) {

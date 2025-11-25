@@ -12,14 +12,14 @@ const router = Router();
 
 router.use('/auth', authRoutes);
 
-router.use('/jobs', authenticateToken, jobsRoutes);
+router.use('/jobs', (req, res, next) => { void authenticateToken(req, res, next); }, jobsRoutes);
 
-router.use('/user', authenticateToken, usersRoutes);
+router.use('/user', (req, res, next) => { void authenticateToken(req, res, next); }, usersRoutes);
 
-router.use('/discussions', authenticateToken, discussionsRoutes);
+router.use('/discussions', (req, res, next) => { void authenticateToken(req, res, next); }, discussionsRoutes);
 
-router.use('/questions', authenticateToken, questionsRoutes);
+router.use('/questions', (req, res, next) => { void authenticateToken(req, res, next); }, questionsRoutes);
 
-router.use('/sessions', authenticateToken, sessionsRoutes);
+router.use('/sessions', (req, res, next) => { void authenticateToken(req, res, next); }, sessionsRoutes);
 
 export default router;

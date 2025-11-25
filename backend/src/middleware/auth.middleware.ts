@@ -1,14 +1,14 @@
-import { NextFunction, Request, RequestHandler, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { userModel } from '../models/user.model';
-import { IUser } from '../types/users.types';
+import type { IUser } from '../types/users.types';
 
-export const authenticateToken: RequestHandler = async (
+export const authenticateToken = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
   try {
     // Local development auth bypass
     if (process.env.BYPASS_AUTH === 'true') {
@@ -42,7 +42,12 @@ export const authenticateToken: RequestHandler = async (
       return;
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET environment variable is not defined');
+    }
+
+    const decoded = jwt.verify(token, jwtSecret) as {
       id: mongoose.Types.ObjectId;
     };
 
