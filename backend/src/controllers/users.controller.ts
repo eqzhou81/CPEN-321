@@ -91,9 +91,8 @@ export class UserController {
   ) {
     try {
 
-    
+
       const user = req.user!;
-      const { confirmDelete } = req.body;
 
       // // Validate confirmation
       // if (!confirmDelete) {

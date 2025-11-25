@@ -492,7 +492,7 @@ export class SessionsController {
       let sessionId: mongoose.Types.ObjectId;
       try {
         sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
-      } catch (error) {
+      } catch {
         return res.status(400).json({
           message: 'Invalid session ID format',
         });

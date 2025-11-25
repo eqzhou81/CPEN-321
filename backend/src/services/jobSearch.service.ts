@@ -845,7 +845,7 @@ export class JobSearchService {
         })));
               break; // Found jobs, no need to try other URLs
               
-            } catch (urlError) {
+            } catch {
               continue; // Try next URL
             }
           }
@@ -1087,7 +1087,7 @@ export class JobSearchService {
         // Try to wait for job cards, but don't fail if they don't exist
         try {
           await page.waitForSelector(config.selectors.jobCard, { timeout: 5000 });
-        } catch (error) {
+        } catch {
           logger.warn(`Job cards not found for ${source}, trying alternative approach`);
         }
         
@@ -1179,16 +1179,6 @@ export class JobSearchService {
         await browser.close();
         
         // Process and validate jobs
-        interface RawJobData {
-          title: string;
-          company: string;
-          location?: string;
-          description?: string;
-          url?: string;
-          salary?: string;
-          postedDate?: string;
-          source: string;
-        }
         const processedJobs = jobList
           .filter((job: unknown): job is RawScrapedJob => {
             const j = job as Partial<RawScrapedJob>;
@@ -1460,7 +1450,7 @@ export class JobSearchService {
     try {
       const parsedUrl = new URL(url);
       cleanUrl = parsedUrl.href;
-    } catch (e) {
+    } catch {
       throw new Error('Invalid URL format');
     }
     
