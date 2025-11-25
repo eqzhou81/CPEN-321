@@ -58,14 +58,7 @@ abstract class BaseComposeTest {
         waitForAppToBeReady()
     }
     
-    /**
-     * Wait for the app to be fully ready before running tests
-     * Ensures navigation and auth check are complete
-     * Extended timeout for backend connection (especially for unmocked E2E tests)
-     * 
-     * IMPORTANT: This waits for backend calls to complete. If backend is not running,
-     * this will timeout after 90 seconds.
-     */
+   
     private fun waitForAppToBeReady() {
         android.util.Log.d("BaseComposeTest", "Waiting for app to be ready...")
         
