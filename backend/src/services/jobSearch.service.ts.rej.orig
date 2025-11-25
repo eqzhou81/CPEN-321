@@ -1,0 +1,12 @@
+@@ -564,1 +564,1 @@
+-                      title: titleEl.textContent?.trim() || '',
++                      title: titleEl.textContent.trim() || '',
+@@ -739,1 +739,1 @@
+-                location: locationEl?.textContent?.trim() || 'Not specified',
++                location: locationEl?.textContent?.trim() ?? 'Not specified',
+@@ -792,1 +792,1 @@
+-            title: job.title || 'Unknown Title',
++            title: job.title ?? 'Unknown Title',
+@@ -793,1 +793,1 @@
+-            company: job.company || 'Unknown Company',
++            company: job.company ?? 'Unknown Company',

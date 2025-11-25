@@ -99,7 +99,7 @@ export class LocationUtils {
         return {
           latitude,
           longitude,
-          address: result.formattedAddress || `${latitude}, ${longitude}`,
+          address: result.formattedAddress ?? `${latitude}, ${longitude}`,
           city: result.city,
           state: result.state,
           country: result.country,

@@ -39,7 +39,7 @@ io.on('connection', (socket) => {
 });
 
 
-void connectDB().catch((error) => {
+void connectDB().catch((error: unknown) => {
   console.error('Failed to connect to database:', error);
   throw error;
 });

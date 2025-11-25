@@ -176,11 +176,10 @@ class OpenAIService {
       });
       
       return {
-        feedback: feedback.feedback || 'Good answer!',
-        score: feedback.score || 7,
-        strengths: feedback.strengths || [],
-        improvements: feedback.improvements || [],
-      };
+        feedback: feedback.feedback ?? 'Good answer!',
+        score: feedback.score ?? 7,
+        strengths: feedback.strengths ?? [],
+        improvements: feedback.improvements ?? [],      };
     } catch (error) {
       logger.error('Error generating answer feedback:', error);
       throw error;

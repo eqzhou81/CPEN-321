@@ -413,7 +413,7 @@ export class JobSearchService {
               jobs.push({
                 title: titleEl.textContent?.trim() ?? '',
                 company: companyEl.textContent?.trim() ?? '',
-                location: locationEl?.textContent.trim() ?? 'Not specified',
+                location: locationEl?.textContent?.trim() ?? 'Not specified',
                 description: '',
                 url: (linkEl as HTMLAnchorElement).href || '',
                 salary: '',
@@ -562,10 +562,10 @@ export class JobSearchService {
             if (titleEl && companyEl) {
               jobs.push({
                 title: titleEl.textContent?.trim() || '',
-                company: companyEl.textContent.trim() || '',
-                location: locationEl?.textContent?.trim() ?? 'Not specified',
+                company: companyEl.textContent?.trim() || '',
+                location: locationEl?.textContent?.trim() || 'Not specified',
                 description: '',
-                url: (linkEl)?.href ?? '',
+                url: (linkEl)?.href || '',
                 salary: '',
                 postedDate: new Date(),
                 source: 'glassdoor'
@@ -616,8 +616,8 @@ export class JobSearchService {
         
         for (const job of data.slice(0, 10)) {
           jobs.push({
-            title: job.title ?? 'Unknown Title',
-            company: job.company ?? 'Unknown Company',
+            title: job.title || 'Unknown Title',
+            company: job.company || 'Unknown Company',
             location: job.location || 'Remote',
             description: job.description || '',
             url: job.url || '',
@@ -1638,9 +1638,9 @@ export class JobSearchService {
           if (titleEl) {
             jobs.push({
               title: titleEl.textContent?.trim() || '',
-              company: companyEl?.textContent?.trim() ?? 'Company',
-              location: locationEl?.textContent?.trim() ?? 'Location not specified',
-              description: descriptionEl?.textContent?.trim() ?? '',
+              company: companyEl?.textContent?.trim() || 'Company',
+              location: locationEl?.textContent?.trim() || 'Location not specified',
+              description: descriptionEl?.textContent?.trim() || '',
               url: `https://stackoverflow.com${titleEl.getAttribute('href')}`
             });
           }
@@ -1728,7 +1728,7 @@ export class JobSearchService {
     // Extract search terms
     const titleKeywords = this.extractMainKeywords(jobApplication.title);
     const companyName = this.normalizeCompanyName(jobApplication.company);
-    const location = this.normalizeLocation(jobApplication.location ?? '');
+    const location = this.normalizeLocation(jobApplication.location || '');
     
     // Strategy 1: Search by job title keywords
     if (titleKeywords) {
@@ -1773,8 +1773,8 @@ export class JobSearchService {
       description: job.description,
       location: job.jobLocation,
       url: job.url,
-      salary: job.salary ?? undefined,
-      jobType: job.jobType ?? undefined,
+      salary: job.salary || undefined,
+      jobType: job.jobType || undefined,
       experienceLevel: job.experienceLevel || undefined,
       source: 'database',
       score: 0, // Will be set later

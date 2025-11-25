@@ -15,7 +15,7 @@ router.use((req, res, next) => {
 router.post(
   '/create',
   (req: Request, res: Response, next: NextFunction) => {
-    void sessionsController.createSession(req, res, next);
+    void sessionsController.createSession(req, res);
   }
 );
 
@@ -23,7 +23,7 @@ router.post(
 router.get(
   '/',
   (req: Request, res: Response, next: NextFunction) => {
-    void sessionsController.getUserSessions(req, res, next);
+    void sessionsController.getUserSessions(req, res);
   }
 );
 
