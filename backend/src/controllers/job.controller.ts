@@ -23,8 +23,11 @@ export class JobController {
     next: NextFunction
   ) {
     try {
-      const user = req.user!;
-      
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+
       const jobApplication = await jobApplicationModel.create(new mongoose.Types.ObjectId(user._id), req.body);
       
       res.status(201).json({
@@ -53,11 +56,15 @@ export class JobController {
     next: NextFunction
   ) {
     try {
-      const user = req.user!;
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
       const skip = (page - 1) * limit;
-      
+
       const { jobApplications, total } = await jobApplicationModel.findByUserId(
         new mongoose.Types.ObjectId(user._id),
         limit,
@@ -407,13 +414,13 @@ export class JobController {
       // Get company distribution
       const { jobApplications } = await jobApplicationModel.findByUserId(new mongoose.Types.ObjectId(user._id), 1000, 0);
       
-      const companyStats = jobApplications.reduce((acc, job) => {
+      const companyStats = jobApplications.reduce<Record<string, number>>((acc, job) => {
         acc[job.company] = (acc[job.company] || 0) + 1;
         return acc;
       }, {});
-      
+
       const topCompanies = Object.entries(companyStats)
-        .sort(([, a], [, b]) => b - a)
+        .sort(([, a], [, b]) => (b) - (a))
         .slice(0, 5)
         .map(([company, count]) => ({ company, count }));
       

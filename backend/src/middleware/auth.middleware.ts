@@ -1,17 +1,19 @@
-import { NextFunction, Request, RequestHandler, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { userModel } from '../models/user.model';
+import type { IUser } from '../types/users.types';
+import logger from '../utils/logger.util';
 
-export const authenticateToken: RequestHandler = async (
+export const authenticateToken = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
   try {
     // Local development auth bypass
     if (process.env.BYPASS_AUTH === 'true') {
-      console.log('🔓 Auth bypass enabled for local development');
+      logger.info('🔓 Auth bypass enabled for local development');
       
       // Create a mock user object
       req.user = {
@@ -20,13 +22,11 @@ export const authenticateToken: RequestHandler = async (
         name: process.env.MOCK_USER_NAME ?? 'Test User',
         googleId: 'mock-google-id',
         profilePicture: 'https://via.placeholder.com/150',
-        bio: 'Test user for local development',
-        hobbies: ['coding', 'testing'],
         savedJobs: [],
         savedQuestions: [],
         createdAt: new Date(),
         updatedAt: new Date()
-      } as unknown;
+      } as unknown as IUser;
       
       next();
       return;
@@ -43,11 +43,16 @@ export const authenticateToken: RequestHandler = async (
       return;
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET environment variable is not defined');
+    }
+
+    const decoded = jwt.verify(token, jwtSecret) as {
       id: mongoose.Types.ObjectId;
     };
 
-    if (!decoded?.id) {
+    if (!decoded.id) {
       res.status(401).json({
         error: 'Invalid token',
         message: 'Token verification failed',

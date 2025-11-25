@@ -31,10 +31,7 @@ import org.junit.Test
  */
 class DiscussionsTest : BaseComposeTest() {
 
-    /**
-     * Navigate to discussions screen by clicking the discussions button in the top app bar
-     * This should be called at the start of each test to ensure we're on the discussions screen
-     */
+    
     private fun navigateToDiscussions() {
         android.util.Log.d("DiscussionsTest", "Navigating to discussions screen...")
 

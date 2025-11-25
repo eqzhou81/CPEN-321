@@ -12,14 +12,14 @@ const router = Router();
 
 router.use('/auth', authRoutes);
 
-router.use('/jobs', authenticateToken, jobsRoutes);
+router.use('/jobs', (req, res, next) => { authenticateToken(req, res, next).catch(next); }, jobsRoutes);
 
-router.use('/user', authenticateToken, usersRoutes);
+router.use('/user', (req, res, next) => { authenticateToken(req, res, next).catch(next); }, usersRoutes);
 
-router.use('/discussions', authenticateToken, discussionsRoutes);
+router.use('/discussions', (req, res, next) => { authenticateToken(req, res, next).catch(next); }, discussionsRoutes);
 
-router.use('/questions', authenticateToken, questionsRoutes);
+router.use('/questions', (req, res, next) => { authenticateToken(req, res, next).catch(next); }, questionsRoutes);
 
-router.use('/sessions', authenticateToken, sessionsRoutes);
+router.use('/sessions', (req, res, next) => { authenticateToken(req, res, next).catch(next); }, sessionsRoutes);
 
 export default router;

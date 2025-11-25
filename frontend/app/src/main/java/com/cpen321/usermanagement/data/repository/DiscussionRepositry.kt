@@ -34,7 +34,10 @@ data class DiscussionRepository @Inject constructor(
             val response = discussionApi.getAllDiscussions(search, sortBy, page, limit)
             Log.d(TAG, "getAllDiscussions response code: ${response.code()}")
             handleResponse(response, "Failed to fetch discussions")
-        } catch (e: Exception) {
+        } catch (e: retrofit2.HttpException) {
+            Log.e(TAG, "Error fetching discussions", e)
+            Result.failure(e)
+        } catch (e: java.io.IOException) {
             Log.e(TAG, "Error fetching discussions", e)
             Result.failure(e)
         }

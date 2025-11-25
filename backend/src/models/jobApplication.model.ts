@@ -48,6 +48,7 @@ const jobApplicationSchema = new Schema<IJobApplication>(
         validator: function (url: string) {
           if (!url) return true; // Optional field
           try {
+            // Using URL constructor for validation only
             new URL(url);
             return true;
           } catch {
@@ -207,7 +208,7 @@ export class JobApplicationModel {
     userId: mongoose.Types.ObjectId,
     searchTerm: string,
     limit = 20,
-    skip: number = 0
+    skip = 0
   ): Promise<{ jobApplications: IJobApplication[]; total: number }> {
     try {
       const searchQuery = {
@@ -234,8 +235,8 @@ export class JobApplicationModel {
   async findByCompany(
     userId: mongoose.Types.ObjectId,
     company: string,
-    limit: number = 20,
-    skip: number = 0
+    limit = 20,
+    skip = 0
   ): Promise<{ jobApplications: IJobApplication[]; total: number }> {
     try {
       const [jobApplications, total] = await Promise.all([

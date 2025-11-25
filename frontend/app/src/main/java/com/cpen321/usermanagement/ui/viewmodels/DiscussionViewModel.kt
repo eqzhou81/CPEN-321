@@ -84,7 +84,7 @@ class DiscussionViewModel @Inject constructor(
                                 _messages.value = _messages.value + message
                             }
                         }
-                    } catch (e: Exception) {
+                    } catch (e: org.json.JSONException) {
                         Log.e("SocketIO", "❌ Error parsing message: ${e.message}")
                     }
                 }

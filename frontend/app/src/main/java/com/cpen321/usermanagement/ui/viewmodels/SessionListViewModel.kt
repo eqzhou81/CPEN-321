@@ -39,7 +39,9 @@ class SessionListViewModel @Inject constructor(
                         response.body()?.message ?: "Failed to load sessions"
                     )
                 }
-            } catch (e: Exception) {
+            } catch (e: retrofit2.HttpException) {
+                _uiState.value = UiState.Error("Network error: ${e.message}")
+            } catch (e: java.io.IOException) {
                 _uiState.value = UiState.Error("Network error: ${e.message}")
             }
         }

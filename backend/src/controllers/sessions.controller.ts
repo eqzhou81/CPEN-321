@@ -20,11 +20,14 @@ import logger from '../utils/logger.util';
 export class SessionsController {
   private formatSessionResponse(session: unknown): ISessionWithQuestions {
     const s = session as ISession & { questionIds: IQuestion[] };
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const sessionObject = s.toObject();
     return {
-      ...s.toObject(),
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      ...sessionObject,
       progressPercentage: Math.round((s.answeredQuestions / s.totalQuestions) * 100),
-      currentQuestion: s.currentQuestionIndex < s.questionIds.length 
-        ? s.questionIds[s.currentQuestionIndex] 
+      currentQuestion: s.currentQuestionIndex < s.questionIds.length
+        ? s.questionIds[s.currentQuestionIndex]
         : null,
       remainingQuestions: s.totalQuestions - s.answeredQuestions,
     };
@@ -34,7 +37,10 @@ export class SessionsController {
     res: Response<SessionResponse>
   ) {
     try {
-      const user = req.user!;
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
       const { jobId, specificQuestionId } = req.body;
 
       if (!jobId || typeof jobId !== 'string') {
@@ -323,11 +329,10 @@ export class SessionsController {
       if (question.type === QuestionType.BEHAVIORAL) {
         try {
           logger.info('Submitting behavioral answer for feedback', {
-            questionId: questionId,
+            questionId,
             questionTitle: question.title,
             answerLength: answer.length,
-            answer: answer
-          });
+            answer          });
 
           const aiFeedback = await openaiService.generateAnswerFeedback(
             question.title,
@@ -409,7 +414,7 @@ export class SessionsController {
       const sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
       const { status } = req.body;
 
-      if (!status || typeof status !== 'string') {
+      if (typeof status !== 'string') {
         return res.status(400).json({
           message: 'Status is required and must be a string',
         });
@@ -487,7 +492,7 @@ export class SessionsController {
       let sessionId: mongoose.Types.ObjectId;
       try {
         sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
-      } catch (error) {
+      } catch {
         return res.status(400).json({
           message: 'Invalid session ID format',
         });

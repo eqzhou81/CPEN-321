@@ -1,5 +1,5 @@
-import { NextFunction, Request, Response } from 'express';
-import {
+import type { NextFunction, Request, Response } from 'express';
+import type {
   CreateDiscussionRequest,
   PostMessageRequest,
   GetDiscussionsQuery,
@@ -8,16 +8,14 @@ import {
   MessageResponse,
   CreateDiscussionResponse,
   PostMessageResponse,
-  EmptyTopicException,
-  TopicTooLongException,
-  DescriptionTooLongException,
+} from '../types/discussions.types';
+import {
   createDiscussionSchema,
   postMessageSchema,
 } from '../types/discussions.types';
 import { discussionModel } from '../models/discussions.model';
 import { userModel } from '../models/user.model';
 import logger from '../utils/logger.util';
-import { ZodError } from 'zod';
 
 export class DiscussionsController {
   /**
@@ -101,7 +99,7 @@ export class DiscussionsController {
         topic: discussion.topic,
         description: discussion.description,
         creatorId: discussion.userId,
-        creatorName: creator?.name || 'Unknown User',
+        creatorName: creator?.name ?? 'Unknown User',
         messageCount: discussion.messageCount,
         participantCount: discussion.participantCount,
         messages: discussion.messages.map((m) => ({
@@ -134,11 +132,20 @@ export class DiscussionsController {
    */
  async createDiscussion(
   req: Request<unknown, unknown, CreateDiscussionRequest>,
-  res: Response,
-  next: NextFunction
+  res: Response
 ) {
   try {
-    const user = req.user!;
+    const user = req.user;
+
+    // Validate user is authenticated
+    if (!user?._id) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated',
+        error: 'AuthenticationError',
+      });
+    }
+
     const { topic, description } = req.body;
 
     // ✅ Validate input safely with Zod schema
@@ -155,7 +162,7 @@ export class DiscussionsController {
 
       // ✅ Custom, readable error messages
       // errorMessage is always a string (either firstError?.message or 'Validation error')
-      if (errorMessage.includes("required") || !topic?.trim()) {
+      if (errorMessage.includes("required") || !topic.trim()) {
         return res.status(400).json({
           success: false,
           message: "Topic cannot be empty.",
@@ -253,7 +260,17 @@ export class DiscussionsController {
     next: NextFunction
   ) {
     try {
-      const user = req.user!;
+      const user = req.user;
+
+      // Validate user is authenticated
+      if (!user?._id) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not authenticated',
+          error: 'AuthenticationError',
+        });
+      }
+
       const { id } = req.params;
       const { content } = req.body;
 
@@ -325,7 +342,17 @@ export class DiscussionsController {
    */
   async getMyDiscussions(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = req.user!;
+      const user = req.user;
+
+      // Validate user is authenticated
+      if (!user?._id) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not authenticated',
+          error: 'AuthenticationError',
+        });
+      }
+
       const { page = 1, limit = 20 } = req.query;
 
       const skip = (Number(page) - 1) * Number(limit);

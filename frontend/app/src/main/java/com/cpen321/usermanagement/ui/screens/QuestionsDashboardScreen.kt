@@ -45,7 +45,12 @@ fun QuestionsDashboardScreen(
 
     // Auto-generate questions if none exist
     LaunchedEffect(questions, isLoading) {
-        if (!isLoading && questions != null && questions!!.totalQuestions == 0 && !hasAttemptedGeneration) {
+        val shouldAutoGenerate = !isLoading &&
+            questions != null &&
+            questions!!.totalQuestions == 0 &&
+            !hasAttemptedGeneration
+
+        if (shouldAutoGenerate) {
             hasAttemptedGeneration = true
             viewModel.generateQuestions(jobId)
             shouldReload = true  // Mark that we should reload after generation

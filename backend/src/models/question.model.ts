@@ -56,6 +56,7 @@ const questionSchema = new Schema<IQuestion>(
         validator: function (url: string) {
           if (!url) return true;
           try {
+            // Using URL constructor for validation only
             new URL(url);
             return true;
           } catch {
@@ -156,7 +157,7 @@ export class QuestionModel {
     type?: QuestionType
   ): Promise<IQuestion[]> {
     try {
-      const query: unknown = { jobId, userId };
+      const query: Record<string, unknown> = { jobId, userId };
       if (type) {
         query.type = type;
       }

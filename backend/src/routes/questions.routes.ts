@@ -1,20 +1,21 @@
 import { Router } from 'express';
 import { QuestionsController } from '../controllers/questions.controller';
+import { catchAsync } from '../utils/catchAsync';
 
 const router = Router();
 const questionsController = new QuestionsController();
 
 router.post(
   '/generate',
-  questionsController.generateQuestions.bind(questionsController)
+  catchAsync(questionsController.generateQuestions.bind(questionsController))
 );
 
-router.get('/job/:jobId', questionsController.getQuestions.bind(questionsController));
+router.get('/job/:jobId', catchAsync(questionsController.getQuestions.bind(questionsController)));
 
-router.post('/behavioral/submit', questionsController.submitBehavioralAnswer.bind(questionsController));
+router.post('/behavioral/submit', catchAsync(questionsController.submitBehavioralAnswer.bind(questionsController)));
 
-router.put('/:questionId/toggle', questionsController.toggleQuestionCompleted.bind(questionsController));
+router.put('/:questionId/toggle', catchAsync(questionsController.toggleQuestionCompleted.bind(questionsController)));
 
-router.get('/job/:jobId/progress', questionsController.getQuestionProgress.bind(questionsController));
+router.get('/job/:jobId/progress', catchAsync(questionsController.getQuestionProgress.bind(questionsController)));
 
 export default router;

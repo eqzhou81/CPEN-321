@@ -2,29 +2,44 @@ import mongoose from 'mongoose';
 
 // ✅ This setup file runs for unmocked tests - ensures real database connections
 
-console.log('🔧 Setting up unmocked test environment');
+logger.info('🔧 Setting up unmocked test environment');
 
 const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
 
+// Set test environment
+process.env.NODE_ENV = 'test';
+
 // Connect to database before tests start
-(global as any).beforeAll = (global as any).beforeAll || ((fn: any) => fn());
-(global as any).afterAll = (global as any).afterAll || ((fn: any) => fn());
-(global as any).jest = (global as any).jest || { setTimeout: () => {} };
+beforeAll(async () => {
+  logger.info('🔧 Unmocked test setup - connecting to:', uri);
 
-(global as any).beforeAll(async () => {
-  console.log('🔧 Unmocked test setup - mongoose type:', typeof mongoose.connect);
-  console.log('🔧 Unmocked test setup - connection type:', typeof mongoose.connection.collection);
-  
   if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(uri);
+    try {
+      await mongoose.connect(uri, {
+        serverSelectionTimeoutMS: 10000, // Increased timeout to 10s
+        socketTimeoutMS: 45000,
+        connectTimeoutMS: 10000,
+      });
+      logger.info('✅ Test database connected');
+    } catch (error) {
+      console.error('❌ Test database connection failed:', error);
+      console.error('Make sure MongoDB is running at:', uri);
+      // Don't throw - let tests fail individually
+    }
   }
-});
+}, 15000); // 15 second timeout for beforeAll
 
-(global as any).afterAll(async () => {
-  if (mongoose.connection.readyState !== 0) {
-    await mongoose.connection.close();
+afterAll(async () => {
+  logger.info('🔧 Closing database connection...');
+  try {
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.connection.close();
+      logger.info('✅ Database connection closed');
+    }
+  } catch (error) {
+    console.error('❌ Error closing database:', error);
   }
-});
+}, 10000); // 10 second timeout for afterAll
 
 // Increase timeout for database operations
-(global as any).jest.setTimeout(20000);
+jest.setTimeout(30000);

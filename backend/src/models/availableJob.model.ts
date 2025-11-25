@@ -52,6 +52,7 @@ const availableJobSchema = new Schema<IAvailableJob>(
       validate: {
         validator: function (url: string) {
           try {
+            // Using URL constructor for validation only
             new URL(url);
             return true;
           } catch {
@@ -119,7 +120,7 @@ export class AvailableJobModel {
       const job = new this.availableJob(jobData);
       return await job.save();
     } catch (error) {
-      throw new Error(`Failed to create available job: ${error}`);
+      throw new Error(`Failed to create available job: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -165,7 +166,7 @@ export class AvailableJobModel {
     limit?: number;
   }): Promise<IAvailableJob[]> {
     try {
-      const query: unknown = {};
+      const query: Record<string, unknown> = {};
 
       if (searchParams.title) {
         query.$or = [
@@ -195,7 +196,8 @@ export class AvailableJobModel {
       }
 
       const limit = searchParams.limit ?? 20;
-      return await this.availableJob.find(query).limit(limit).sort({ createdAt: -1 });
+      const results = await this.availableJob.find(query).limit(limit).sort({ createdAt: -1 });
+      return results as IAvailableJob[];
     } catch (error) {
       throw new Error(`Failed to search jobs: ${error}`);
     }

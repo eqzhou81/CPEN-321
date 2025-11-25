@@ -10,7 +10,7 @@ export interface AuthenticateUserRequest {
 export interface AuthenticateUserResponse {
   message: string;
   data?: AuthResult;
-};
+}
 
 // Zod schemas
 // ------------------------------------------------------------
@@ -23,7 +23,7 @@ export const authenticateUserSchema = z.object({
 export interface AuthResult {
   token: string;
   user: IUser;
-};
+}
 
 declare global {
   namespace Express {

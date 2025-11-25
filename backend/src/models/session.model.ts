@@ -111,7 +111,7 @@ export class SessionModel {
     questionIds: mongoose.Types.ObjectId[]
   ): Promise<ISession> {
     try {
-      if (!questionIds || questionIds.length === 0) {
+      if (questionIds.length === 0) {
         throw new Error('At least one question is required to start a session');
       }
 
@@ -192,17 +192,18 @@ export class SessionModel {
     currentQuestionIndex?: number
   ): Promise<ISession | null> {
     try {
-      const updateData: unknown = { answeredQuestions };
-      
+      const updateData: Record<string, unknown> = { answeredQuestions };
+
       if (currentQuestionIndex !== undefined) {
         updateData.currentQuestionIndex = currentQuestionIndex;
       }
 
-      return await Session.findOneAndUpdate(
+      const result = await Session.findOneAndUpdate(
         { _id: sessionId, userId },
         updateData,
         { new: true }
       ).populate('questionIds').exec();
+      return result as ISession | null;
     } catch (error) {
       logger.error('Error updating session progress:', error);
       throw new Error('Failed to update session progress');
@@ -289,17 +290,18 @@ export class SessionModel {
     status: SessionStatus
   ): Promise<ISession | null> {
     try {
-      const updateData: unknown = { status };
-      
+      const updateData: Record<string, unknown> = { status };
+
       if (status === SessionStatus.COMPLETED) {
         updateData.completedAt = new Date();
       }
 
-      return await Session.findOneAndUpdate(
+      const result = await Session.findOneAndUpdate(
         { _id: sessionId, userId },
         updateData,
         { new: true }
       ).populate('questionIds').exec();
+      return result as ISession | null;
     } catch (error) {
       logger.error('Error updating session status:', error);
       throw new Error('Failed to update session status');

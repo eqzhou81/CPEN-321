@@ -205,9 +205,6 @@ class AuthRepositoryImpl @Inject constructor(
         } catch (e: retrofit2.HttpException) {
             Log.e("AuthRepository", "HTTP error while getting current user: ${e.code()}", e)
             null
-        } catch (e: Exception) {
-            Log.e("AuthRepository", "Unexpected error while getting current user", e)
-            null
         }
     }
 

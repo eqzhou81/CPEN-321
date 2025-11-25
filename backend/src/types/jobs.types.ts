@@ -116,7 +116,7 @@ export interface JobApplicationResponse {
   data?: {
     jobApplication: IJobApplication;
   };
-};
+}
 
 export interface JobApplicationsListResponse {
   message: string;
@@ -124,7 +124,7 @@ export interface JobApplicationsListResponse {
     jobApplications: IJobApplication[];
     total: number;
   };
-};
+}
 
 export interface SimilarJobsResponse {
   message: string;
@@ -133,7 +133,7 @@ export interface SimilarJobsResponse {
     total: number;
     searchParams: IJobSearchParams;
   };
-};
+}
 
 // Web scraping interfaces
 // ------------------------------------------------------------

@@ -61,13 +61,13 @@ export class LocationUtils {
       }
 
       const results = await geocoderInstance.geocode(address);
-      
-      if (results && results.length > 0) {
+
+      if (results.length > 0) {
         const result = results[0];
         return {
-          latitude: result.latitude || 0,
-          longitude: result.longitude || 0,
-          address: result.formattedAddress || address,
+          latitude: result.latitude ?? 0,
+          longitude: result.longitude ?? 0,
+          address: result.formattedAddress ?? address,
           city: result.city,
           state: result.state,
           country: result.country,
@@ -99,7 +99,7 @@ export class LocationUtils {
         return {
           latitude,
           longitude,
-          address: result.formattedAddress || `${latitude}, ${longitude}`,
+          address: result.formattedAddress ?? `${latitude}, ${longitude}`,
           city: result.city,
           state: result.state,
           country: result.country,
