@@ -6,7 +6,7 @@ const router = Router();
 const controller = new DiscussionsController();
 
 router.get('/', (req: Request, res: Response, next: NextFunction) => {
-  void controller.getDiscussions(req, res, next);
+  controller.getDiscussions(req, res, next).catch(next);
 });
 router.get('/:id', controller.getDiscussionById.bind(controller));
 router.post('/', controller.createDiscussion.bind(controller));

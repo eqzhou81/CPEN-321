@@ -488,7 +488,7 @@ export class JobSearchService {
               jobs.push({
                 title: titleEl.textContent?.trim() ?? '',
                 company: companyEl.textContent?.trim() ?? '',
-                location: locationEl?.textContent?.trim() ?? 'Not specified',
+                location: locationEl?.textContent.trim() ?? 'Not specified',
                 description: '',
                 url: (linkEl as HTMLAnchorElement).href || '',
                 salary: '',
@@ -565,7 +565,7 @@ export class JobSearchService {
                 company: companyEl.textContent.trim() || '',
                 location: locationEl?.textContent?.trim() ?? 'Not specified',
                 description: '',
-                url: (linkEl!)?.href || '',
+                url: (linkEl!).href || '',
                 salary: '',
                 postedDate: new Date(),
                 source: 'glassdoor'
@@ -618,10 +618,10 @@ export class JobSearchService {
           jobs.push({
             title: job.title ?? 'Unknown Title',
             company: job.company ?? 'Unknown Company',
-            location: job.location || 'Remote',
-            description: job.description || '',
-            url: job.url || '',
-            salary: job.salary || '',
+            location: job.location ?? 'Remote',
+            description: job.description ?? '',
+            url: job.url ?? '',
+            salary: job.salary ?? '',
             postedDate: new Date(job.created_at),
             source: 'github_jobs',
             jobType: this.extractJobType(job.title, job.description),
@@ -667,7 +667,7 @@ export class JobSearchService {
               company: job.company,
               location: 'Remote',
               description: job.description || '',
-              url: job.url || `https://remoteok.io/remote-jobs/${job.id}`,
+              url: job.url ?? `https://remoteok.io/remote-jobs/${job.id}`,
               salary: job.salary || '',
               postedDate: new Date(job.date),
               source: 'remoteok',
@@ -734,11 +734,11 @@ export class JobSearchService {
             
             if (titleEl && companyEl) {
               jobs.push({
-                title: titleEl.textContent?.trim() || '',
-                company: companyEl.textContent?.trim() || '',
-                location: locationEl?.textContent?.trim() ?? 'Remote',
+                title: titleEl.textContent.trim() || '',
+                company: companyEl.textContent.trim() || '',
+                location: locationEl?.textContent.trim() ?? 'Remote',
                 description: '',
-                url: (linkEl)?.href || '',
+                url: (linkEl)?.href ?? '',
                 salary: '',
                 postedDate: new Date().toISOString(),
                 source: 'wellfound'
@@ -821,8 +821,7 @@ export class JobSearchService {
                   const locationEl = element.querySelector('.location, .office');
                   const linkEl = element.querySelector('a');
                   
-                  if (titleEl?.textContent?.toLowerCase().includes(query.toLowerCase())) {
-                    jobs.push({
+                  if (titleEl?.textContent.toLowerCase().includes(query.toLowerCase())) {                    jobs.push({
                       title: titleEl.textContent.trim() || '',
                       company: company.charAt(0).toUpperCase() + company.slice(1),
                       location: locationEl?.textContent?.trim() ?? 'Remote',

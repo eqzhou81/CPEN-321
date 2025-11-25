@@ -49,7 +49,7 @@ export class DiscussionsController {
             topic: d.topic,
             description: d.description,
             creatorId: d.userId,
-            creatorName: creator?.name || 'Unknown User',
+            creatorName: creator?.name ?? 'Unknown User',
             messageCount: d.messageCount,
             participantCount: d.participantCount,
             lastActivityAt: d.lastActivityAt.toISOString(),

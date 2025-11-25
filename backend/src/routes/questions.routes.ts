@@ -8,12 +8,12 @@ const questionsController = new QuestionsController();
 router.post(
   '/generate',
   (req: Request, res: Response, next: NextFunction) => {
-    void questionsController.generateQuestions(req, res);
+    questionsController.generateQuestions(req, res).catch(next);
   }
 );
 
 router.get('/job/:jobId', (req: Request<{ jobId: string }>, res: Response, next: NextFunction) => {
-  void questionsController.getQuestions(req, res);
+  questionsController.getQuestions(req, res).catch(next);
 });
 
 router.post('/behavioral/submit', questionsController.submitBehavioralAnswer.bind(questionsController));

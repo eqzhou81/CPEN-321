@@ -1,3 +1,0 @@
-@@ -167,1 +167,1 @@
--      if (errorMessage.includes("required") || !topic?.trim()) {
-+      if (errorMessage.includes("required") || !topic.trim()) {

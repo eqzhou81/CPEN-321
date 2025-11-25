@@ -8,14 +8,14 @@ const sessionsController = new SessionsController();
 
 // Apply authentication middleware to all routes
 router.use((req, res, next) => {
-  void authenticateToken(req, res, next);
+  authenticateToken(req, res, next).catch(next);
 });
 
 // Create a new mock interview session
 router.post(
   '/create',
   (req: Request, res: Response, next: NextFunction) => {
-    void sessionsController.createSession(req, res);
+    sessionsController.createSession(req, res).catch(next);
   }
 );
 
@@ -23,7 +23,7 @@ router.post(
 router.get(
   '/',
   (req: Request, res: Response, next: NextFunction) => {
-    void sessionsController.getUserSessions(req, res);
+    sessionsController.getUserSessions(req, res).catch(next);
   }
 );
 

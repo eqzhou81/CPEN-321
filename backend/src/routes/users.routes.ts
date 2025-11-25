@@ -15,7 +15,7 @@ router.post(
   '/profile',
   validateBody<UpdateProfileRequest>(updateProfileSchema),
   (req: Request, res: Response, next: NextFunction) => {
-    void userController.updateProfile(req, res, next);
+    userController.updateProfile(req, res, next).catch(next);
   }
 );
 
@@ -23,7 +23,7 @@ router.delete(
   '/profile',
   validateBody<DeleteProfileRequest>(deleteProfileSchema),
   (req: Request, res: Response, next: NextFunction) => {
-    void userController.deleteProfile(req, res, next);
+    userController.deleteProfile(req, res, next).catch(next);
   }
 );
 

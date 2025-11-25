@@ -32,14 +32,14 @@ app.set('io', io); // <── important line
 io.on('connection', (socket) => {
   console.log('🟢 User connected:', socket.id);
   socket.on('joinDiscussion', (discussionId: string) => {
-    void socket.join(discussionId);
+    socket.join(discussionId);
     console.log(`📥 ${socket.id} joined ${discussionId}`);
   });
   socket.on('disconnect', () => { console.log('🔴 User disconnected:', socket.id); });
 });
 
 
-void connectDB();
+connectDB().catch((err) => console.error("Database connection failed:", err));
 
 // Start BOTH Express + Socket.IO
 server.listen(PORT, () => {
