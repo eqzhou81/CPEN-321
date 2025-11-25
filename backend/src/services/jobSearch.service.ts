@@ -203,7 +203,7 @@ export class JobSearchService {
       let allJobs: ISimilarJob[] = [];
       
       results.forEach((result, index) => {
-        if (result.status === 'fulfilled' && (result.value).jobs) {
+        if (result.status === 'fulfilled') {
           allJobs = allJobs.concat((result.value).jobs);
         } else {
           logger.warn(`Failed to scrape ${Object.keys(this.scraperConfigs)[index]}:`, result);
@@ -408,11 +408,11 @@ export class JobSearchService {
             const companyEl = card.querySelector('.companyName, .company, [data-testid="company-name"]');
             const locationEl = card.querySelector('.companyLocation, .location, [data-testid="job-location"]');
             const linkEl = card.querySelector('h2.jobTitle a, .jobTitle a, a[data-jk]');
-            
+
             if (titleEl && companyEl) {
               jobs.push({
-                title: titleEl.textContent?.trim() ?? '',
-                company: companyEl.textContent?.trim() ?? '',
+                title: titleEl.textContent.trim(),
+                company: companyEl.textContent.trim(),
                 location: locationEl?.textContent.trim() ?? 'Not specified',
                 description: '',
                 url: (linkEl as HTMLAnchorElement).href || '',
@@ -563,7 +563,7 @@ export class JobSearchService {
               jobs.push({
                 title: titleEl.textContent.trim() || '',
                 company: companyEl.textContent.trim() || '',
-                location: locationEl?.textContent?.trim() ?? 'Not specified',
+                location: locationEl?.textContent.trim() ?? 'Not specified',
                 description: '',
                 url: (linkEl!).href || '',
                 salary: '',
@@ -824,7 +824,7 @@ export class JobSearchService {
                   if (titleEl?.textContent.toLowerCase().includes(query.toLowerCase())) {                    jobs.push({
                       title: titleEl.textContent.trim() || '',
                       company: company.charAt(0).toUpperCase() + company.slice(1),
-                      location: locationEl?.textContent?.trim() ?? 'Remote',
+                      location: locationEl?.textContent.trim() ?? 'Remote',
                       description: '',
                       url: linkEl?.href ?? url,
                       salary: '',
@@ -1000,7 +1000,7 @@ export class JobSearchService {
     // Description similarity (using keyword extraction)
     const descriptionScore = this.compareDescriptions(job1.description, job2.description);
     totalScore += descriptionScore * weights.description;
-    
+
     // Location similarity
     const locationScore = this.compareLocations(job1.location ?? '', job2.jobLocation ?? '');
     totalScore += locationScore * weights.location;
@@ -1060,6 +1060,7 @@ export class JobSearchService {
   ): Promise<IScraperResult> {
     try {
       const config = this.scraperConfigs[source];
+
       if (!config) {
         throw new Error(`Unknown job source: ${source}`);
       }
@@ -1128,13 +1129,13 @@ export class JobSearchService {
               
               if (titleEl && companyEl) {
                 const job: RawJobData = {
-                  title: (titleEl.textContent ?? '').trim(),
-                  company: (companyEl.textContent ?? '').trim(),
+                  title: titleEl.textContent.trim(),
+                  company: companyEl.textContent.trim(),
                   location: (locationEl?.textContent ?? '').trim(),
                   description: (descriptionEl?.textContent ?? '').trim(),
                   url: urlEl?.getAttribute('href') ?? '',
-                  salary: salaryEl?.textContent?.trim(),
-                  postedDate: postedEl?.textContent?.trim(),
+                  salary: salaryEl?.textContent.trim(),
+                  postedDate: postedEl?.textContent.trim(),
                   source
                 };
 
@@ -1146,9 +1147,9 @@ export class JobSearchService {
                 jobs.push(job);
               } else if (source === 'amazon') {
                 // For Amazon, try a more flexible approach - assume it's Amazon if no company found
-                if (titleEl?.textContent?.trim()) {
+                if (titleEl?.textContent.trim()) {
                   const job: RawJobData = {
-                    title: (titleEl.textContent ?? '').trim(),
+                    title: titleEl.textContent.trim(),
                     company: 'Amazon', // Default to Amazon since we're on amazon.jobs
                     location: (locationEl?.textContent ?? '').trim(),
                     description: (descriptionEl?.textContent ?? '').trim(),
@@ -1626,10 +1627,10 @@ export class JobSearchService {
           
           if (titleEl) {
             jobs.push({
-              title: titleEl.textContent?.trim() || '',
-              company: companyEl?.textContent?.trim() ?? 'Company',
-              location: locationEl?.textContent?.trim() ?? 'Location not specified',
-              description: descriptionEl?.textContent?.trim() ?? '',
+              title: titleEl.textContent.trim() || '',
+              company: companyEl?.textContent.trim() ?? 'Company',
+              location: locationEl?.textContent.trim() ?? 'Location not specified',
+              description: descriptionEl?.textContent.trim() ?? '',
               url: `https://stackoverflow.com${titleEl.getAttribute('href')}`
             });
           }
@@ -1858,7 +1859,7 @@ export class JobSearchService {
    * Compare skills arrays
    */
   private compareSkills(skills1: string[], skills2: string[]): number {
-    if (!skills1.length || !skills2?.length) return 0;
+    if (!skills1.length || !skills2.length) return 0;
     
     const s1 = new Set(skills1.map(s => s.toLowerCase()));
     const s2 = new Set(skills2.map(s => s.toLowerCase()));

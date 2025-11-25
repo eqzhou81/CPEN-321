@@ -49,8 +49,8 @@ const jobApplicationSchema = new Schema<IJobApplication>(
           if (!url) return true; // Optional field
           try {
             // Using URL constructor for validation only
-            const validUrl = new URL(url);
-            return validUrl !== null;
+            new URL(url);
+            return true;
           } catch {
             return false;
           }

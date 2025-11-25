@@ -51,7 +51,7 @@ export const authenticateToken = async (
       id: mongoose.Types.ObjectId;
     };
 
-    if (!decoded?.id) {
+    if (!decoded.id) {
       res.status(401).json({
         error: 'Invalid token',
         message: 'Token verification failed',

@@ -414,7 +414,7 @@ export class SessionsController {
       const sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
       const { status } = req.body;
 
-      if (!status || typeof status !== 'string') {
+      if (typeof status !== 'string') {
         return res.status(400).json({
           message: 'Status is required and must be a string',
         });

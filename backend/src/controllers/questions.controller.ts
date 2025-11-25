@@ -169,7 +169,7 @@ export class QuestionsController {
           behavioralQuestions,
           technicalQuestions,
           totalQuestions: savedQuestions.length,
-          jobApplication: jobApplication || null
+          jobApplication: jobApplication ?? null
         },
       });
     } catch (error) {
