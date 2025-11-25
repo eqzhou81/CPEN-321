@@ -7,6 +7,7 @@ import {
   similarJobsSearchSchema,
   updateJobApplicationSchema
 } from '../types/jobs.types';
+import { catchAsync } from '../utils/catchAsync';
 
 const router = Router();
 const jobController = new JobController();
@@ -24,9 +25,7 @@ router.use((req, res, next) => {
 router.post(
   '/',
   validateBody(createJobApplicationSchema),
-  (req, res, next) => {
-    jobController.createJobApplication(req, res, next).catch(next);
-  }
+  catchAsync(jobController.createJobApplication.bind(jobController))
 );
 
 /**
@@ -34,35 +33,35 @@ router.post(
  * @desc Get all job applications for the authenticated user
  * @access Private
  */
-router.get('/', jobController.getJobApplications.bind(jobController));
+router.get('/', catchAsync(jobController.getJobApplications.bind(jobController)));
 
 /**
  * @route GET /api/jobs/search
  * @desc Search job applications by text
  * @access Private
  */
-router.get('/search', jobController.searchJobApplications.bind(jobController));
+router.get('/search', catchAsync(jobController.searchJobApplications.bind(jobController)));
 
 /**
  * @route GET /api/jobs/by-company
  * @desc Get job applications by company
  * @access Private
  */
-router.get('/by-company', jobController.getJobApplicationsByCompany.bind(jobController));
+router.get('/by-company', catchAsync(jobController.getJobApplicationsByCompany.bind(jobController)));
 
 /**
  * @route GET /api/jobs/statistics
  * @desc Get job statistics for the user
  * @access Private
  */
-router.get('/statistics', jobController.getJobStatistics.bind(jobController));
+router.get('/statistics', catchAsync(jobController.getJobStatistics.bind(jobController)));
 
 /**
  * @route GET /api/jobs/:id
  * @desc Get a specific job application by ID
  * @access Private
  */
-router.get('/:id', jobController.getJobApplication.bind(jobController));
+router.get('/:id', catchAsync(jobController.getJobApplication.bind(jobController)));
 
 /**
  * @route PUT /api/jobs/:id
@@ -72,7 +71,7 @@ router.get('/:id', jobController.getJobApplication.bind(jobController));
 router.put(
   '/:id',
   validateBody(updateJobApplicationSchema),
-  jobController.updateJobApplication.bind(jobController)
+  catchAsync(jobController.updateJobApplication.bind(jobController))
 );
 
 /**
@@ -80,7 +79,7 @@ router.put(
  * @desc Delete a job application
  * @access Private
  */
-router.delete('/:id', jobController.deleteJobApplication.bind(jobController));
+router.delete('/:id', catchAsync(jobController.deleteJobApplication.bind(jobController)));
 
 /**
  * @route POST /api/jobs/:id/similar
@@ -90,7 +89,7 @@ router.delete('/:id', jobController.deleteJobApplication.bind(jobController));
 router.post(
   '/:id/similar',
   validateBody(similarJobsSearchSchema),
-  jobController.searchSimilarJobs.bind(jobController)
+  catchAsync(jobController.searchSimilarJobs.bind(jobController))
 );
 
 /**
@@ -98,6 +97,6 @@ router.post(
  * @desc Scrape job details from a URL
  * @access Private
  */
-router.post('/scrape', jobController.scrapeJobDetails.bind(jobController));
+router.post('/scrape', catchAsync(jobController.scrapeJobDetails.bind(jobController)));
 
 export default router;

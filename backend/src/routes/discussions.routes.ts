@@ -1,16 +1,15 @@
 import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
 import { DiscussionsController } from '../controllers/discussions.controller';
+import { catchAsync } from '../utils/catchAsync';
 
 const router = Router();
 const controller = new DiscussionsController();
 
-router.get('/', (req: Request, res: Response, next: NextFunction) => {
-  controller.getDiscussions(req, res, next).catch(next);
-});
-router.get('/:id', controller.getDiscussionById.bind(controller));
-router.post('/', controller.createDiscussion.bind(controller));
-router.post('/:id/messages', controller.postMessage.bind(controller));
-router.get('/my/discussions', controller.getMyDiscussions.bind(controller)); //maybe not in mvp
+router.get('/', catchAsync(controller.getDiscussions.bind(controller)));
+router.get('/:id', catchAsync(controller.getDiscussionById.bind(controller)));
+router.post('/', catchAsync(controller.createDiscussion.bind(controller)));
+router.post('/:id/messages', catchAsync(controller.postMessage.bind(controller)));
+router.get('/my/discussions', catchAsync(controller.getMyDiscussions.bind(controller))); //maybe not in mvp
 
 export default router;
