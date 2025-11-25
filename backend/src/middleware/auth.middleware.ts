@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { userModel } from '../models/user.model';
 import type { IUser } from '../types/users.types';
+import logger from '../utils/logger.util';
 
 export const authenticateToken = async (
   req: Request,
@@ -12,7 +13,7 @@ export const authenticateToken = async (
   try {
     // Local development auth bypass
     if (process.env.BYPASS_AUTH === 'true') {
-      console.log('🔓 Auth bypass enabled for local development');
+      logger.info('🔓 Auth bypass enabled for local development');
       
       // Create a mock user object
       req.user = {

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { ExternalQuestion, leetService } from './leetcode.service';
+import logger from '../utils/logger.util';
 
 // List of available LeetCode question types
 const LEETCODE_TOPICS = [
@@ -40,15 +41,15 @@ export async function generateQuestions(jobDescription: string): Promise<Generat
 
 
     // Log the full OpenAI API response
-    console.log('FULL OPENAI API RESPONSE:', JSON.stringify(openAIResponse.data, null, 2));
+    logger.info('FULL OPENAI API RESPONSE:', JSON.stringify(openAIResponse.data, null, 2));
 
     // Log the raw OpenAI response
     const rawOpenAI = openAIResponse.data.choices[0].message.content;
-    console.log('RAW OPENAI RESPONSE:', rawOpenAI);
+    logger.info('RAW OPENAI RESPONSE:', rawOpenAI);
 
     // Parse the response to extract suggested types
     const suggestedTypes = extractTypesFromOpenAI(rawOpenAI);
-    console.log('PARSED SUGGESTED TYPES:', suggestedTypes);
+    logger.info('PARSED SUGGESTED TYPES:', suggestedTypes);
 
     // 2. For each type, call LeetCode search API to get questions (no difficulty split)
     const dbResults: GenerateQuestionsResult[] = [];

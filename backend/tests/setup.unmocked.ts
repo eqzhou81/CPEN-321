@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 // ✅ This setup file runs for unmocked tests - ensures real database connections
 
-console.log('🔧 Setting up unmocked test environment');
+logger.info('🔧 Setting up unmocked test environment');
 
 const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/testdb';
 
@@ -11,7 +11,7 @@ process.env.NODE_ENV = 'test';
 
 // Connect to database before tests start
 beforeAll(async () => {
-  console.log('🔧 Unmocked test setup - connecting to:', uri);
+  logger.info('🔧 Unmocked test setup - connecting to:', uri);
 
   if (mongoose.connection.readyState === 0) {
     try {
@@ -20,7 +20,7 @@ beforeAll(async () => {
         socketTimeoutMS: 45000,
         connectTimeoutMS: 10000,
       });
-      console.log('✅ Test database connected');
+      logger.info('✅ Test database connected');
     } catch (error) {
       console.error('❌ Test database connection failed:', error);
       console.error('Make sure MongoDB is running at:', uri);
@@ -30,11 +30,11 @@ beforeAll(async () => {
 }, 15000); // 15 second timeout for beforeAll
 
 afterAll(async () => {
-  console.log('🔧 Closing database connection...');
+  logger.info('🔧 Closing database connection...');
   try {
     if (mongoose.connection.readyState !== 0) {
       await mongoose.connection.close();
-      console.log('✅ Database connection closed');
+      logger.info('✅ Database connection closed');
     }
   } catch (error) {
     console.error('❌ Error closing database:', error);

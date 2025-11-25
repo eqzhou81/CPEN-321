@@ -96,7 +96,7 @@ export class UserController {
 
       // // Validate confirmation
       // if (!confirmDelete) {
-      //   console.log('❌ Controller returning 400');
+      //   logger.info('❌ Controller returning 400');
       //   return res.status(400).json({
       //     success: false,
       //     message: 'Delete confirmation required',
