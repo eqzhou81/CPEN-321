@@ -666,9 +666,9 @@ export class JobSearchService {
               title: job.position,
               company: job.company,
               location: 'Remote',
-              description: job.description || '',
+              description: job.description ?? '',
               url: job.url ?? `https://remoteok.io/remote-jobs/${job.id}`,
-              salary: job.salary || '',
+              salary: job.salary ?? '',
               postedDate: new Date(job.date),
               source: 'remoteok',
               isRemote: true,
@@ -1531,7 +1531,7 @@ export class JobSearchService {
 
     // Fallbacks
     if (!title) {
-      title = $('h1').first().text().trim() || 'Job Position';
+      title = $('h1').first().text().trim() ?? 'Job Position';
     }
 
     if (!company) {
@@ -1764,10 +1764,10 @@ export class JobSearchService {
       url: job.url,
       salary: job.salary ?? undefined,
       jobType: job.jobType ?? undefined,
-      experienceLevel: job.experienceLevel || undefined,
+      experienceLevel: job.experienceLevel ?? undefined,
       source: 'database',
       score: 0, // Will be set later
-      postedDate: job.postedDate || job.createdAt
+      postedDate: job.postedDate ?? job.createdAt
     };
   }
 
