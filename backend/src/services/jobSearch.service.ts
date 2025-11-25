@@ -561,7 +561,7 @@ export class JobSearchService {
             
             if (titleEl && companyEl) {
               jobs.push({
-                title: titleEl.textContent?.trim() || '',
+                title: titleEl.textContent.trim() || '',
                 company: companyEl.textContent.trim() || '',
                 location: locationEl?.textContent?.trim() ?? 'Not specified',
                 description: '',
