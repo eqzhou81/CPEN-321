@@ -138,7 +138,17 @@ export class DiscussionsController {
   next: NextFunction
 ) {
   try {
-    const user = req.user!;
+    const user = req.user;
+
+    // Validate user is authenticated
+    if (!user || !user._id) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated',
+        error: 'AuthenticationError',
+      });
+    }
+
     const { topic, description } = req.body;
 
     // ✅ Validate input safely with Zod schema
@@ -253,7 +263,17 @@ export class DiscussionsController {
     next: NextFunction
   ) {
     try {
-      const user = req.user!;
+      const user = req.user;
+
+      // Validate user is authenticated
+      if (!user || !user._id) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not authenticated',
+          error: 'AuthenticationError',
+        });
+      }
+
       const { id } = req.params;
       const { content } = req.body;
 
@@ -325,7 +345,17 @@ export class DiscussionsController {
    */
   async getMyDiscussions(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = req.user!;
+      const user = req.user;
+
+      // Validate user is authenticated
+      if (!user || !user._id) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not authenticated',
+          error: 'AuthenticationError',
+        });
+      }
+
       const { page = 1, limit = 20 } = req.query;
 
       const skip = (Number(page) - 1) * Number(limit);
