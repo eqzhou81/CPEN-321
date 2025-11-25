@@ -39,7 +39,7 @@ io.on('connection', (socket) => {
 });
 
 
-connectDB().catch((err) => console.error("Database connection failed:", err));
+connectDB().catch((err : unknown) => console.error("Database connection failed:", err));
 
 // Start BOTH Express + Socket.IO
 server.listen(PORT, () => {

@@ -1154,8 +1154,8 @@ export class JobSearchService {
                     location: (locationEl?.textContent ?? '').trim(),
                     description: (descriptionEl?.textContent ?? '').trim(),
                     url: urlEl?.getAttribute('href') ?? '',
-                    salary: salaryEl?.textContent?.trim(),
-                    postedDate: postedEl?.textContent?.trim(),
+                    salary: salaryEl?.textContent.trim(),
+                    postedDate: postedEl?.textContent.trim(),
                     source
                   };
                   
@@ -1892,7 +1892,7 @@ export class JobSearchService {
     ];
     
     const titleLower = title.toLowerCase();
-    return roles.find(role => titleLower.includes(role)) || null;
+    return roles.find(role => titleLower.includes(role)) ?? null;
   }
 
   /**
