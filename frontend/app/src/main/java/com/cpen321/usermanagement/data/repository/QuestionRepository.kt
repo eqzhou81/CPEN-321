@@ -32,7 +32,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to generate questions"))
             }
-        } catch (e: Exception) {
+        } catch (e: retrofit2.HttpException) {
+            Result.failure(e)
+        } catch (e: java.io.IOException) {
             Result.failure(e)
         }
     }

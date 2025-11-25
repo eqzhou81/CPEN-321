@@ -1,4 +1,3 @@
-import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
 import { SessionsController } from '../controllers/sessions.controller';
 import { authenticateToken } from '../middleware/auth.middleware';

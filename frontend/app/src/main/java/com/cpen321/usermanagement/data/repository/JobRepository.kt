@@ -24,7 +24,9 @@ class JobRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to create job application"))
             }
-        } catch (e: Exception) {
+        } catch (e: retrofit2.HttpException) {
+            Result.failure(e)
+        } catch (e: java.io.IOException) {
             Result.failure(e)
         }
     }

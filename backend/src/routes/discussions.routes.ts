@@ -1,4 +1,3 @@
-import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
 import { DiscussionsController } from '../controllers/discussions.controller';
 import { catchAsync } from '../utils/catchAsync';

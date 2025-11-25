@@ -303,7 +303,9 @@ class QuestionViewModel @Inject constructor(
                         _error.value = exception.message ?: "Failed to update question completion"
                     }
                 )
-            } catch (e: Exception) {
+            } catch (e: retrofit2.HttpException) {
+                _error.value = e.message ?: "Failed to update question completion"
+            } catch (e: java.io.IOException) {
                 _error.value = e.message ?: "Failed to update question completion"
             }
         }

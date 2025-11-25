@@ -79,7 +79,13 @@ class MainViewModel @Inject constructor(
                             _sessionCreated.value = sessionId
                             _uiState.value = _uiState.value.copy(isCreatingSession = false)
                             Log.d("MainViewModel", "Successfully parsed session ID: $sessionId")
-                        } catch (e: Exception) {
+                        } catch (e: org.json.JSONException) {
+                            Log.e("MainViewModel", "Failed to parse existing session ID: ${e.message}")
+                            _uiState.value = _uiState.value.copy(
+                                isCreatingSession = false,
+                                errorMessage = "An active session exists but could not be retrieved"
+                            )
+                        } catch (e: com.google.gson.JsonSyntaxException) {
                             Log.e("MainViewModel", "Failed to parse existing session ID: ${e.message}")
                             _uiState.value = _uiState.value.copy(
                                 isCreatingSession = false,
@@ -93,7 +99,12 @@ class MainViewModel @Inject constructor(
                         errorMessage = response.body()?.message ?: "Failed to create session"
                     )
                 }
-            } catch (e: Exception) {
+            } catch (e: retrofit2.HttpException) {
+                _uiState.value = _uiState.value.copy(
+                    isCreatingSession = false,
+                    errorMessage = "Network error: ${e.message}"
+                )
+            } catch (e: java.io.IOException) {
                 _uiState.value = _uiState.value.copy(
                     isCreatingSession = false,
                     errorMessage = "Network error: ${e.message}"
@@ -143,7 +154,13 @@ class MainViewModel @Inject constructor(
                             _sessionCreated.value = sessionId
                             _uiState.value = _uiState.value.copy(isCreatingSession = false)
                             Log.d("MainViewModel", "Successfully parsed session ID: $sessionId")
-                        } catch (e: Exception) {
+                        } catch (e: org.json.JSONException) {
+                            Log.e("MainViewModel", "Failed to parse existing session ID: ${e.message}")
+                            _uiState.value = _uiState.value.copy(
+                                isCreatingSession = false,
+                                errorMessage = "An active session exists but could not be retrieved"
+                            )
+                        } catch (e: com.google.gson.JsonSyntaxException) {
                             Log.e("MainViewModel", "Failed to parse existing session ID: ${e.message}")
                             _uiState.value = _uiState.value.copy(
                                 isCreatingSession = false,
@@ -157,7 +174,12 @@ class MainViewModel @Inject constructor(
                         errorMessage = response.body()?.message ?: "Failed to create session"
                     )
                 }
-            } catch (e: Exception) {
+            } catch (e: retrofit2.HttpException) {
+                _uiState.value = _uiState.value.copy(
+                    isCreatingSession = false,
+                    errorMessage = "Network error: ${e.message}"
+                )
+            } catch (e: java.io.IOException) {
                 _uiState.value = _uiState.value.copy(
                     isCreatingSession = false,
                     errorMessage = "Network error: ${e.message}"
