@@ -565,7 +565,7 @@ export class JobSearchService {
                 company: companyEl.textContent.trim() || '',
                 location: locationEl?.textContent?.trim() ?? 'Not specified',
                 description: '',
-                url: (linkEl)?.href ?? '',
+                url: (linkEl!)?.href || '',
                 salary: '',
                 postedDate: new Date(),
                 source: 'glassdoor'

@@ -236,7 +236,7 @@ export class JobApplicationModel {
     userId: mongoose.Types.ObjectId,
     company: string,
     limit = 20,
-    skip = 0
+    skip: number = 0
   ): Promise<{ jobApplications: IJobApplication[]; total: number }> {
     try {
       const [jobApplications, total] = await Promise.all([
