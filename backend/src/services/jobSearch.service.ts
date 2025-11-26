@@ -802,7 +802,7 @@ export class JobSearchService {
                 company: companyEl.textContent?.trim() ?? '',
                 location: locationEl?.textContent?.trim() ?? 'Remote',
                 description: '',
-                url: linkEl ? (linkEl as HTMLAnchorElement).href || '' : '',
+                url: linkEl ? (linkEl).href || '' : '',
                 salary: '',
                 postedDate: new Date().toISOString(),
                 source: 'wellfound'
@@ -1044,8 +1044,8 @@ export class JobSearchService {
       // Score and filter jobs
       const scoredJobs = availableJobs
         .map(job => ({
-          ...this.convertToSimilarJob(job),
-          score: this.calculateJobSimilarity(jobApplication, job)
+          ...this.convertToSimilarJob(job as IAvailableJob),
+          score: this.calculateJobSimilarity(jobApplication, job as IAvailableJob)
         }))
         .filter(job => job.score > 0.1) // Minimum meaningful similarity
         .sort((a, b) => b.score - a.score)
@@ -1064,7 +1064,7 @@ export class JobSearchService {
    * Calculate similarity score between two job applications
    * Uses weighted criteria for manual similarity calculation
    */
-  private calculateJobSimilarity(job1: IJobApplication | Partial<IJobApplication> | ISimilarJob, job2: IJobApplication | Partial<IJobApplication> | ISimilarJob): number {
+  private calculateJobSimilarity(job1: IJobApplication | Partial<IJobApplication> | ISimilarJob, job2: IJobApplication | Partial<IJobApplication> | ISimilarJob | IAvailableJob): number {
     const weights = {
       title: 0.4,      // 40% - Job title similarity
       company: 0.2,    // 20% - Company similarity  
@@ -1830,14 +1830,14 @@ export class JobSearchService {
   /**
    * Fetch candidate jobs from database using smart search strategy
    */
-  private async fetchCandidateJobs(jobApplication: IJobApplication | Partial<IJobApplication>): Promise<any[]> {
+  private async fetchCandidateJobs(jobApplication: IJobApplication | Partial<IJobApplication>): Promise<unknown[]> {
     const searches = [];
     const jobApp = jobApplication as { title?: string; company?: string; jobLocation?: string; location?: string };
     
     // Extract search terms
-    const titleKeywords = this.extractMainKeywords(jobApp.title || '');
-    const companyName = this.normalizeCompanyName(jobApp.company || '');
-    const location = this.normalizeLocation(jobApp.jobLocation || jobApp.location || '');
+    const titleKeywords = this.extractMainKeywords(jobApp.title ?? '');
+    const companyName = this.normalizeCompanyName(jobApp.company ?? '');
+    const location = this.normalizeLocation((jobApp.jobLocation ?? jobApp.location) || '');
     
     // Strategy 1: Search by job title keywords
     if (titleKeywords) {
@@ -1878,17 +1878,17 @@ export class JobSearchService {
   private convertToSimilarJob(job: IAvailableJob | Partial<IAvailableJob>): ISimilarJob {
     const jobObj = job as { title?: string; company?: string; description?: string; jobLocation?: string; url?: string; salary?: string; jobType?: string; experienceLevel?: string; postedDate?: Date; createdAt?: Date };
     return {
-      title: jobObj.title || '',
-      company: jobObj.company || '',
-      description: jobObj.description || '',
-      location: jobObj.jobLocation || '',
-      url: jobObj.url || '',
-      salary: jobObj.salary || undefined,
-      jobType: jobObj.jobType || undefined,
-      experienceLevel: jobObj.experienceLevel || undefined,
+      title: jobObj.title ?? '',
+      company: jobObj.company ?? '',
+      description: jobObj.description ?? '',
+      location: jobObj.jobLocation ?? '',
+      url: jobObj.url ?? '',
+      salary: jobObj.salary ?? undefined,
+      jobType: jobObj.jobType ?? undefined,
+      experienceLevel: jobObj.experienceLevel ?? undefined,
       source: 'database' as const,
       score: 0, // Will be set later
-      postedDate: jobObj.postedDate || jobObj.createdAt
+      postedDate: jobObj.postedDate ?? jobObj.createdAt
     };
   }
 

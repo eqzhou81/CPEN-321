@@ -116,7 +116,7 @@ export interface JobApplicationResponse {
   data?: {
     jobApplication: IJobApplication;
   };
-};
+}
 
 export interface JobApplicationsListResponse {
   message: string;

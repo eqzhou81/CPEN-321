@@ -10,7 +10,7 @@ export interface AuthenticateUserRequest {
 export interface AuthenticateUserResponse {
   message: string;
   data?: AuthResult;
-};
+}
 
 // Zod schemas
 // ------------------------------------------------------------
