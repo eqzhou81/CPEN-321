@@ -1,4 +1,4 @@
-import mongoose, { Model, Schema } from 'mongoose';
+import mongoose, { FilterQuery, Model, Schema } from 'mongoose';
 import {
   CreateQuestionRequest,
   IQuestion,
@@ -156,7 +156,7 @@ export class QuestionModel {
     type?: QuestionType
   ): Promise<IQuestion[]> {
     try {
-      const query: unknown = { jobId, userId };
+      const query: FilterQuery<IQuestion> = { jobId, userId };
       if (type) {
         query.type = type;
       }

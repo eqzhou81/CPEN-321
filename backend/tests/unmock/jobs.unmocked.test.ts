@@ -1674,7 +1674,7 @@ describe('Job Controller - Unmocked Integration Tests', () => {
           const processed2 = (jobSearchServiceInstance as any).processJobData(rawJobData2, 'linkedin');
           expect(processed2.title).toBe('Developer');
           expect(processed2.source).toBe('linkedin');
-          expect(processed2.company).toBeUndefined();
+          expect(processed2.company).toBe(''); // Company is required in ISimilarJob, defaults to empty string
         });
 
         it('should handle complex title and company extraction', () => {

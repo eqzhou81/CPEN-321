@@ -1,4 +1,4 @@
-import mongoose, { Document, Model, Schema } from 'mongoose';
+import mongoose, { Document, Model, Schema, UpdateQuery } from 'mongoose';
 import logger from '../utils/logger.util';
 
 // Session status enum
@@ -192,17 +192,17 @@ export class SessionModel {
     currentQuestionIndex?: number
   ): Promise<ISession | null> {
     try {
-      const updateData: unknown = { answeredQuestions };
+      const updateData: UpdateQuery<ISession> = { answeredQuestions };
       
       if (currentQuestionIndex !== undefined) {
         updateData.currentQuestionIndex = currentQuestionIndex;
       }
 
-      return await Session.findOneAndUpdate(
+      return (await Session.findOneAndUpdate(
         { _id: sessionId, userId },
         updateData,
         { new: true }
-      ).populate('questionIds').exec();
+      ).populate('questionIds').exec()) as ISession | null;
     } catch (error) {
       logger.error('Error updating session progress:', error);
       throw new Error('Failed to update session progress');
@@ -289,17 +289,17 @@ export class SessionModel {
     status: SessionStatus
   ): Promise<ISession | null> {
     try {
-      const updateData: unknown = { status };
+      const updateData: UpdateQuery<ISession> = { status };
       
       if (status === SessionStatus.COMPLETED) {
         updateData.completedAt = new Date();
       }
 
-      return await Session.findOneAndUpdate(
+      return (await Session.findOneAndUpdate(
         { _id: sessionId, userId },
         updateData,
         { new: true }
-      ).populate('questionIds').exec();
+      ).populate('questionIds').exec()) as ISession | null;
     } catch (error) {
       logger.error('Error updating session status:', error);
       throw new Error('Failed to update session status');

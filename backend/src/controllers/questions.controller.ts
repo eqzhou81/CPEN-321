@@ -142,7 +142,11 @@ export class QuestionsController {
           technicalQuestions = this.generateFallbackTechnicalQuestions(jobApplication, technicalCount);
         }
 
-        generatedQuestions.push(...technicalQuestions);
+        generatedQuestions.push(...technicalQuestions.map(q => ({
+          ...q,
+          description: q.description ?? '',
+          tags: q.tags ?? []
+        })));
       }
 
       const savedQuestions = await questionModel.createMany(

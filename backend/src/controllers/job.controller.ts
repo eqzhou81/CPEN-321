@@ -407,7 +407,7 @@ export class JobController {
       // Get company distribution
       const { jobApplications } = await jobApplicationModel.findByUserId(new mongoose.Types.ObjectId(user._id), 1000, 0);
       
-      const companyStats = jobApplications.reduce((acc, job) => {
+      const companyStats = jobApplications.reduce((acc: Record<string, number>, job) => {
         acc[job.company] = (acc[job.company] || 0) + 1;
         return acc;
       }, {});

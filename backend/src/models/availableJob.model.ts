@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, FilterQuery, Schema } from 'mongoose';
 
 // Available Job model for storing jobs that can be searched
 // This is separate from user job applications
@@ -165,7 +165,7 @@ export class AvailableJobModel {
     limit?: number;
   }): Promise<IAvailableJob[]> {
     try {
-      const query: unknown = {};
+      const query: FilterQuery<IAvailableJob> = {};
 
       if (searchParams.title) {
         query.$or = [
@@ -195,7 +195,7 @@ export class AvailableJobModel {
       }
 
       const limit = searchParams.limit ?? 20;
-      return await this.availableJob.find(query).limit(limit).sort({ createdAt: -1 });
+      return (await this.availableJob.find(query).limit(limit).sort({ createdAt: -1 })) as IAvailableJob[];
     } catch (error) {
       throw new Error(`Failed to search jobs: ${error}`);
     }
