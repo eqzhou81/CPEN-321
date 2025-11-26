@@ -42,7 +42,7 @@ class LiveDiscussionsTest : BaseComposeTest() {
     /**
      * Navigate to discussions screen by clicking the discussions button in the top app bar
      */
-    private fun navigateToDiscussions() {
+    private fun navigateFromMainScreenToDiscussionsScreen() {
         android.util.Log.d("LiveDiscussionsTest", "Navigating to discussions screen...")
 
         // Wait for main screen
@@ -93,7 +93,7 @@ class LiveDiscussionsTest : BaseComposeTest() {
         android.util.Log.d("LiveDiscussionsTest", "User A token set. Backend URL: ${com.cpen321.usermanagement.BuildConfig.STAGING_BASE_URL}")
 
         super.setup()
-        navigateToDiscussions()
+        navigateFromMainScreenToDiscussionsScreen()
     }
 
     /**

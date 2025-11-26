@@ -57,14 +57,14 @@ class NavigationStateManager @Inject constructor() {
 
         // Trigger navigation based on state
         if (!isLoading) {
-            handleAuthenticationNavigation(currentRoute, isAuthenticated, needsProfileCompletion)
+            determineAndTriggerNavigationBasedOnAuthState(currentRoute, isAuthenticated, needsProfileCompletion)
         }
     }
 
     /**
      * Handle navigation decisions based on authentication state
      */
-    private fun handleAuthenticationNavigation(
+    private fun determineAndTriggerNavigationBasedOnAuthState(
         currentRoute: String,
         isAuthenticated: Boolean,
         needsProfileCompletion: Boolean

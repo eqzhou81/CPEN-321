@@ -55,18 +55,18 @@ abstract class BaseComposeTest {
         // Wait for app to be fully ready - give time for navigation and auth check
         // With AUTH_BYPASS_ENABLED, the app should navigate from AUTH to MAIN
         // This also waits for initial backend calls (getCurrentUser, etc.) to complete
-        waitForAppToBeReady()
+        waitForAppInitializationAndBackendConnection()
     }
     
     /**
      * Wait for the app to be fully ready before running tests
      * Ensures navigation and auth check are complete
      * Extended timeout for backend connection (especially for unmocked E2E tests)
-     * 
+     *
      * IMPORTANT: This waits for backend calls to complete. If backend is not running,
      * this will timeout after 90 seconds.
      */
-    private fun waitForAppToBeReady() {
+    private fun waitForAppInitializationAndBackendConnection() {
         android.util.Log.d("BaseComposeTest", "Waiting for app to be ready...")
         
         // Wait for either main screen or loading to complete

@@ -1243,7 +1243,7 @@ export class JobSearchService {
                     url: urlEl?.getAttribute('href') || '',
                     salary: salaryEl?.textContent?.trim(),
                     postedDate: postedEl?.textContent?.trim(),
-                    source: source
+                    source
                   };
                   
                   // Make URL absolute if it's relative
@@ -1620,8 +1620,8 @@ export class JobSearchService {
     // ===== EXTRACT DATA WITH CHEERIO =====
     const extractText = (selector: string): string => {
       const elements = $(selector);
-      for (let i = 0; i < elements.length; i++) {
-        const text = $(elements[i]).text().trim();
+      for (const element of elements) {
+        const text = $(element).text().trim();
         if (text && text.length > 0) {
           return text;
         }
@@ -1854,7 +1854,7 @@ export class JobSearchService {
     // Strategy 3: Search by location
     if (location) {
       searches.push(
-        availableJobModel.searchJobs({ location: location, limit: 100 })
+        availableJobModel.searchJobs({ location, limit: 100 })
       );
     }
     

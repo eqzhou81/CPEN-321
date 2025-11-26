@@ -27,8 +27,3 @@ interface UserInterface {
         @Body request: DeleteProfileRequest
     ): Response<DeleteProfileResponse>
 }
-
-interface ImageInterface{}
-
-
-

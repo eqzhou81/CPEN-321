@@ -168,7 +168,7 @@ import com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel
 //        verticalArrangement = Arrangement.spacedBy(24.dp)
 //    ) {
 //        // Profile Header
-//        ProfileHeader(user = user)
+//        UserProfileHeaderCard(user = user)
 //
 //        // Profile Information
 //        ProfileInformation(user = user)
@@ -182,7 +182,7 @@ import com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel
 //}
 
 @Composable
-private fun ProfileHeader(user: User) {
+private fun UserProfileHeaderCard(user: User) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(

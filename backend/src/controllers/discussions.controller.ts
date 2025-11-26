@@ -130,8 +130,7 @@ export class DiscussionsController {
    */
  async createDiscussion(
   req: Request<unknown, unknown, CreateDiscussionRequest>,
-  res: Response,
-  _next: NextFunction
+  res: Response
 ) {
   try {
     const user = req.user!;

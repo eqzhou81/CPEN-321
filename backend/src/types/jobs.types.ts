@@ -124,7 +124,7 @@ export interface JobApplicationsListResponse {
     jobApplications: IJobApplication[];
     total: number;
   };
-};
+}
 
 export interface SimilarJobsResponse {
   message: string;

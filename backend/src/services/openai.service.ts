@@ -114,16 +114,16 @@ class OpenAIService {
       }
 
       logger.info('Generating feedback for answer', {
-        question: question,
+        question,
         questionLength: question.length,
-        answer: answer,
+        answer,
         answerLength: answer.length
       });
 
       const prompt = this.createFeedbackPrompt(question, answer, jobContext);
 
       logger.debug('Feedback prompt created', {
-        prompt: prompt
+        prompt
       });
 
       const completion = await this.openai.chat.completions.create({
@@ -153,7 +153,7 @@ class OpenAIService {
       }
 
       logger.debug('OpenAI response received', {
-        response: response
+        response
       });
 
       let feedback;

@@ -35,7 +35,7 @@ class DiscussionsTest : BaseComposeTest() {
      * Navigate to discussions screen by clicking the discussions button in the top app bar
      * This should be called at the start of each test to ensure we're on the discussions screen
      */
-    private fun navigateToDiscussions() {
+    private fun navigateFromMainScreenToDiscussionsScreen() {
         android.util.Log.d("DiscussionsTest", "Navigating to discussions screen...")
 
         // Step 1: Wait for main screen to load
@@ -108,7 +108,7 @@ class DiscussionsTest : BaseComposeTest() {
         super.setup()
 
         // Navigate to discussions screen after app setup
-        navigateToDiscussions()
+        navigateFromMainScreenToDiscussionsScreen()
     }
 
     /**
