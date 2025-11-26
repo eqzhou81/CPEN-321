@@ -1,8 +1,6 @@
 import mongoose from 'mongoose';
 import axios from 'axios';
 import puppeteer from 'puppeteer';
-import fs from 'fs';
-import path from 'path';
 import * as cheerio from 'cheerio';
 import { availableJobModel, IAvailableJob } from '../models/availableJob.model';
 import {

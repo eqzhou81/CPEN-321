@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { DiscussionsController } from '../controllers/discussions.controller';
-import { authenticateToken } from '../middleware/auth.middleware';
 
 const router = Router();
 const controller = new DiscussionsController();

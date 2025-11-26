@@ -1,15 +1,13 @@
 import { Router } from 'express';
 
 import { AuthController } from '../controllers/auth.controller';
-import { validateBody } from '../middleware/validation.middleware';
-import { AuthenticateUserRequest, authenticateUserSchema } from '../types/auth.types';
 
 const router = Router();
 const authController = new AuthController();
 
 // Mock auth endpoint for local development
 if (process.env.BYPASS_AUTH === 'true') {
-  router.post('/mock-signin', (req, res) => {
+  router.post('/mock-signin', (_req, res) => {
     res.json({
       message: 'Mock sign in successful',
       data: {

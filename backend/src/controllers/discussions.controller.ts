@@ -8,16 +8,12 @@ import {
   MessageResponse,
   CreateDiscussionResponse,
   PostMessageResponse,
-  EmptyTopicException,
-  TopicTooLongException,
-  DescriptionTooLongException,
   createDiscussionSchema,
   postMessageSchema,
 } from '../types/discussions.types';
 import { discussionModel } from '../models/discussions.model';
 import { userModel } from '../models/user.model';
 import logger from '../utils/logger.util';
-import { ZodError } from 'zod';
 
 export class DiscussionsController {
   /**
@@ -135,7 +131,7 @@ export class DiscussionsController {
  async createDiscussion(
   req: Request<unknown, unknown, CreateDiscussionRequest>,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) {
   try {
     const user = req.user!;
