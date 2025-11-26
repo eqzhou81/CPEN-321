@@ -1837,7 +1837,7 @@ export class JobSearchService {
     // Extract search terms
     const titleKeywords = this.extractMainKeywords(jobApp.title ?? '');
     const companyName = this.normalizeCompanyName(jobApp.company ?? '');
-    const location = this.normalizeLocation((jobApp.jobLocation ?? jobApp.location) || '');
+    const location = this.normalizeLocation((jobApp.jobLocation ?? jobApp.location) ?? '');
     
     // Strategy 1: Search by job title keywords
     if (titleKeywords) {
