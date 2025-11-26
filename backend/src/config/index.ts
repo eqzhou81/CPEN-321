@@ -41,7 +41,7 @@ io.on('connection', (socket) => {
 });
 
 
-connectDB();
+void connectDB();
 
 // Start BOTH Express + Socket.IO
 server.listen(PORT, () => {
@@ -53,7 +53,7 @@ process.on('SIGTERM', () => {
   console.log('SIGTERM received. Shutting down gracefully...');
   server.close(() => {
     console.log('✅ Server closed');
-    process.exit(0);
+    throw new Error("Fatal startup error: unable to initialize server.");
   });
 });
 

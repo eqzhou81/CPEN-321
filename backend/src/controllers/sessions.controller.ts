@@ -401,7 +401,7 @@ export class SessionsController {
   }
 
   async updateSessionStatus(
-    req: Request<{ sessionId: string }, unknown, UpdateSessionStatusRequest>,
+    req: Request<{ sessionId?: string }, unknown, UpdateSessionStatusRequest>,
     res: Response<SessionResponse>
   ) {
     try {
@@ -409,7 +409,7 @@ export class SessionsController {
       const sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
       const { status } = req.body;
 
-      if (!status || typeof status !== 'string') {
+      if (!status) {
         return res.status(400).json({
           message: 'Status is required and must be a string',
         });

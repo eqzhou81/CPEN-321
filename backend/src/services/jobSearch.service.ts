@@ -417,7 +417,7 @@ export class JobSearchService {
                 company: companyEl.textContent?.trim() ?? '',
                 location: locationEl?.textContent?.trim() ?? 'Not specified',
                 description: '',
-                url: linkEl ? (linkEl as HTMLAnchorElement).href || '' : '',
+                url: linkEl instanceof HTMLAnchorElement ? linkEl.href : '',
                 salary: '',
                 postedDate: new Date(),
                 source: 'indeed'
