@@ -1,4 +1,4 @@
-import mongoose, { Schema, Model } from 'mongoose';
+import mongoose, { FilterQuery, Schema, Model, SortOrder } from 'mongoose';
 import { IDiscussion, IMessage } from '../types/discussions.types';
 
 // ==================== MESSAGE SCHEMA ====================
@@ -121,21 +121,21 @@ export const discussionModel = {
     limit = 20,
     skip = 0
   ): Promise<IDiscussion[]> {
-    const query: unknown = {};
+    const query: FilterQuery<IDiscussion> = {};
 
     if (search) {
-      (query as { $text?: { $search: string } }).$text = { $search: search };
+      query.$text = { $search: search };
     }
 
-    const sort: unknown = sortBy === 'popular' 
+    const sort: Record<string, SortOrder> = sortBy === 'popular' 
       ? { messageCount: -1, lastActivityAt: -1 }
       : { lastActivityAt: -1 };
 
-    return await Discussion.find(query)
+    return (await Discussion.find(query)
       .sort(sort)
       .limit(limit)
       .skip(skip)
-      .exec();
+      .exec()) as IDiscussion[];
   },
 
   /**
@@ -209,7 +209,7 @@ export const discussionModel = {
   /**
    * Delete discussions by query (for testing cleanup)
    */
-  async deleteMany(query: unknown): Promise<unknown> {
+  async deleteMany(query: FilterQuery<IDiscussion>): Promise<unknown> {
     return await Discussion.deleteMany(query).exec();
   },
 

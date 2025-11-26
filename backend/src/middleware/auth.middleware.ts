@@ -2,6 +2,7 @@ import { NextFunction, Request, RequestHandler, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { userModel } from '../models/user.model';
+import { IUser } from '../types/users.types';
 
 export const authenticateToken: RequestHandler = async (
   req: Request,
@@ -26,7 +27,7 @@ export const authenticateToken: RequestHandler = async (
         savedQuestions: [],
         createdAt: new Date(),
         updatedAt: new Date()
-      } as unknown;
+      } as unknown as IUser | undefined;
       
       next();
       return;
