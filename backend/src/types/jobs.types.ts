@@ -133,7 +133,7 @@ export interface SimilarJobsResponse {
     total: number;
     searchParams: IJobSearchParams;
   };
-};
+}
 
 // Web scraping interfaces
 // ------------------------------------------------------------

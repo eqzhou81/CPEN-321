@@ -510,7 +510,7 @@ export class JobSearchService {
                 company: companyEl.textContent?.trim() || '',
                 location: locationEl?.textContent?.trim() || 'Not specified',
                 description: '',
-                url: (linkEl as HTMLAnchorElement)?.href || '',
+                url: (linkEl as HTMLAnchorElement)!.href || '',
                 salary: '',
                 postedDate: new Date(),
                 source: 'linkedin'
@@ -605,7 +605,7 @@ export class JobSearchService {
                 company: companyEl.textContent?.trim() || '',
                 location: locationEl?.textContent?.trim() || 'Not specified',
                 description: '',
-                url: (linkEl as HTMLAnchorElement)?.href || '',
+                url: (linkEl as HTMLAnchorElement)!.href || '',
                 salary: '',
                 postedDate: new Date(),
                 source: 'glassdoor'
