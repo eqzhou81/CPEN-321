@@ -173,9 +173,7 @@ private enum class MainTab(
     PROFILE("Profile", Icons.Default.Person)
 }
 
-/**
- * Content-only version of DiscussionScreen for embedding in MainAppScreen
- */
+
 @Composable
 private fun DiscussionScreenContent(
     discussionViewModel: com.cpen321.usermanagement.ui.viewmodels.DiscussionViewModel,
@@ -323,9 +321,8 @@ private fun CreateDiscussionDialog(
     )
 }
 
-/**
- * Discussion item card
- */
+
+
 @Composable
 private fun DiscussionItemCard(
     discussion: DiscussionListResponse,
@@ -366,9 +363,7 @@ private fun DiscussionItemCard(
     }
 }
 
-/**
- * Content-only version of ProfileScreen for embedding in MainAppScreen
- */
+
 @Composable
 private fun ProfileScreenContent(
     authViewModel: AuthViewModel,

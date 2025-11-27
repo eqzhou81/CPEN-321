@@ -196,8 +196,8 @@ Generate ${count} behavioral interview questions for the following job position:
 Job Title: ${jobApplication.title}
 Company: ${jobApplication.company}
 Job Description: ${jobApplication.description}
-    Required Skills: ${(jobApplication.skills?.join(', ') ?? '') || 'Not specified'}
-    Experience Level: ${jobApplication.experienceLevel || 'Not specified'}
+    Required Skills: ${jobApplication.skills?.join(', ') ?? 'Not specified'}
+    Experience Level: ${jobApplication.experienceLevel ?? 'Not specified'}
 
 Please create questions that are:
 1. Relevant to the job role and industry

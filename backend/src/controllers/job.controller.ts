@@ -23,7 +23,10 @@ export class JobController {
     next: NextFunction
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       
       const jobApplication = await jobApplicationModel.create(new mongoose.Types.ObjectId(user._id), req.body);
       
@@ -53,7 +56,10 @@ export class JobController {
     next: NextFunction
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
       const skip = (page - 1) * limit;
@@ -93,7 +99,10 @@ export class JobController {
     next: NextFunction
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       const jobId = new mongoose.Types.ObjectId(req.params.id);
       
       const jobApplication = await jobApplicationModel.findById(jobId, new mongoose.Types.ObjectId(user._id));
@@ -130,7 +139,10 @@ export class JobController {
     next: NextFunction
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       const jobId = new mongoose.Types.ObjectId(req.params.id);
       
       const updatedJobApplication = await jobApplicationModel.update(
@@ -171,7 +183,10 @@ export class JobController {
     next: NextFunction
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       const jobId = new mongoose.Types.ObjectId(req.params.id);
       
       const deleted = await jobApplicationModel.delete(jobId, new mongoose.Types.ObjectId(user._id));
@@ -207,7 +222,10 @@ export class JobController {
     next: NextFunction
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       const jobId = new mongoose.Types.ObjectId(req.params.id);
       
       // Get the original job application
@@ -261,7 +279,10 @@ export class JobController {
     next: NextFunction
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       const searchTerm = req.query.q as string;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
@@ -309,7 +330,10 @@ export class JobController {
     next: NextFunction
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       const company = req.query.company as string;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
@@ -399,7 +423,10 @@ export class JobController {
     next: NextFunction
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       
       // Get basic statistics
       const { total } = await jobApplicationModel.findByUserId(new mongoose.Types.ObjectId(user._id), 1, 0);

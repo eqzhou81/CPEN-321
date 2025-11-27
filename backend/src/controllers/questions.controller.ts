@@ -23,7 +23,10 @@ export class QuestionsController {
     res: Response<QuestionResponse>
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       const { jobId, types, count = 10 } = req.body;
 
       if (!jobId) {
@@ -181,7 +184,10 @@ export class QuestionsController {
     res: Response<QuestionResponse>
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       const jobId = new mongoose.Types.ObjectId(req.params.jobId);
       const type = req.query.type as QuestionType;
 
@@ -216,7 +222,10 @@ export class QuestionsController {
     res: Response<BehavioralAnswerResponse>
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       const { questionId, answer } = req.body;
 
       if (!questionId) {
@@ -280,7 +289,10 @@ export class QuestionsController {
     res: Response<QuestionResponse>
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       const questionId = new mongoose.Types.ObjectId(req.params.questionId);
 
       const currentQuestion = await questionModel.findById(questionId, new mongoose.Types.ObjectId(user._id));
@@ -325,7 +337,10 @@ export class QuestionsController {
     res: Response<QuestionProgressResponse>
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       const jobId = new mongoose.Types.ObjectId(req.params.jobId);
 
       const progress = await questionModel.getProgressByJob(jobId, new mongoose.Types.ObjectId(user._id));

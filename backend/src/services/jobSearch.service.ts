@@ -607,9 +607,9 @@ export class JobSearchService {
             
             if (titleEl && companyEl) {
               jobs.push({
-                title: titleEl.textContent?.trim() || '',
-                company: companyEl.textContent?.trim() || '',
-                location: locationEl?.textContent?.trim() || 'Not specified',
+                title: titleEl.textContent?.trim() ?? '',
+                company: companyEl.textContent?.trim() ?? '',
+                location: locationEl?.textContent?.trim() ?? 'Not specified',
                 description: '',
                 url: linkEl?.href ?? '',
                 salary: '',
@@ -1999,7 +1999,7 @@ export class JobSearchService {
    * Compare skills arrays
    */
   private compareSkills(skills1: string[], skills2: string[]): number {
-    if (!skills1.length || !skills2?.length) return 0;
+    if (!skills1.length || !skills2.length) return 0;
     
     const s1 = new Set(skills1.map(s => s.toLowerCase()));
     const s2 = new Set(skills2.map(s => s.toLowerCase()));

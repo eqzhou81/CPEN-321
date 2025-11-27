@@ -133,7 +133,10 @@ export class DiscussionsController {
   res: Response
 ) {
   try {
-    const user = req.user!;
+    if (!req.user) {
+      throw new Error('User not authenticated');
+    }
+    const user = req.user;
     const { topic, description } = req.body;
 
     // ✅ Validate input safely with Zod schema
@@ -248,7 +251,10 @@ export class DiscussionsController {
     next: NextFunction
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+      throw new Error('User not authenticated');
+    }
+    const user = req.user;
       const { id } = req.params;
       const { content } = req.body;
 
@@ -320,7 +326,10 @@ export class DiscussionsController {
    */
   async getMyDiscussions(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+      throw new Error('User not authenticated');
+    }
+    const user = req.user;
       const { page = 1, limit = 20 } = req.query;
 
       const skip = (Number(page) - 1) * Number(limit);

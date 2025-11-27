@@ -214,7 +214,10 @@ export class SessionsController {
     res: Response<SessionResponse>
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       const sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
 
       const session = await sessionModel.findById(sessionId, new mongoose.Types.ObjectId(user._id));
@@ -248,7 +251,10 @@ export class SessionsController {
     res: Response<SessionResponse>
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       const limit = parseInt(req.query.limit as string) || 20;
 
       const sessions = await sessionModel.findByUserId(new mongoose.Types.ObjectId(user._id), limit);
@@ -274,7 +280,10 @@ export class SessionsController {
     res: Response<SessionResponse>
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       const { sessionId, questionId, answer } = req.body;
 
       if (!sessionId || typeof sessionId !== 'string') {
@@ -428,7 +437,10 @@ export class SessionsController {
     res: Response<SessionResponse>
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       const sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
       const { status } = req.body;
 
@@ -478,7 +490,10 @@ export class SessionsController {
     res: Response<SessionResponse>
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       const sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
 
       const deleted = await sessionModel.delete(sessionId, new mongoose.Types.ObjectId(user._id));
@@ -504,7 +519,10 @@ export class SessionsController {
     res: Response<SessionResponse>
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       
       // Validate sessionId format
       let sessionId: mongoose.Types.ObjectId;
@@ -577,7 +595,10 @@ export class SessionsController {
     res: Response<SessionResponse>
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
       const sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
 
       const session = await sessionModel.findById(sessionId, new mongoose.Types.ObjectId(user._id));

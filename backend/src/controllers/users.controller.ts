@@ -26,7 +26,10 @@ export class UserController {
   }
 
   getProfile(req: Request, res: Response<{ data: { user: GetProfileResponse } }>): Promise<void> {
-    const user = req.user!;
+    if (!req.user) {
+      throw new Error('User not authenticated');
+    }
+    const user = req.user;
 
     const profileResponse = this.transformUserToResponse(user);
 
@@ -45,7 +48,10 @@ export class UserController {
     next: NextFunction
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
 
       const updatedUser = await userModel.update(user._id, req.body);
 
@@ -65,15 +71,15 @@ export class UserController {
     } catch (error) {
       logger.error('Failed to update user info:', error);
 
-      if (error instanceof Error) {
+      if (error instanceof Error && req.user) {
         return res.status(500).json({
           success: false,
           message: error.message || 'Failed to update user info',
-          profile: this.transformUserToResponse(req.user!),
+          profile: this.transformUserToResponse(req.user),
         });
       }
-      
-      next(error); 
+
+      next(error);
     }
   }
 
@@ -83,7 +89,10 @@ export class UserController {
     next: NextFunction
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        throw new Error('User not authenticated');
+      }
+      const user = req.user;
 
       // // Validate confirmation
       // if (!confirmDelete) {
