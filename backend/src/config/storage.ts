@@ -1,5 +1,5 @@
-import { Request } from 'express';
 import crypto from 'crypto';
+import { Request } from 'express';
 import fs from 'fs';
 import multer from 'multer';
 import path from 'path';
@@ -14,9 +14,10 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, IMAGES_DIR);
   },
-  filename: (req, file, cb) => {
+  filename: (req, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
     const uniqueSuffix = Date.now() + '-' + crypto.randomBytes(4).toString('hex');
-    cb(null, `${uniqueSuffix}${path.extname(file.originalname)}`);
+    const originalname: string = file.originalname || '';
+    cb(null, `${uniqueSuffix}${path.extname(originalname)}`);
   },
 });
 
