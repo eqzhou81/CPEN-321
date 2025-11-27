@@ -37,16 +37,20 @@ fun QuestionsDashboardScreen(
     
     QuestionsDashboardEffects(
         jobId = jobId,
-        sessionCreated = state.sessionCreated,
-        questions = state.questions,
-        isLoading = state.isLoading,
-        hasAttemptedGeneration = hasAttemptedGeneration,
-        shouldReload = shouldReload,
+        state = QuestionsDashboardEffectsState(
+            sessionCreated = state.sessionCreated,
+            questions = state.questions,
+            isLoading = state.isLoading,
+            hasAttemptedGeneration = hasAttemptedGeneration,
+            shouldReload = shouldReload
+        ),
         onNavigateToMockInterview = onNavigateToMockInterview,
         viewModel = viewModel,
         mainViewModel = mainViewModel,
-        onHasAttemptedGenerationChanged = { hasAttemptedGeneration = it },
-        onShouldReloadChanged = { shouldReload = it }
+        callbacks = QuestionsDashboardEffectsCallbacks(
+            onHasAttemptedGenerationChanged = { hasAttemptedGeneration = it },
+            onShouldReloadChanged = { shouldReload = it }
+        )
     )
     
     val handlers = createQuestionsDashboardHandlers(
@@ -58,23 +62,27 @@ fun QuestionsDashboardScreen(
     )
     
     QuestionsDashboardLayout(
-        onNavigateBack = onNavigateBack,
-        error = state.error,
-        sessionError = state.mainUiState.errorMessage,
-        isLoading = state.isLoading,
-        shouldReload = shouldReload,
-        questions = state.questions,
-        mainUiState = state.mainUiState,
+        state = QuestionsDashboardLayoutState(
+            error = state.error,
+            sessionError = state.mainUiState.errorMessage,
+            isLoading = state.isLoading,
+            shouldReload = shouldReload,
+            questions = state.questions,
+            mainUiState = state.mainUiState,
+            showGenerateDialog = showGenerateDialog
+        ),
         jobId = jobId,
-        showGenerateDialog = showGenerateDialog,
         viewModel = viewModel,
         mainViewModel = mainViewModel,
-        onNavigateToTechnicalQuestions = { onNavigateToTechnicalQuestions(jobId) },
-        onCreateMockInterview = { mainViewModel.createMockInterviewSession(jobId) },
-        onShowGenerateDialog = { showGenerateDialog = true },
-        onDismissGenerateDialog = { showGenerateDialog = false },
-        onGenerateQuestions = handlers.generateQuestions,
-        onRetry = handlers.retry
+        callbacks = QuestionsDashboardLayoutCallbacks(
+            onNavigateBack = onNavigateBack,
+            onNavigateToTechnicalQuestions = { onNavigateToTechnicalQuestions(jobId) },
+            onCreateMockInterview = { mainViewModel.createMockInterviewSession(jobId) },
+            onShowGenerateDialog = { showGenerateDialog = true },
+            onDismissGenerateDialog = { showGenerateDialog = false },
+            onGenerateQuestions = handlers.generateQuestions,
+            onRetry = handlers.retry
+        )
     )
 }
 
@@ -134,22 +142,30 @@ private fun createQuestionsDashboardHandlers(
     )
 }
 
+private data class QuestionsDashboardEffectsState(
+    val sessionCreated: String?,
+    val questions: QuestionsResponse?,
+    val isLoading: Boolean,
+    val hasAttemptedGeneration: Boolean,
+    val shouldReload: Boolean
+)
+
+private data class QuestionsDashboardEffectsCallbacks(
+    val onHasAttemptedGenerationChanged: (Boolean) -> Unit,
+    val onShouldReloadChanged: (Boolean) -> Unit
+)
+
 @Composable
 private fun QuestionsDashboardEffects(
     jobId: String,
-    sessionCreated: String?,
-    questions: QuestionsResponse?,
-    isLoading: Boolean,
-    hasAttemptedGeneration: Boolean,
-    shouldReload: Boolean,
+    state: QuestionsDashboardEffectsState,
     onNavigateToMockInterview: ((String) -> Unit)?,
     viewModel: QuestionViewModel,
     mainViewModel: MainViewModel,
-    onHasAttemptedGenerationChanged: (Boolean) -> Unit,
-    onShouldReloadChanged: (Boolean) -> Unit
+    callbacks: QuestionsDashboardEffectsCallbacks
 ) {
-    LaunchedEffect(sessionCreated) {
-        sessionCreated?.let { sessionId ->
+    LaunchedEffect(state.sessionCreated) {
+        state.sessionCreated?.let { sessionId ->
             onNavigateToMockInterview?.invoke(sessionId)
             mainViewModel.clearSessionCreated()
         }
@@ -160,48 +176,56 @@ private fun QuestionsDashboardEffects(
         viewModel.loadQuestionProgress(jobId)
     }
 
-    LaunchedEffect(questions, isLoading) {
-        val shouldAutoGenerate = !isLoading &&
-            questions != null &&
-            questions!!.totalQuestions == 0 &&
-            !hasAttemptedGeneration
+    LaunchedEffect(state.questions, state.isLoading) {
+        val shouldAutoGenerate = !state.isLoading &&
+            state.questions != null &&
+            state.questions!!.totalQuestions == 0 &&
+            !state.hasAttemptedGeneration
 
         if (shouldAutoGenerate) {
-            onHasAttemptedGenerationChanged(true)
+            callbacks.onHasAttemptedGenerationChanged(true)
             viewModel.generateQuestions(jobId)
-            onShouldReloadChanged(true)
+            callbacks.onShouldReloadChanged(true)
         }
     }
 
-    LaunchedEffect(shouldReload, isLoading) {
-        if (shouldReload && !isLoading) {
+    LaunchedEffect(state.shouldReload, state.isLoading) {
+        if (state.shouldReload && !state.isLoading) {
             kotlinx.coroutines.delay(1000)
             viewModel.loadQuestions(jobId)
             viewModel.loadQuestionProgress(jobId)
-            onShouldReloadChanged(false)
+            callbacks.onShouldReloadChanged(false)
         }
     }
 }
 
+private data class QuestionsDashboardLayoutState(
+    val error: String?,
+    val sessionError: String?,
+    val isLoading: Boolean,
+    val shouldReload: Boolean,
+    val questions: QuestionsResponse?,
+    val mainUiState: MainViewModel.UiState,
+    val showGenerateDialog: Boolean
+)
+
+private data class QuestionsDashboardLayoutCallbacks(
+    val onNavigateBack: () -> Unit,
+    val onNavigateToTechnicalQuestions: () -> Unit,
+    val onCreateMockInterview: () -> Unit,
+    val onShowGenerateDialog: () -> Unit,
+    val onDismissGenerateDialog: () -> Unit,
+    val onGenerateQuestions: (List<String>) -> Unit,
+    val onRetry: () -> Unit
+)
+
 @Composable
 private fun QuestionsDashboardLayout(
-    onNavigateBack: () -> Unit,
-    error: String?,
-    sessionError: String?,
-    isLoading: Boolean,
-    shouldReload: Boolean,
-    questions: QuestionsResponse?,
-    mainUiState: MainViewModel.UiState,
+    state: QuestionsDashboardLayoutState,
     jobId: String,
-    showGenerateDialog: Boolean,
     viewModel: QuestionViewModel,
     mainViewModel: MainViewModel,
-    onNavigateToTechnicalQuestions: () -> Unit,
-    onCreateMockInterview: () -> Unit,
-    onShowGenerateDialog: () -> Unit,
-    onDismissGenerateDialog: () -> Unit,
-    onGenerateQuestions: (List<String>) -> Unit,
-    onRetry: () -> Unit
+    callbacks: QuestionsDashboardLayoutCallbacks
 ) {
     Column(
         modifier = Modifier
@@ -209,28 +233,28 @@ private fun QuestionsDashboardLayout(
             .background(colorResource(R.color.background))
             .padding(16.dp)
     ) {
-        QuestionsDashboardHeader(onNavigateBack = onNavigateBack)
+        QuestionsDashboardHeader(onNavigateBack = callbacks.onNavigateBack)
         Spacer(modifier = Modifier.height(24.dp))
         QuestionsDashboardErrorStates(
-            error = error,
-            sessionError = sessionError,
+            error = state.error,
+            sessionError = state.sessionError,
             viewModel = viewModel,
             mainViewModel = mainViewModel,
             jobId = jobId,
-            onRetry = onRetry
+            onRetry = callbacks.onRetry
         )
         QuestionsDashboardContent(
-            isLoading = isLoading,
-            shouldReload = shouldReload,
-            questions = questions,
-            mainUiState = mainUiState,
+            isLoading = state.isLoading,
+            shouldReload = state.shouldReload,
+            questions = state.questions,
+            mainUiState = state.mainUiState,
             jobId = jobId,
-            onNavigateToTechnicalQuestions = onNavigateToTechnicalQuestions,
-            onCreateMockInterview = onCreateMockInterview,
-            showGenerateDialog = showGenerateDialog,
-            onShowGenerateDialog = onShowGenerateDialog,
-            onDismissGenerateDialog = onDismissGenerateDialog,
-            onGenerateQuestions = onGenerateQuestions
+            onNavigateToTechnicalQuestions = callbacks.onNavigateToTechnicalQuestions,
+            onCreateMockInterview = callbacks.onCreateMockInterview,
+            showGenerateDialog = state.showGenerateDialog,
+            onShowGenerateDialog = callbacks.onShowGenerateDialog,
+            onDismissGenerateDialog = callbacks.onDismissGenerateDialog,
+            onGenerateQuestions = callbacks.onGenerateQuestions
         )
     }
 }
