@@ -21,9 +21,7 @@ export interface IUser extends Document {
 // ==================== REQUEST TYPES ====================
 
 // Get Profile - No request body needed (uses authenticated user from token)
-export interface GetProfileRequest {
-  // Empty - user ID comes from JWT token via authenticateToken middleware
-}
+export type GetProfileRequest = Record<string, never>;
 
 // Update Profile Request
 export interface UpdateProfileRequest {

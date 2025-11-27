@@ -8,7 +8,7 @@ const geocoderInstance = geocoder({
   formatter: null,
 });
 
-export class LocationUtils {
+export const LocationUtils = {
   /**
    * Calculate the distance between two coordinates using the Haversine formula
    * @param lat1 Latitude of first point
@@ -17,44 +17,44 @@ export class LocationUtils {
    * @param lon2 Longitude of second point
    * @returns Distance in miles
    */
-  static calculateDistance(
+  calculateDistance(
     lat1: number,
     lon1: number,
     lat2: number,
     lon2: number
   ): number {
     const R = 3959; // Earth's radius in miles
-    const dLat = this.toRadians(lat2 - lat1);
-    const dLon = this.toRadians(lon2 - lon1);
+    const dLat = LocationUtils.toRadians(lat2 - lat1);
+    const dLon = LocationUtils.toRadians(lon2 - lon1);
     
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRadians(lat1)) *
-        Math.cos(this.toRadians(lat2)) *
+      Math.cos(LocationUtils.toRadians(lat1)) *
+        Math.cos(LocationUtils.toRadians(lat2)) *
         Math.sin(dLon / 2) *
         Math.sin(dLon / 2);
-    
+
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
-    
+
     return Math.round(distance * 100) / 100; // Round to 2 decimal places
-  }
+  },
 
   /**
    * Convert degrees to radians
    * @param degrees Degrees to convert
    * @returns Radians
    */
-  private static toRadians(degrees: number): number {
+  toRadians(degrees: number): number {
     return degrees * (Math.PI / 180);
-  }
+  },
 
   /**
    * Geocode an address string to get coordinates
    * @param address Address string to geocode
    * @returns Location object with coordinates and formatted address
    */
-  static async geocodeAddress(address: string): Promise<ILocation | null> {
+  async geocodeAddress(address: string): Promise<ILocation | null> {
     try {
       if (!address || address.trim() === '') {
         return null;
@@ -79,7 +79,7 @@ export class LocationUtils {
       logger.error('Error geocoding address:', error);
       return null;
     }
-  }
+  },
 
   /**
    * Reverse geocode coordinates to get address
@@ -87,7 +87,7 @@ export class LocationUtils {
    * @param longitude Longitude coordinate
    * @returns Location object with address information
    */
-  static async reverseGeocode(
+  async reverseGeocode(
     latitude: number,
     longitude: number
   ): Promise<ILocation | null> {
@@ -111,14 +111,14 @@ export class LocationUtils {
       logger.error('Error reverse geocoding coordinates:', error);
       return null;
     }
-  }
+  },
 
   /**
    * Parse location string to extract city, state, country
    * @param locationString Location string to parse
    * @returns Parsed location components
    */
-  static parseLocationString(locationString: string): {
+  parseLocationString(locationString: string): {
     city?: string;
     state?: string;
     country?: string;
@@ -152,7 +152,7 @@ export class LocationUtils {
     }
 
     return { city, state, country, isRemote: false };
-  }
+  },
 
   /**
    * Check if a job location is within the specified radius of a reference location
@@ -161,26 +161,26 @@ export class LocationUtils {
    * @param radiusMiles Radius in miles
    * @returns Object with distance and whether it's within radius
    */
-  static async isWithinRadius(
+  async isWithinRadius(
     jobLocation: string,
     referenceLocation: ILocation,
     radiusMiles: number
   ): Promise<{ distance: number; withinRadius: boolean; isRemote: boolean }> {
     try {
       // Check if job is remote
-      const parsedLocation = this.parseLocationString(jobLocation);
+      const parsedLocation = LocationUtils.parseLocationString(jobLocation);
       if (parsedLocation.isRemote) {
         return { distance: 0, withinRadius: true, isRemote: true };
       }
 
       // Geocode the job location
-      const jobCoords = await this.geocodeAddress(jobLocation);
+      const jobCoords = await LocationUtils.geocodeAddress(jobLocation);
       if (!jobCoords) {
         return { distance: Infinity, withinRadius: false, isRemote: false };
       }
 
       // Calculate distance
-      const distance = this.calculateDistance(
+      const distance = LocationUtils.calculateDistance(
         referenceLocation.latitude,
         referenceLocation.longitude,
         jobCoords.latitude,
@@ -196,29 +196,29 @@ export class LocationUtils {
       logger.error('Error checking radius:', error);
       return { distance: Infinity, withinRadius: false, isRemote: false };
     }
-  }
+  },
 
   /**
    * Format location string for display
    * @param location Location object
    * @returns Formatted location string
    */
-  static formatLocation(location: ILocation): string {
+  formatLocation(location: ILocation): string {
     const parts = [];
     
     if (location.city) parts.push(location.city);
     if (location.state) parts.push(location.state);
     if (location.country) parts.push(location.country);
-    
+
     return parts.length > 0 ? parts.join(', ') : location.address;
-  }
+  },
 
   /**
    * Extract coordinates from various location string formats
    * @param locationString Location string that might contain coordinates
    * @returns Coordinates if found, null otherwise
    */
-  static extractCoordinates(locationString: string): { latitude: number; longitude: number } | null {
+  extractCoordinates(locationString: string): { latitude: number; longitude: number } | null {
     try {
       // Pattern for coordinates like "40.7128, -74.0060" or "40.7128,-74.0060"
       const coordPattern = /(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/;
@@ -239,18 +239,18 @@ export class LocationUtils {
       logger.error('Error extracting coordinates:', error);
       return null;
     }
-  }
+  },
 
   /**
    * Normalize location string for consistent searching
    * @param locationString Location string to normalize
    * @returns Normalized location string
    */
-  static normalizeLocation(locationString: string): string {
+  normalizeLocation(locationString: string): string {
     return locationString
       .toLowerCase()
       .trim()
       .replace(/\s+/g, ' ') // Replace multiple spaces with single space
       .replace(/[^\w\s,-]/g, ''); // Remove special characters except commas and hyphens
   }
-}
+};

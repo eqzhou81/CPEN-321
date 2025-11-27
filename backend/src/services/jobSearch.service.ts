@@ -182,7 +182,7 @@ export class JobSearchService {
       const searchPromises = scraperKeys.map(source =>
         Promise.race([
           this.scrapeJobSite(source, params),
-          new Promise((_, reject) =>
+          new Promise((_resolve, reject) =>
             setTimeout(() => { reject(new Error(`Timeout for ${source}`)); }, 30000) // 30 second timeout
           )
         ])
@@ -247,10 +247,10 @@ export class JobSearchService {
       ];
 
       // Execute scraping sources in parallel with individual timeouts
-      const scrapingPromises = scrapingSources.map(source => 
+      const scrapingPromises = scrapingSources.map(source =>
         Promise.race([
           source.fn(),
-          new Promise<ISimilarJob[]>((_, reject) => 
+          new Promise<ISimilarJob[]>((_resolve, reject) =>
             setTimeout(() => { reject(new Error(`${source.name} timeout`)); }, 15000) // 15 second timeout per source
           )
         ]).catch((error: unknown) => {

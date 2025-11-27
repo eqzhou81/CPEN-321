@@ -268,26 +268,31 @@ private fun parseJobText(text: String): CreateJobApplicationRequest {
     // Try to find title and company using common patterns
     var title = "New Position"
     var company = "Company Name"
-    
+
+    // Helper function to check if line looks like a job title
+    fun isLikelyJobTitle(line: String): Boolean {
+        val jobKeywords = listOf("Engineer", "Developer", "Manager", "Analyst", "Designer", "Specialist", "Coordinator", "Director")
+        return line.length in 6..99 && jobKeywords.any { line.contains(it) }
+    }
+
+    // Helper function to check if line looks like a company name
+    fun isLikelyCompanyName(line: String): Boolean {
+        val excludeKeywords = listOf("@", "http", "Salary", "Location", "Requirements", "Responsibilities")
+        return line.length in 3..49 && excludeKeywords.none { line.contains(it) }
+    }
+
     // Look for common patterns
     for (i in 0 until minOf(lines.size, 10)) {
         val line = lines[i].trim()
-        
+
         // Look for job title patterns
-        if (line.length > 5 && line.length < 100 && 
-            (line.contains("Engineer") || line.contains("Developer") || 
-             line.contains("Manager") || line.contains("Analyst") ||
-             line.contains("Designer") || line.contains("Specialist") ||
-             line.contains("Coordinator") || line.contains("Director"))) {
+        if (isLikelyJobTitle(line)) {
             title = line
             continue
         }
-        
+
         // Look for company patterns
-        if (line.length > 2 && line.length < 50 && 
-            !line.contains("@") && !line.contains("http") &&
-            !line.contains("Salary") && !line.contains("Location") &&
-            !line.contains("Requirements") && !line.contains("Responsibilities")) {
+        if (isLikelyCompanyName(line)) {
             company = line
             break
         }
