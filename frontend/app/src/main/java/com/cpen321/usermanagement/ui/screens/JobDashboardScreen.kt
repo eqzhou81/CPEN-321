@@ -46,10 +46,8 @@ fun JobDashboardScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val jobStatistics by viewModel.jobStatistics.collectAsStateWithLifecycle()
-    
     var showAddJobDialog by remember { mutableStateOf(false) }
     
-    // Clear error when screen is displayed
     LaunchedEffect(Unit) {
         viewModel.clearError()
     }
@@ -60,7 +58,38 @@ fun JobDashboardScreen(
             .background(colorResource(R.color.background))
             .padding(16.dp)
     ) {
-        // Header
+        JobDashboardHeader(onAddJobClick = { showAddJobDialog = true })
+        Spacer(modifier = Modifier.height(24.dp))
+        JobDashboardContent(
+            jobStatistics = jobStatistics,
+            error = error,
+            isLoading = isLoading,
+            jobApplications = jobApplications,
+            context = context,
+            viewModel = viewModel,
+            onNavigateToJobDetails = onNavigateToJobDetails,
+            onNavigateToQuestions = onNavigateToQuestions,
+            onAddJobClick = { showAddJobDialog = true }
+        )
+    }
+    
+    if (showAddJobDialog) {
+        AddJobDialog(
+            onDismiss = { showAddJobDialog = false },
+            onAddJob = { request ->
+                viewModel.createJobApplication(request)
+                showAddJobDialog = false
+            },
+            onScrapeJob = { url ->
+                viewModel.createJobFromScrapedData(url)
+                showAddJobDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun JobDashboardHeader(onAddJobClick: () -> Unit) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -69,7 +98,7 @@ fun JobDashboardScreen(
             Column {
                 Text(
                     text = "My Job Applications",
-                    modifier = Modifier.testTag("job_applications_title"),
+                modifier = Modifier.testTag("job_applications_title"),
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = colorResource(R.color.text_primary)
@@ -82,27 +111,54 @@ fun JobDashboardScreen(
                     )
                 )
             }
-            
             FloatingActionButton(
-                onClick = { showAddJobDialog = true },
-                modifier = Modifier.testTag("add_job_button"),
+            onClick = onAddJobClick,
+            modifier = Modifier.testTag("add_job_button"),
                 containerColor = colorResource(R.color.primary),
                 contentColor = colorResource(R.color.text_on_primary)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Job Application")
-            }
         }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        // Statistics Cards
+    }
+}
+
+@Composable
+private fun JobDashboardContent(
+    jobStatistics: JobStatistics?,
+    error: String?,
+    isLoading: Boolean,
+    jobApplications: List<JobApplication>,
+    context: android.content.Context,
+    viewModel: JobViewModel,
+    onNavigateToJobDetails: (String) -> Unit,
+    onNavigateToQuestions: (String) -> Unit,
+    onAddJobClick: () -> Unit
+) {
         jobStatistics?.let { stats ->
             StatisticsSection(stats = stats)
             Spacer(modifier = Modifier.height(24.dp))
         }
         
-        // Error Message
         error?.let { errorMessage ->
+        ErrorMessageCard(errorMessage = errorMessage, onDismiss = { viewModel.clearError() })
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+    
+    when {
+        isLoading && jobApplications.isEmpty() -> LoadingState()
+        jobApplications.isEmpty() -> EmptyState(onAddJob = onAddJobClick)
+        else -> JobApplicationsList(
+            jobApplications = jobApplications,
+            context = context,
+            onNavigateToJobDetails = onNavigateToJobDetails,
+            onNavigateToQuestions = onNavigateToQuestions,
+            onDeleteJob = { viewModel.deleteJobApplication(it) }
+        )
+    }
+}
+
+@Composable
+private fun ErrorMessageCard(errorMessage: String, onDismiss: () -> Unit) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -125,67 +181,45 @@ fun JobDashboardScreen(
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(modifier = Modifier.weight(1f))
-                    TextButton(onClick = { viewModel.clearError() }) {
+            TextButton(onClick = onDismiss) {
                         Text("Dismiss")
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
         }
         
-        // Loading State
-        if (isLoading && jobApplications.isEmpty()) {
+@Composable
+private fun LoadingState() {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(
-                    color = colorResource(R.color.primary)
-                )
-            }
-        }
-        // Empty State
-        else if (jobApplications.isEmpty()) {
-            EmptyState(
-                onAddJob = { showAddJobDialog = true }
-            )
-        }
-        // Job Applications List
-        else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+        CircularProgressIndicator(color = colorResource(R.color.primary))
+    }
+}
+
+@Composable
+private fun JobApplicationsList(
+    jobApplications: List<JobApplication>,
+    context: android.content.Context,
+    onNavigateToJobDetails: (String) -> Unit,
+    onNavigateToQuestions: (String) -> Unit,
+    onDeleteJob: (String) -> Unit
+) {
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 items(jobApplications) { job ->
                     JobApplicationCard(
                         job = job,
                         onJobClick = { onNavigateToJobDetails(job.id) },
                         onGenerateQuestions = { onNavigateToQuestions(job.id) },
-                        onDeleteJob = { viewModel.deleteJobApplication(job.id) },
+                onDeleteJob = { onDeleteJob(job.id) },
                         onViewDetails = { onNavigateToJobDetails(job.id) },
                         onOpenJobLink = { url -> 
-                            // Open external URL
                             val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
                             context.startActivity(intent)
                         }
                     )
-                }
-            }
         }
-    }
-    
-    // Add Job Dialog
-    if (showAddJobDialog) {
-        AddJobDialog(
-            onDismiss = { showAddJobDialog = false },
-            onAddJob = { request ->
-                viewModel.createJobApplication(request)
-                showAddJobDialog = false
-            },
-            onScrapeJob = { url ->
-                viewModel.createJobFromScrapedData(url)
-                showAddJobDialog = false
-            }
-        )
     }
 }
 
