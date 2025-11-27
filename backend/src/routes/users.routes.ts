@@ -3,22 +3,23 @@ import { Router } from 'express';
 import { UserController } from '../controllers/users.controller';
 import { DeleteProfileRequest, UpdateProfileRequest, deleteProfileSchema, updateProfileSchema } from '../types/users.types';
 import { validateBody } from '../middleware/validation.middleware';
+import { asyncHandler } from '../utils/asyncHandler.util';
 
 const router = Router();
 const userController = new UserController();
 
-router.get('/profile', userController.getProfile.bind(userController));
+router.get('/profile', asyncHandler(userController.getProfile.bind(userController)));
 
 router.post(
   '/profile',
   validateBody<UpdateProfileRequest>(updateProfileSchema),
-  userController.updateProfile.bind(userController)
+  asyncHandler(userController.updateProfile.bind(userController))
 );
 
 router.delete(
   '/profile',
   validateBody<DeleteProfileRequest>(deleteProfileSchema),
-  userController.deleteProfile.bind(userController)
+  asyncHandler(userController.deleteProfile.bind(userController))
 );
 
 export default router;

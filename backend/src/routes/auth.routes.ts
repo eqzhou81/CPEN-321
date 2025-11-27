@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import { AuthController } from '../controllers/auth.controller';
+import { asyncHandler } from '../utils/asyncHandler.util';
 
 const router = Router();
 const authController = new AuthController();
@@ -28,12 +29,12 @@ if (process.env.BYPASS_AUTH === 'true') {
 
 router.post(
   '/signup',
-  authController.signUp.bind(authController)
+  asyncHandler(authController.signUp.bind(authController))
 );
 
 router.post(
   '/signin',
-  authController.signIn.bind(authController)
+  asyncHandler(authController.signIn.bind(authController))
 );
 
 export default router;

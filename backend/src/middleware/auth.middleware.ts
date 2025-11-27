@@ -3,8 +3,9 @@ import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { userModel } from '../models/user.model';
 import { IUser } from '../types/users.types';
+import { asyncHandler } from '../utils/asyncHandler.util';
 
-export const authenticateToken: RequestHandler = async (
+export const authenticateToken: RequestHandler = asyncHandler(async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -88,4 +89,4 @@ export const authenticateToken: RequestHandler = async (
 
     next(error);
   }
-};
+});
