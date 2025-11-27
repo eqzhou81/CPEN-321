@@ -1,6 +1,14 @@
 import mongoose, { Document, Model, Schema, UpdateQuery } from 'mongoose';
 import logger from '../utils/logger.util';
 
+// Connection states enum (matches mongoose connection readyState values)
+enum ConnectionStates {
+  disconnected = 0,
+  connected = 1,
+  connecting = 2,
+  disconnecting = 3
+}
+
 // Session status enum
 export enum SessionStatus {
   ACTIVE = 'active',
@@ -157,7 +165,7 @@ export class SessionModel {
   // Find active session by job ID
   async findActiveByJobId(jobId: mongoose.Types.ObjectId, userId: mongoose.Types.ObjectId): Promise<ISession | null> {
     try {
-      if (mongoose.connection.readyState !== 1) {
+       if (mongoose.connection.readyState !== ConnectionStates.connected)  {
         throw new Error('Database connection is not ready');
       }
 

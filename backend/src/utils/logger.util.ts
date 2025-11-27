@@ -3,7 +3,7 @@ import { sanitizeArgs, sanitizeInput } from './sanitizeInput.util';
 const logger = {
   info: (message: string, ...args: unknown[]) => {
     // eslint-disable-next-line no-console
-    console.log(`[INFO] ${sanitizeInput(message)}`, ...sanitizeArgs(args));
+    process.stdout.write("[INFO] " + sanitizeInput(message) + " " + sanitizeArgs(args).join(" ") + "\n");
   },
   error: (message: string, ...args: unknown[]) => {
     // eslint-disable-next-line no-console
