@@ -52,80 +52,102 @@ class DiscussionViewModel @Inject constructor(
     // val discussions: LiveData<List<DiscussionListResponse>> = _discussions
 
     fun connectToSocket(discussionId: String? = null) {
-        try {
-            socket = IO.socket(BuildConfig.IMAGE_BASE_URL)
-            socket?.connect()
-
-            socket?.on(Socket.EVENT_CONNECT) {
-                Log.d("SocketIO", "✅ Connected to server")
-                discussionId?.let {
-                    socket?.emit("joinDiscussion", it)
-                    Log.d("SocketIO", "Joined discussion room $it")
-                }
-            }
-
-            // Listen for new messages
-            socket?.on("messageReceived") { args ->
-                if (args.isNotEmpty()) {
-                    try {
-                        val data = args[0] as JSONObject
-                        val message = MessageResponse(
-                            id = data.optString("id", data.optString("_id", "")),
-                            userId = data.getString("userId"),
-                            userName = data.getString("userName"),
-                            content = data.getString("content"),
-                            createdAt = data.getString("createdAt"),
-                            updatedAt = data.getString("updatedAt")
-                        )
-
-                        viewModelScope.launch {
-                            val exists = _messages.value.any { it.id == message.id }
-                            if (!exists) {
-                                _messages.value = _messages.value + message
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Log.e("SocketIO", "❌ Error parsing message: ${e.message}")
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                // Disconnect existing socket if any
+                socket?.disconnect()
+                socket = null
+                
+                // Create and connect socket on IO dispatcher to avoid blocking main thread
+                socket = IO.socket(BuildConfig.IMAGE_BASE_URL)
+                
+                socket?.on(Socket.EVENT_CONNECT) {
+                    Log.d("SocketIO", "✅ Connected to server")
+                    discussionId?.let {
+                        socket?.emit("joinDiscussion", it)
+                        Log.d("SocketIO", "Joined discussion room $it")
                     }
                 }
-            }
 
-            // Listen for new discussions - UPDATE UI STATE
-            socket?.on("newDiscussion") { args ->
-                if (args.isNotEmpty()) {
-                    try {
-                        val data = args[0] as JSONObject
-                        val discussion = DiscussionListResponse(
-                            id = data.optString("id", data.optString("_id", "")),
-                            topic = data.getString("topic"),
-                            description = data.optString("description", ""),
-                            creatorId = data.getString("creatorId"),
-                            creatorName = data.getString("creatorName"),
-                            messageCount = data.optInt("messageCount", 0),
-                            participantCount = data.optInt("participantCount", 0),
-                            lastActivityAt = data.optString("lastActivityAt", ""),
-                            createdAt = data.optString("createdAt", "")
-                        )
+                socket?.on(Socket.EVENT_DISCONNECT) {
+                    Log.d("SocketIO", "⚠️ Disconnected from server")
+                }
 
-                        viewModelScope.launch {
-                            val currentList = _uiState.value.discussions
-                            val exists = currentList.any { it.id == discussion.id }
-                            if (!exists) {
-                                val updatedList = listOf(discussion) + currentList
-                                _uiState.value = _uiState.value.copy(
-                                    discussions = updatedList
-                                )
-                                Log.d("SocketIO", "🆕 New discussion received: ${discussion.topic}")
+                socket?.on(Socket.EVENT_CONNECT_ERROR) { args ->
+                    Log.e("SocketIO", "❌ Connection error: ${args.joinToString()}")
+                }
+
+                // Listen for new messages
+                socket?.on("messageReceived") { args ->
+                    if (args.isNotEmpty()) {
+                        try {
+                            val data = args[0] as JSONObject
+                            val message = MessageResponse(
+                                id = data.optString("id", data.optString("_id", "")),
+                                userId = data.getString("userId"),
+                                userName = data.getString("userName"),
+                                content = data.getString("content"),
+                                createdAt = data.getString("createdAt"),
+                                updatedAt = data.getString("updatedAt")
+                            )
+
+                            viewModelScope.launch {
+                                val exists = _messages.value.any { it.id == message.id }
+                                if (!exists) {
+                                    _messages.value = _messages.value + message
+                                }
                             }
+                        } catch (e: Exception) {
+                            Log.e("SocketIO", "❌ Error parsing message: ${e.message}")
                         }
-                    } catch (e: Exception) {
-                        Log.e("SocketIO", "❌ Error parsing newDiscussion: ${e.message}")
                     }
                 }
-            }
 
-        } catch (e: Exception) {
-            Log.e("SocketIO", "❌ Error connecting socket: ${e.message}")
+                // Listen for new discussions - UPDATE UI STATE
+                socket?.on("newDiscussion") { args ->
+                    if (args.isNotEmpty()) {
+                        try {
+                            val data = args[0] as JSONObject
+                            val discussion = DiscussionListResponse(
+                                id = data.optString("id", data.optString("_id", "")),
+                                topic = data.getString("topic"),
+                                description = data.optString("description", ""),
+                                creatorId = data.getString("creatorId"),
+                                creatorName = data.getString("creatorName"),
+                                messageCount = data.optInt("messageCount", 0),
+                                participantCount = data.optInt("participantCount", 0),
+                                lastActivityAt = data.optString("lastActivityAt", ""),
+                                createdAt = data.optString("createdAt", "")
+                            )
+
+                            viewModelScope.launch {
+                                val currentList = _uiState.value.discussions
+                                val exists = currentList.any { it.id == discussion.id }
+                                if (!exists) {
+                                    val updatedList = listOf(discussion) + currentList
+                                    _uiState.value = _uiState.value.copy(
+                                        discussions = updatedList
+                                    )
+                                    Log.d("SocketIO", "🆕 New discussion received: ${discussion.topic}")
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e("SocketIO", "❌ Error parsing newDiscussion: ${e.message}")
+                        }
+                    }
+                }
+
+                // Connect socket (non-blocking)
+                socket?.connect()
+                
+            } catch (e: Exception) {
+                Log.e("SocketIO", "❌ Error connecting socket: ${e.message}", e)
+                viewModelScope.launch {
+                    _uiState.value = _uiState.value.copy(
+                        error = "Failed to connect to chat server: ${e.message}"
+                    )
+                }
+            }
         }
     }
 
@@ -136,37 +158,42 @@ class DiscussionViewModel @Inject constructor(
      * Fetch all discussions from the backend
      */
     fun loadDiscussions() {
-        viewModelScope.launch {
-            Log.d("DiscussionViewModel", "🔹 Loading discussions...")
-            val result = repository.getAllDiscussions()
-            result
-                .onSuccess { discussionsList ->
-                    Log.d("DiscussionViewModel", "✅ Got discussions: ${discussionsList.size}")
-                    discussionsList.forEach { Log.d("DiscussionViewModel", "Topic: ${it.topic}") }
-
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        discussions = discussionsList,
-                        error = null
-                    )
-                }
-                .onFailure { e ->
-                    Log.e("DiscussionViewModel", "❌ Failed to load discussions", e)
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = e.message ?: "Failed to load discussions"
-                    )
-                }
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                _uiState.value = _uiState.value.copy(isLoading = true)
+                Log.d("DiscussionViewModel", "🔹 Loading discussions...")
+                val result = repository.getAllDiscussions()
+                result
+                    .onSuccess { discussionsList ->
+                        Log.d("DiscussionViewModel", "✅ Got discussions: ${discussionsList.size}")
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            discussions = discussionsList,
+                            error = null
+                        )
+                    }
+                    .onFailure { e ->
+                        Log.e("DiscussionViewModel", "❌ Failed to load discussions", e)
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = e.message ?: "Failed to load discussions"
+                        )
+                    }
+            } catch (e: Exception) {
+                Log.e("DiscussionViewModel", "❌ Exception loading discussions", e)
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = e.message ?: "Failed to load discussions"
+                )
+            }
         }
-
-
     }
 
     /**
      * Create a new discussion
      */
     fun createDiscussion(topic: String, description: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null, successMessage = null)
 
@@ -179,18 +206,17 @@ class DiscussionViewModel @Inject constructor(
                     Log.w("DiscussionViewModel", "No token available for createDiscussion")
                 }
 
-                viewModelScope.launch {
-                    _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-                    val result = repository.createDiscussion(topic, description)
-                    result.onSuccess {
-                        _uiState.value = _uiState.value.copy(isLoading = false, successMessage = "Discussion created!")
-                    }.onFailure { e ->
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            error = e.message ?: "An unexpected error occurred",
-                            discussions = _uiState.value.discussions
-                        )
-                    }
+                val result = repository.createDiscussion(topic, description)
+                result.onSuccess {
+                    _uiState.value = _uiState.value.copy(isLoading = false, successMessage = "Discussion created!")
+                    // Reload discussions to show the new one
+                    loadDiscussions()
+                }.onFailure { e ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = e.message ?: "An unexpected error occurred",
+                        discussions = _uiState.value.discussions
+                    )
                 }
             } catch (e: Exception) {
                 Log.e("DiscussionViewModel", "Error in createDiscussion", e)
@@ -204,18 +230,29 @@ class DiscussionViewModel @Inject constructor(
     }
 
     fun loadDiscussionById(id: String) {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            repository.getDiscussionById(id)
-                .onSuccess {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        selectedDiscussion = it
-                    )
-                }
-                .onFailure {
-                    _uiState.value = _uiState.value.copy(isLoading = false, error = it.message)
-                }
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                _uiState.value = _uiState.value.copy(isLoading = true)
+                repository.getDiscussionById(id)
+                    .onSuccess {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            selectedDiscussion = it
+                        )
+                    }
+                    .onFailure { e ->
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = e.message ?: "Failed to load discussion"
+                        )
+                    }
+            } catch (e: Exception) {
+                Log.e("DiscussionViewModel", "❌ Exception loading discussion", e)
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = e.message ?: "Failed to load discussion"
+                )
+            }
         }
     }
 
@@ -225,21 +262,26 @@ class DiscussionViewModel @Inject constructor(
 
 
     fun sendMessage(discussionId: String, content: String, userName: String, userId: String) {
-        // 1️⃣ Send to backend to persist
-        viewModelScope.launch {
-            val result = repository.postMessage(discussionId, content)
-            result.onSuccess {
-
-            }.onFailure { e ->
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val result = repository.postMessage(discussionId, content)
+                result.onSuccess {
+                    // Message sent successfully - socket will handle UI update
+                }.onFailure { e ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = e.message ?: "An unexpected error occurred",
+                        discussions = _uiState.value.discussions
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("DiscussionViewModel", "❌ Exception sending message", e)
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = e.message ?: "An unexpected error occurred",
-                    discussions = _uiState.value.discussions
+                    error = e.message ?: "Failed to send message"
                 )
             }
         }
-
-
     }
 
 

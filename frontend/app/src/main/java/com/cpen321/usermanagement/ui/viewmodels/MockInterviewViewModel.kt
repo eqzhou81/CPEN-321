@@ -97,8 +97,16 @@ class MockInterviewViewModel @Inject constructor(
                         val responseData = response.body()!!.data!!
                         
                         currentAnswer = ""
+                        // Reload session to get the latest progress
+                        val updatedSessionResponse = sessionRepository.getSession(currentState.session.id)
+                        val updatedSession = if (updatedSessionResponse.isSuccessful && updatedSessionResponse.body()?.data != null) {
+                            updatedSessionResponse.body()!!.data!!.session
+                        } else {
+                            responseData.session
+                        }
+                        
                         _uiState.value = UiState.Success(
-                            session = responseData.session,
+                            session = updatedSession,
                             currentQuestion = currentState.currentQuestion,
                             feedback = responseData.feedback,
                             answer = "",
@@ -135,13 +143,20 @@ class MockInterviewViewModel @Inject constructor(
                     
                     if (response.isSuccessful && response.body()?.data != null) {
                         val responseData = response.body()!!.data!!
+                        // Preserve current answer if navigating to previous question
+                        val preservedAnswer = if (currentState.session.currentQuestionIndex > responseData.session.currentQuestionIndex) {
+                            currentAnswer
+                        } else {
+                            ""
+                        }
                         _uiState.value = UiState.Success(
                             session = responseData.session,
                             currentQuestion = responseData.currentQuestion,
                             feedback = null,
-                            answer = "",
+                            answer = preservedAnswer,
                             isSubmitting = false
                         )
+                        currentAnswer = preservedAnswer
                     }
                 } catch (e: Exception) {
                 }
@@ -151,17 +166,54 @@ class MockInterviewViewModel @Inject constructor(
     
     fun saveSession() {
         val currentState = _uiState.value
-        if (currentState is UiState.Success) {
+        if (currentState is UiState.Success && currentAnswer.isNotBlank()) {
             viewModelScope.launch {
                 try {
-                    val request = UpdateStatusRequest(status = "paused")
+                    // Save the answer by submitting it (but we'll keep the session active)
+                    // The backend will save the answer when we submit
+                    // For now, we'll just pause the session and the answer will be preserved in the UI state
+                    // When user returns, they can continue from where they left off
                     
+                    // First, update status to paused
+                    val request = UpdateStatusRequest(status = "paused")
                     val response = sessionRepository.updateSessionStatus(
                         currentState.session.id,
                         request
                     )
                     
                     if (response.isSuccessful && response.body()?.data != null) {
+                        // Answer is already saved in currentAnswer, which persists in the ViewModel
+                        // When user returns, the answer will still be there
+                        // Reload session to get updated status
+                        val updatedSessionResponse = sessionRepository.getSession(currentState.session.id)
+                        if (updatedSessionResponse.isSuccessful && updatedSessionResponse.body()?.data != null) {
+                            val updatedSession = updatedSessionResponse.body()!!.data!!.session
+                            _uiState.value = currentState.copy(
+                                session = updatedSession,
+                                answer = currentAnswer // Preserve the answer
+                            )
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Error saving - answer is still preserved in currentAnswer
+                }
+            }
+        } else if (currentState is UiState.Success) {
+            // No answer to save, just pause the session
+            viewModelScope.launch {
+                try {
+                    val request = UpdateStatusRequest(status = "paused")
+                    val response = sessionRepository.updateSessionStatus(
+                        currentState.session.id,
+                        request
+                    )
+                    
+                    if (response.isSuccessful && response.body()?.data != null) {
+                        val updatedSessionResponse = sessionRepository.getSession(currentState.session.id)
+                        if (updatedSessionResponse.isSuccessful && updatedSessionResponse.body()?.data != null) {
+                            val updatedSession = updatedSessionResponse.body()!!.data!!.session
+                            _uiState.value = currentState.copy(session = updatedSession)
+                        }
                     }
                 } catch (e: Exception) {
                 }
@@ -185,6 +237,8 @@ class MockInterviewViewModel @Inject constructor(
                         
                         if (response.isSuccessful && response.body()?.data != null) {
                             val responseData = response.body()!!.data!!
+                            // Clear answer when moving to next question
+                            currentAnswer = ""
                             _uiState.value = UiState.Success(
                                 session = responseData.session,
                                 currentQuestion = responseData.currentQuestion,

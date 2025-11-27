@@ -8,16 +8,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.res.colorResource
@@ -42,68 +39,148 @@ fun MockInterviewScreen(
     
     Scaffold(
         topBar = {
-        TopAppBar(
-            title = { 
-                Text(
-                        "Mock Interview Session",
-                    fontWeight = FontWeight.Bold
-                ) 
-            },
-            navigationIcon = {
-                IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = Color(0xFF1A1A1A)
-                )
-            )
+            MockInterviewTopBar(onBackClick = onBackClick)
         },
         containerColor = colorResource(R.color.background)
     ) { paddingValues ->
-        when (val state = uiState) {
-            is MockInterviewViewModel.UiState.Loading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-            
-            is MockInterviewViewModel.UiState.Error -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text(
-                            "Error: ${state.message}",
-                            color = Color.Red,
-                            textAlign = TextAlign.Center
-                        )
-                        Button(onClick = { viewModel.loadSession(sessionId) }) {
-                            Text("Retry")
-                        }
-                    }
-                }
-            }
-            
-            is MockInterviewViewModel.UiState.Success -> {
-                MockInterviewContent(
-                    state = state,
-                    viewModel = viewModel,
-                    paddingValues = paddingValues,
-                    onBackClick = onBackClick
+        MockInterviewContentState(
+            uiState = uiState,
+            sessionId = sessionId,
+            viewModel = viewModel,
+            paddingValues = paddingValues,
+            onBackClick = onBackClick
+        )
+    }
+}
+
+@Composable
+private fun MockInterviewTopBar(onBackClick: () -> Unit) {
+    TopAppBar(
+        title = { 
+            Text(
+                "Mock Interview",
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleLarge
+            ) 
+        },
+        navigationIcon = {
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack, 
+                    contentDescription = "Back",
+                    tint = colorResource(R.color.text_primary)
                 )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = colorResource(R.color.surface),
+            titleContentColor = colorResource(R.color.text_primary)
+        )
+    )
+}
+
+@Composable
+private fun MockInterviewContentState(
+    uiState: MockInterviewViewModel.UiState,
+    sessionId: String,
+    viewModel: MockInterviewViewModel,
+    paddingValues: PaddingValues,
+    onBackClick: () -> Unit
+) {
+    when (val state = uiState) {
+        is MockInterviewViewModel.UiState.Loading -> {
+            LoadingState(paddingValues = paddingValues)
+        }
+        is MockInterviewViewModel.UiState.Error -> {
+            ErrorState(
+                errorMessage = state.message,
+                sessionId = sessionId,
+                viewModel = viewModel,
+                paddingValues = paddingValues
+            )
+        }
+        is MockInterviewViewModel.UiState.Success -> {
+            MockInterviewContent(
+                state = state,
+                viewModel = viewModel,
+                paddingValues = paddingValues,
+                onBackClick = onBackClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoadingState(paddingValues: PaddingValues) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(48.dp),
+                color = colorResource(R.color.primary)
+            )
+            Text(
+                "Loading interview session...",
+                style = MaterialTheme.typography.bodyMedium,
+                color = colorResource(R.color.text_secondary)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ErrorState(
+    errorMessage: String,
+    sessionId: String,
+    viewModel: MockInterviewViewModel,
+    paddingValues: PaddingValues
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+            modifier = Modifier.padding(24.dp)
+        ) {
+            Icon(
+                Icons.Default.Error,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = colorResource(R.color.error)
+            )
+            Text(
+                "Error Loading Session",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = colorResource(R.color.text_primary)
+            )
+            Text(
+                errorMessage,
+                style = MaterialTheme.typography.bodyMedium,
+                color = colorResource(R.color.text_secondary),
+                textAlign = TextAlign.Center
+            )
+            Button(
+                onClick = { viewModel.loadSession(sessionId) },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(R.color.primary)
+                )
+            ) {
+                Icon(Icons.Default.Refresh, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Retry")
             }
         }
     }
@@ -116,213 +193,288 @@ private fun MockInterviewContent(
     paddingValues: PaddingValues,
     onBackClick: () -> Unit
 ) {
+    val isSessionComplete = state.session.answeredQuestions >= state.session.totalQuestions
+    val scrollState = rememberScrollState()
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues)
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+            .verticalScroll(scrollState)
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        Text(
-            "Answer the question below to practice your interview skills",
-            style = MaterialTheme.typography.bodyMedium.copy(
-                color = colorResource(R.color.text_secondary)
-            )
+        SessionCompletionSection(
+            isSessionComplete = isSessionComplete,
+            feedback = state.feedback
         )
         
-        ProgressCard(
-            completedQuestions = state.session.answeredQuestions,
-            totalQuestions = state.session.totalQuestions
+        MainContentSection(state = state)
+        
+        AnswerAndButtonsSection(
+            state = state,
+            viewModel = viewModel,
+            isSessionComplete = isSessionComplete
         )
         
-        state.currentQuestion?.let { question ->
-            QuestionCard(
-                questionNumber = state.session.currentQuestionIndex + 1,
-                totalQuestions = state.session.totalQuestions,
-                questionText = question.title
-            )
-        }
+        TipsAndEndSessionSection(
+            hasFeedback = state.feedback != null,
+            onBackClick = onBackClick
+        )
+    }
+}
+
+@Composable
+private fun SessionCompletionSection(
+    isSessionComplete: Boolean,
+    feedback: com.cpen321.usermanagement.data.remote.dto.SessionModels.SessionFeedback?
+) {
+    if (isSessionComplete && feedback?.sessionCompleted == true) {
+        SessionCompleteCard()
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+}
+
+@Composable
+private fun MainContentSection(
+    state: MockInterviewViewModel.UiState.Success
+) {
+    EnhancedProgressCard(
+        completedQuestions = state.session.answeredQuestions,
+        totalQuestions = state.session.totalQuestions,
+        currentIndex = state.session.currentQuestionIndex
+    )
+    
+    state.currentQuestion?.let { question ->
+        EnhancedQuestionCard(
+            questionNumber = state.session.currentQuestionIndex + 1,
+            totalQuestions = state.session.totalQuestions,
+            questionText = question.title
+        )
+    }
+    
+    state.feedback?.let { feedback ->
+        EnhancedFeedbackCard(feedback = feedback)
+    }
+}
+
+@Composable
+private fun AnswerAndButtonsSection(
+    state: MockInterviewViewModel.UiState.Success,
+    viewModel: MockInterviewViewModel,
+    isSessionComplete: Boolean
+) {
+    if (state.feedback == null && !isSessionComplete) {
+        EnhancedAnswerInputCard(
+            answer = state.answer,
+            onAnswerChange = viewModel::updateAnswer,
+            characterCount = state.answer.length
+        )
         
-        state.feedback?.let { feedback ->
-            FeedbackCard(feedback = feedback)
-        }
-        
-        if (state.feedback == null) {
-            AnswerInputCard(
-                answer = state.answer,
-                onAnswerChange = viewModel::updateAnswer
-            )
-            
-            ActionButtonsRow(
-                onPrevious = viewModel::previousQuestion,
-                onSaveSession = viewModel::saveSession,
-                onSubmitAnswer = viewModel::submitAnswer,
-                canGoPrevious = state.session.currentQuestionIndex > 0,
-                hasAnswer = state.answer.isNotBlank(),
-                isSubmitting = state.isSubmitting
-            )
-        } else {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Previous Button
-                OutlinedButton(
-                    onClick = viewModel::previousQuestion,
-                    enabled = state.session.currentQuestionIndex > 0,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color.Transparent,
-                        contentColor = Color(0xFF666666)
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCCCCCC)),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Previous", fontSize = 14.sp)
-                }
-                
-                Spacer(modifier = Modifier.width(12.dp))
-                
-                // Save Session Button
-                OutlinedButton(
-                    onClick = viewModel::saveSession,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color.Transparent,
-                        contentColor = Color(0xFF666666)
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCCCCCC)),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Star,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Save Session", fontSize = 14.sp)
-                }
-                
-                Spacer(modifier = Modifier.width(12.dp))
-                
-                // Next Question Button
-                Button(
-                    onClick = viewModel::nextQuestion,
-                    enabled = state.feedback != null && !state.feedback.isLastQuestion,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF1E3A8A),
-                        disabledContainerColor = Color(0xFFCCCCCC)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("Next Question", fontSize = 14.sp)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-        }
-        
-        STARMethodTip()
-        
-        OutlinedButton(
-            onClick = onBackClick,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = Color(0xFF666666)
-            )
+        EnhancedActionButtonsRow(
+            onPrevious = viewModel::previousQuestion,
+            onSaveSession = viewModel::saveSession,
+            onSubmitAnswer = viewModel::submitAnswer,
+            canGoPrevious = state.session.currentQuestionIndex > 0,
+            hasAnswer = state.answer.isNotBlank(),
+            isSubmitting = state.isSubmitting
+        )
+    } else if (state.feedback != null && !isSessionComplete) {
+        FeedbackNavigationButtons(
+            onPrevious = viewModel::previousQuestion,
+            onSaveSession = viewModel::saveSession,
+            onNext = viewModel::nextQuestion,
+            canGoPrevious = state.session.currentQuestionIndex > 0,
+            canGoNext = !state.feedback.isLastQuestion
+        )
+    }
+}
+
+@Composable
+private fun TipsAndEndSessionSection(
+    hasFeedback: Boolean,
+    onBackClick: () -> Unit
+) {
+    if (!hasFeedback) {
+        EnhancedTipsCard()
+    }
+    
+    OutlinedButton(
+        onClick = onBackClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = colorResource(R.color.text_secondary)
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp, 
+            colorResource(R.color.text_secondary).copy(alpha = 0.3f)
+        )
+    ) {
+        Icon(Icons.Default.ExitToApp, contentDescription = null)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text("End Session")
+    }
+}
+
+@Composable
+private fun SessionCompleteCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = colorResource(R.color.success).copy(alpha = 0.1f)
+        ),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("End Session")
+            Icon(
+                Icons.Default.CheckCircle,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = colorResource(R.color.success)
+            )
+            Text(
+                "Session Complete! 🎉",
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = colorResource(R.color.success)
+            )
+            Text(
+                "Great job completing all questions! Review your feedback to improve.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = colorResource(R.color.text_secondary),
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
 
 @Composable
-private fun ProgressCard(
+private fun EnhancedProgressCard(
     completedQuestions: Int,
-    totalQuestions: Int
+    totalQuestions: Int,
+    currentIndex: Int
 ) {
+    // Use answeredQuestions for progress calculation to match backend
+    val progress = if (totalQuestions > 0) {
+        completedQuestions.toFloat() / totalQuestions
+    } else {
+        0f
+    }
+    
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.surface)),
+        shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                "Session Progress: $completedQuestions/$totalQuestions questions complete",
-                fontSize = 14.sp,
-                color = Color(0xFF666666)
+                "Progress",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = colorResource(R.color.text_primary)
             )
             
-            Spacer(modifier = Modifier.height(12.dp))
-            
             LinearProgressIndicator(
-                progress = { if (totalQuestions > 0) completedQuestions.toFloat() / totalQuestions else 0f },
+                progress = { progress },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(10.dp)
-                    .clip(RoundedCornerShape(5.dp)),
-                color = Color(0xFFFFC107),
-                trackColor = Color(0xFFFFE082)
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(6.dp)),
+                color = colorResource(R.color.primary),
+                trackColor = colorResource(R.color.primary).copy(alpha = 0.2f)
+            )
+            
+            Text(
+                "Question ${currentIndex + 1} of $totalQuestions",
+                style = MaterialTheme.typography.bodySmall,
+                color = colorResource(R.color.text_secondary)
             )
         }
     }
 }
 
 @Composable
-private fun QuestionCard(
+private fun EnhancedQuestionCard(
     questionNumber: Int,
     totalQuestions: Int,
     questionText: String
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.surface)),
+        shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(24.dp)
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                "Question $questionNumber of $totalQuestions",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF1A1A1A)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.QuestionAnswer,
+                        contentDescription = null,
+                        tint = colorResource(R.color.primary),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        "Question $questionNumber",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = colorResource(R.color.text_primary)
+                    )
+                }
+                Surface(
+                    color = colorResource(R.color.primary).copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        "$questionNumber/$totalQuestions",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = colorResource(R.color.primary)
+                    )
+                }
+            }
             
-            Spacer(modifier = Modifier.height(20.dp))
+            HorizontalDivider(color = colorResource(R.color.text_secondary).copy(alpha = 0.2f))
             
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        Color(0xFFE3F2FD),
-                        RoundedCornerShape(8.dp)
+                        colorResource(R.color.primary).copy(alpha = 0.05f),
+                        RoundedCornerShape(12.dp)
                     )
                     .padding(20.dp)
             ) {
                 Text(
-                    "\"$questionText\"",
-                    fontSize = 16.sp,
-                    fontStyle = FontStyle.Italic,
-                    color = Color(0xFF1565C0),
-                    lineHeight = 24.sp
+                    questionText,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        lineHeight = 24.sp
+                    ),
+                    color = colorResource(R.color.text_primary)
                 )
             }
         }
@@ -330,168 +482,199 @@ private fun QuestionCard(
 }
 
 @Composable
-private fun AnswerInputCard(
+private fun EnhancedAnswerInputCard(
     answer: String,
-    onAnswerChange: (String) -> Unit
+    onAnswerChange: (String) -> Unit,
+    characterCount: Int
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.surface)),
+        shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(24.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                "Your Answer",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF1A1A1A)
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Your Answer",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = colorResource(R.color.text_primary)
+                )
+                Text(
+                    "$characterCount characters",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorResource(R.color.text_secondary)
+                )
+            }
             
             OutlinedTextField(
                 value = answer,
                 onValueChange = onAnswerChange,
                 placeholder = { 
                     Text(
-                        "Type your answer here...",
-                        color = Color(0xFF999999)
+                        "Type your answer here. Be specific and use examples from your experience...",
+                        color = colorResource(R.color.text_secondary).copy(alpha = 0.6f)
                     ) 
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp),
+                    .height(250.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF1976D2),
-                    unfocusedBorderColor = Color(0xFFCCCCCC),
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
+                    focusedBorderColor = colorResource(R.color.primary),
+                    unfocusedBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f),
+                    focusedContainerColor = colorResource(R.color.surface),
+                    unfocusedContainerColor = colorResource(R.color.surface)
                 ),
-                shape = RoundedCornerShape(8.dp),
-                textStyle = androidx.compose.ui.text.TextStyle(
-                    fontSize = 15.sp,
-                    color = Color(0xFF1A1A1A)
-                )
+                shape = RoundedCornerShape(12.dp),
+                textStyle = MaterialTheme.typography.bodyMedium.copy(
+                    lineHeight = 22.sp
+                ),
+                maxLines = 15
             )
         }
     }
 }
 
 @Composable
-private fun FeedbackCard(feedback: com.cpen321.usermanagement.data.remote.dto.SessionModels.SessionFeedback) {
+private fun EnhancedFeedbackCard(feedback: com.cpen321.usermanagement.data.remote.dto.SessionModels.SessionFeedback) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = colorResource(R.color.surface)),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // AI Feedback Header
+            // Header
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 16.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Icon(
-                    Icons.Default.CheckCircle,
+                    Icons.Default.AutoAwesome,
                     contentDescription = null,
-                    tint = colorResource(R.color.success),
-                    modifier = Modifier.size(24.dp)
+                    tint = colorResource(R.color.primary),
+                    modifier = Modifier.size(28.dp)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     "AI Feedback",
                     style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = colorResource(R.color.text_primary)
-                    )
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = colorResource(R.color.text_primary)
                 )
             }
             
+            HorizontalDivider(color = colorResource(R.color.text_secondary).copy(alpha = 0.2f))
+            
             // Strengths Section
             if (feedback.strengths.isNotEmpty()) {
-                Card(
+                Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = colorResource(R.color.success).copy(alpha = 0.1f)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
+                    color = colorResource(R.color.success).copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             Icon(
                                 Icons.Default.CheckCircle,
                                 contentDescription = null,
                                 tint = colorResource(R.color.success),
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(20.dp)
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 "Strengths",
                                 style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = colorResource(R.color.success)
-                                )
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = colorResource(R.color.success)
                             )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
                         feedback.strengths.forEach { strength ->
-                            Text(
-                                "• $strength",
-                                style = MaterialTheme.typography.bodyMedium.copy(
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    "•",
+                                    style = MaterialTheme.typography.bodyMedium,
                                     color = colorResource(R.color.success)
-                                ),
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
+                                )
+                                Text(
+                                    strength,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = colorResource(R.color.text_primary),
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
             }
             
             // Areas for Improvement Section
             if (feedback.improvements.isNotEmpty()) {
-                Card(
+                Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = colorResource(R.color.warning).copy(alpha = 0.1f)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
+                    color = colorResource(R.color.warning).copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             Icon(
-                                Icons.Default.Warning,
+                                Icons.Default.Lightbulb,
                                 contentDescription = null,
                                 tint = colorResource(R.color.warning),
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(20.dp)
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 "Areas for Improvement",
                                 style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = colorResource(R.color.warning)
-                                )
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = colorResource(R.color.warning)
                             )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
                         feedback.improvements.forEach { improvement ->
-                            Text(
-                                "• $improvement",
-                                style = MaterialTheme.typography.bodyMedium.copy(
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    "•",
+                                    style = MaterialTheme.typography.bodyMedium,
                                     color = colorResource(R.color.warning)
-                                ),
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
+                                )
+                                Text(
+                                    improvement,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = colorResource(R.color.text_primary),
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
                         }
                     }
                 }
@@ -501,7 +684,7 @@ private fun FeedbackCard(feedback: com.cpen321.usermanagement.data.remote.dto.Se
 }
 
 @Composable
-private fun ActionButtonsRow(
+private fun EnhancedActionButtonsRow(
     onPrevious: () -> Unit,
     onSaveSession: () -> Unit,
     onSubmitAnswer: () -> Unit,
@@ -509,66 +692,21 @@ private fun ActionButtonsRow(
     hasAnswer: Boolean,
     isSubmitting: Boolean = false
 ) {
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Previous Button
-        OutlinedButton(
-            onClick = onPrevious,
-            enabled = canGoPrevious,
-            modifier = Modifier.weight(1f),
-            colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = Color.Transparent,
-                contentColor = Color(0xFF666666)
-            ),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCCCCCC)),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Previous", fontSize = 14.sp)
-        }
-        
-        Spacer(modifier = Modifier.width(12.dp))
-        
-        // Save Session Button
-        OutlinedButton(
-            onClick = onSaveSession,
-            modifier = Modifier.weight(1f),
-            colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = Color.Transparent,
-                contentColor = Color(0xFF666666)
-            ),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCCCCCC)),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Icon(
-                Icons.Default.Star,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Save Session", fontSize = 14.sp)
-        }
-        
-        Spacer(modifier = Modifier.width(12.dp))
-        
-        // Submit Answer Button
+        // Primary action: Submit Answer
         Button(
             onClick = onSubmitAnswer,
             enabled = hasAnswer && !isSubmitting,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF5C6BC0),
-                disabledContainerColor = Color(0xFFCCCCCC)
+                containerColor = colorResource(R.color.primary),
+                disabledContainerColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
             ),
-            shape = RoundedCornerShape(8.dp)
+            shape = RoundedCornerShape(12.dp),
+            contentPadding = PaddingValues(vertical = 16.dp)
         ) {
             if (isSubmitting) {
                 CircularProgressIndicator(
@@ -576,33 +714,209 @@ private fun ActionButtonsRow(
                     color = Color.White,
                     strokeWidth = 2.dp
                 )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("Submitting...", style = MaterialTheme.typography.labelLarge)
             } else {
-                Text("Submit Answer", fontSize = 14.sp)
+                Icon(Icons.Default.Send, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Submit Answer", style = MaterialTheme.typography.labelLarge)
+            }
+        }
+        
+        // Secondary actions
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedButton(
+                onClick = onPrevious,
+                enabled = canGoPrevious,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = colorResource(R.color.text_primary)
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp, 
+                    colorResource(R.color.text_secondary).copy(alpha = 0.3f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Previous", style = MaterialTheme.typography.labelMedium)
+            }
+            
+            OutlinedButton(
+                onClick = onSaveSession,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = colorResource(R.color.text_primary)
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp, 
+                    colorResource(R.color.text_secondary).copy(alpha = 0.3f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    Icons.Default.Bookmark,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Save", style = MaterialTheme.typography.labelMedium)
             }
         }
     }
 }
 
 @Composable
-private fun STARMethodTip() {
+private fun FeedbackNavigationButtons(
+    onPrevious: () -> Unit,
+    onSaveSession: () -> Unit,
+    onNext: () -> Unit,
+    canGoPrevious: Boolean,
+    canGoNext: Boolean
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Next Question Button (primary)
+        Button(
+            onClick = onNext,
+            enabled = canGoNext,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = colorResource(R.color.primary),
+                disabledContainerColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
+            ),
+            shape = RoundedCornerShape(12.dp),
+            contentPadding = PaddingValues(vertical = 16.dp)
+        ) {
+            Text("Next Question", style = MaterialTheme.typography.labelLarge)
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        
+        // Secondary buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedButton(
+                onClick = onPrevious,
+                enabled = canGoPrevious,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = colorResource(R.color.text_primary)
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp, 
+                    colorResource(R.color.text_secondary).copy(alpha = 0.3f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Previous", style = MaterialTheme.typography.labelMedium)
+            }
+            
+            OutlinedButton(
+                onClick = onSaveSession,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = colorResource(R.color.text_primary)
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp, 
+                    colorResource(R.color.text_secondary).copy(alpha = 0.3f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    Icons.Default.Bookmark,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Save", style = MaterialTheme.typography.labelMedium)
+            }
+        }
+    }
+}
+
+@Composable
+private fun EnhancedTipsCard() {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = colorResource(R.color.primary).copy(alpha = 0.05f),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    Icons.Default.Lightbulb,
+                    contentDescription = null,
+                    tint = colorResource(R.color.primary),
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    "Interview Tips",
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = colorResource(R.color.text_primary)
+                )
+            }
+            
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                TipItem("Use the STAR method: Situation, Task, Action, Result")
+                TipItem("Be specific with examples from your experience")
+                TipItem("Keep answers concise but comprehensive (2-3 minutes)")
+                TipItem("Practice speaking clearly and confidently")
+            }
+        }
+    }
+}
+
+@Composable
+private fun TipItem(text: String) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color(0xFFFFF9E6), RoundedCornerShape(8.dp))
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.Start,
-        verticalAlignment = Alignment.CenterVertically
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.Top
     ) {
         Text(
-            "💡",
-            fontSize = 20.sp,
-            modifier = Modifier.padding(end = 12.dp)
+            "•",
+            style = MaterialTheme.typography.bodySmall,
+            color = colorResource(R.color.primary)
         )
         Text(
-            "Tips: Use the STAR method (Situation, Task, Action, Result) for behavioral questions",
-            fontSize = 13.sp,
-            color = Color(0xFF856404),
-            lineHeight = 18.sp
+            text,
+            style = MaterialTheme.typography.bodySmall,
+            color = colorResource(R.color.text_secondary),
+            modifier = Modifier.weight(1f)
         )
     }
 }

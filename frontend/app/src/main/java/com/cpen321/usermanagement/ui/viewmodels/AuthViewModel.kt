@@ -58,14 +58,20 @@ class AuthViewModel @Inject constructor(
     }
 
     private fun checkAuthenticationStatus() {
-        viewModelScope.launch {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
                 _uiState.value = _uiState.value.copy(isCheckingAuth = true)
                 updateNavigationState(isLoading = true)
 
                 val isAuthenticated = authRepository.isUserAuthenticated()
-                val user = if (isAuthenticated) authRepository.getCurrentUser() else null
-
+                val user = if (isAuthenticated) {
+                    try {
+                        authRepository.getCurrentUser()
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error getting current user", e)
+                        null
+                    }
+                } else null
 
                 _uiState.value = _uiState.value.copy(
                     isAuthenticated = isAuthenticated,
@@ -83,6 +89,9 @@ class AuthViewModel @Inject constructor(
                 handleAuthError("No internet connection. Please check your network.", e)
             } catch (e: java.io.IOException) {
                 handleAuthError("Connection error. Please try again.", e)
+            } catch (e: Exception) {
+                Log.e(TAG, "Unexpected error in checkAuthenticationStatus", e)
+                handleAuthError("An unexpected error occurred. Please try again.", e)
             }
         }
     }

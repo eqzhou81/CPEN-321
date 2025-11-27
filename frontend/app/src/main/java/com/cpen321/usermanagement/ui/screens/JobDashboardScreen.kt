@@ -527,7 +527,11 @@ private fun formatDate(dateString: String): String {
         val outputFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
         val date = inputFormat.parse(dateString)
         outputFormat.format(date ?: Date())
-    } catch (e: Exception) {
+    } catch (e: java.text.ParseException) {
+        "Unknown date"
+    } catch (e: IllegalArgumentException) {
+        "Unknown date"
+    } catch (e: Throwable) {
         "Unknown date"
     }
 }

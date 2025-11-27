@@ -43,89 +43,135 @@ fun SessionListScreen(
             .fillMaxSize()
             .background(Color(0xFF1E3A8A))
     ) {
-        // Top App Bar
-        TopAppBar(
-            title = { 
-                Text(
-                    "Mock Interview Sessions",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                ) 
-            },
-            navigationIcon = {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color(0xFF1E3A8A)
-            ),
-            actions = {
-                IconButton(onClick = onCreateSession) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Create Session",
-                        tint = Color.White
-                    )
-                }
-            }
+        SessionListTopBar(
+            onBackClick = onBackClick,
+            onCreateSession = onCreateSession
         )
         
-        when (val state = uiState) {
-            is SessionListViewModel.UiState.Loading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Color.White)
-                }
+        SessionListContent(
+            uiState = uiState,
+            onSessionClick = onSessionClick,
+            onCreateSession = onCreateSession,
+            onRetry = { viewModel.loadSessions() }
+        )
+    }
+}
+
+@Composable
+private fun SessionListTopBar(
+    onBackClick: () -> Unit,
+    onCreateSession: () -> Unit
+) {
+    TopAppBar(
+        title = { 
+            Text(
+                "Mock Interview Sessions",
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            ) 
+        },
+        navigationIcon = {
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White
+                )
             }
-            
-            is SessionListViewModel.UiState.Success -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(state.sessions) { session ->
-                        SessionCard(
-                            session = session,
-                            onClick = { onSessionClick(session.id) }
-                        )
-                    }
-                    
-                    if (state.sessions.isEmpty()) {
-                        item {
-                            EmptyStateCard(onCreateSession = onCreateSession)
-                        }
-                    }
-                }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color(0xFF1E3A8A)
+        ),
+        actions = {
+            IconButton(onClick = onCreateSession) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Create Session",
+                    tint = Color.White
+                )
             }
-            
-            is SessionListViewModel.UiState.Error -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            "Error: ${state.message}",
-                            color = Color.White,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = { viewModel.loadSessions() }
-                        ) {
-                            Text("Retry")
-                        }
-                    }
-                }
+        }
+    )
+}
+
+@Composable
+private fun SessionListContent(
+    uiState: SessionListViewModel.UiState,
+    onSessionClick: (String) -> Unit,
+    onCreateSession: () -> Unit,
+    onRetry: () -> Unit
+) {
+    when (val state = uiState) {
+        is SessionListViewModel.UiState.Loading -> {
+            LoadingState()
+        }
+        
+        is SessionListViewModel.UiState.Success -> {
+            SessionsList(
+                sessions = state.sessions,
+                onSessionClick = onSessionClick,
+                onCreateSession = onCreateSession
+            )
+        }
+        
+        is SessionListViewModel.UiState.Error -> {
+            ErrorState(message = state.message, onRetry = onRetry)
+        }
+    }
+}
+
+@Composable
+private fun LoadingState() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(color = Color.White)
+    }
+}
+
+@Composable
+private fun SessionsList(
+    sessions: List<Session>,
+    onSessionClick: (String) -> Unit,
+    onCreateSession: () -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(sessions) { session ->
+            SessionCard(
+                session = session,
+                onClick = { onSessionClick(session.id) }
+            )
+        }
+        
+        if (sessions.isEmpty()) {
+            item {
+                EmptyStateCard(onCreateSession = onCreateSession)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ErrorState(message: String, onRetry: () -> Unit) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                "Error: $message",
+                color = Color.White,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onRetry) {
+                Text("Retry")
             }
         }
     }

@@ -74,9 +74,11 @@ object RetrofitClient {
     private val httpClient = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
         .addInterceptor(loggingInterceptor)
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
+        .connectTimeout(8, TimeUnit.SECONDS)  // Reduced from 10s
+        .readTimeout(12, TimeUnit.SECONDS)    // Reduced from 15s
+        .writeTimeout(12, TimeUnit.SECONDS)   // Reduced from 15s
+        .callTimeout(15, TimeUnit.SECONDS)    // Reduced from 20s
+        .retryOnConnectionFailure(true)      // Auto-retry on connection failure
         .build()
     
     // Lazy retrofit instance that can be reset for tests

@@ -37,81 +37,112 @@ fun Navigation(
     navController: NavHostController = rememberNavController()
 ) {
     NavHost(navController = navController, startDestination = NavRoutes.JOB_DASHBOARD) {
-        composable(NavRoutes.JOB_DASHBOARD) {
-            JobDashboardScreen(
-                onNavigateToJobDetails = { jobId ->
-                    navController.navigate(NavRoutes.jobDetailsPath(jobId))
-                },
-                onNavigateToQuestions = { jobId ->
-                    navController.navigate(NavRoutes.questionsDashboardPath(jobId))
-                }
-            )
-        }
-        composable(NavRoutes.JOB_DETAILS) { backStackEntry ->
-            val jobId = backStackEntry.arguments?.getString("jobId")
-            if (jobId != null) {
-                JobDetailsScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToQuestions = { navController.navigate(NavRoutes.questionsDashboardPath(jobId)) },
-                    onNavigateToSimilarJobs = { navController.navigate(NavRoutes.similarJobsPath(jobId)) },
-                    jobId = jobId
-                )
-            }
-        }
-        composable(NavRoutes.SIMILAR_JOBS) { backStackEntry ->
-            val jobId = backStackEntry.arguments?.getString("jobId")
-            if (jobId != null) {
-                SimilarJobsScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onOpenJobLink = { /* Handle job link opening */ },
-                    jobId = jobId
-                )
-            }
-        }
-        composable(NavRoutes.QUESTIONS_DASHBOARD) { backStackEntry ->
-            val jobId = backStackEntry.arguments?.getString("jobId")
-            if (jobId != null) {
-                val mainViewModel: MainViewModel = hiltViewModel()
-                QuestionsDashboardScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToBehavioralQuestions = { navController.navigate(NavRoutes.behavioralQuestionsPath(jobId)) },
-                    onNavigateToTechnicalQuestions = { navController.navigate(NavRoutes.technicalQuestionsPath(jobId)) },
-                    jobId = jobId,
+        jobDashboardRoute(navController)
+        jobDetailsRoute(navController)
+        similarJobsRoute(navController)
+        questionsDashboardRoute(navController)
+        technicalQuestionsRoute(navController)
+        behavioralQuestionsRoute(navController)
+        mockInterviewRoute(navController)
+    }
+}
 
-                )
+private fun androidx.navigation.NavGraphBuilder.jobDashboardRoute(navController: NavHostController) {
+    composable(NavRoutes.JOB_DASHBOARD) {
+        JobDashboardScreen(
+            onNavigateToJobDetails = { jobId ->
+                navController.navigate(NavRoutes.jobDetailsPath(jobId))
+            },
+            onNavigateToQuestions = { jobId ->
+                navController.navigate(NavRoutes.questionsDashboardPath(jobId))
             }
-        }
-        composable(NavRoutes.TECHNICAL_QUESTIONS) { backStackEntry ->
-            val jobId = backStackEntry.arguments?.getString("jobId")
-            if (jobId != null) {
-                TechnicalQuestionsScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToQuestion = { /* Handle question navigation */ },
-                    jobId = jobId
-                )
-            }
-        }
-        composable(NavRoutes.BEHAVIORAL_QUESTIONS) { backStackEntry ->
-            val jobId = backStackEntry.arguments?.getString("jobId")
-            if (jobId != null) {
-                val mainViewModel: MainViewModel = hiltViewModel()
-                BehavioralQuestionsScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToQuestion = { /* Handle question navigation */ },
-                    onNavigateToMockInterview = { sessionId ->
-                        navController.navigate(NavRoutes.mockInterviewPath(sessionId))
-                    },
-                    jobId = jobId,
-                    mainViewModel = mainViewModel
-                )
-            }
-        }
-        composable(NavRoutes.MOCK_INTERVIEW) { backStackEntry ->
-            val sessionId = backStackEntry.arguments?.getString("sessionId") ?: "default-session"
-            MockInterviewScreen(
-                sessionId = sessionId,
-                onBackClick = { navController.popBackStack() }
+        )
+    }
+}
+
+private fun androidx.navigation.NavGraphBuilder.jobDetailsRoute(navController: NavHostController) {
+    composable(NavRoutes.JOB_DETAILS) { backStackEntry ->
+        val jobId = backStackEntry.arguments?.getString("jobId")
+        if (jobId != null) {
+            JobDetailsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToQuestions = { navController.navigate(NavRoutes.questionsDashboardPath(jobId)) },
+                onNavigateToSimilarJobs = { navController.navigate(NavRoutes.similarJobsPath(jobId)) },
+                jobId = jobId
             )
         }
+    }
+}
+
+private fun androidx.navigation.NavGraphBuilder.similarJobsRoute(navController: NavHostController) {
+    composable(NavRoutes.SIMILAR_JOBS) { backStackEntry ->
+        val jobId = backStackEntry.arguments?.getString("jobId")
+        if (jobId != null) {
+            SimilarJobsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onOpenJobLink = { },
+                jobId = jobId
+            )
+        }
+    }
+}
+
+private fun androidx.navigation.NavGraphBuilder.questionsDashboardRoute(navController: NavHostController) {
+    composable(NavRoutes.QUESTIONS_DASHBOARD) { backStackEntry ->
+        val jobId = backStackEntry.arguments?.getString("jobId")
+        if (jobId != null) {
+            val mainViewModel: MainViewModel = hiltViewModel()
+            QuestionsDashboardScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToBehavioralQuestions = { navController.navigate(NavRoutes.behavioralQuestionsPath(jobId)) },
+                onNavigateToTechnicalQuestions = { navController.navigate(NavRoutes.technicalQuestionsPath(jobId)) },
+                onNavigateToMockInterview = { sessionId ->
+                    navController.navigate(NavRoutes.mockInterviewPath(sessionId))
+                },
+                jobId = jobId,
+                mainViewModel = mainViewModel
+            )
+        }
+    }
+}
+
+private fun androidx.navigation.NavGraphBuilder.technicalQuestionsRoute(navController: NavHostController) {
+    composable(NavRoutes.TECHNICAL_QUESTIONS) { backStackEntry ->
+        val jobId = backStackEntry.arguments?.getString("jobId")
+        if (jobId != null) {
+            TechnicalQuestionsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToQuestion = { },
+                jobId = jobId
+            )
+        }
+    }
+}
+
+private fun androidx.navigation.NavGraphBuilder.behavioralQuestionsRoute(navController: NavHostController) {
+    composable(NavRoutes.BEHAVIORAL_QUESTIONS) { backStackEntry ->
+        val jobId = backStackEntry.arguments?.getString("jobId")
+        if (jobId != null) {
+            val mainViewModel: MainViewModel = hiltViewModel()
+            BehavioralQuestionsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToQuestion = { },
+                onNavigateToMockInterview = { sessionId ->
+                    navController.navigate(NavRoutes.mockInterviewPath(sessionId))
+                },
+                jobId = jobId,
+                mainViewModel = mainViewModel
+            )
+        }
+    }
+}
+
+private fun androidx.navigation.NavGraphBuilder.mockInterviewRoute(navController: NavHostController) {
+    composable(NavRoutes.MOCK_INTERVIEW) { backStackEntry ->
+        val sessionId = backStackEntry.arguments?.getString("sessionId") ?: "default-session"
+        MockInterviewScreen(
+            sessionId = sessionId,
+            onBackClick = { navController.popBackStack() }
+        )
     }
 }

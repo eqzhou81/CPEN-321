@@ -39,6 +39,10 @@ class MainViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(successMessage = null)
     }
     
+    fun clearErrorMessage() {
+        _uiState.value = _uiState.value.copy(errorMessage = null)
+    }
+    
     fun createMockInterviewSession(jobId: String = "000000000000000000000000") {
         viewModelScope.launch {
             try {

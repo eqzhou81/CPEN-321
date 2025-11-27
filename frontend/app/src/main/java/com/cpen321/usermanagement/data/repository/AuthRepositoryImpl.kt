@@ -205,7 +205,15 @@ class AuthRepositoryImpl @Inject constructor(
         } catch (e: retrofit2.HttpException) {
             Log.e("AuthRepository", "HTTP error while getting current user: ${e.code()}", e)
             null
-        } catch (e: Exception) {
+        } catch (e: java.net.SocketTimeoutException) {
+            Log.e("AuthRepository", "Timeout error while getting current user", e)
+            null
+        } catch (e: java.net.UnknownHostException) {
+            Log.e("AuthRepository", "Network host error while getting current user", e)
+            null
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
             Log.e("AuthRepository", "Unexpected error while getting current user", e)
             null
         }

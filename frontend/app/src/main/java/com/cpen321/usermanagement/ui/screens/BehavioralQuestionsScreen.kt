@@ -38,19 +38,13 @@ fun BehavioralQuestionsScreen(
     val questions by viewModel.questions.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
-    
-    // MainViewModel state for session creation
     val sessionCreated by mainViewModel.sessionCreated.collectAsStateWithLifecycle()
-    val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
-    
     val behavioralQuestions = questions?.behavioralQuestions ?: emptyList()
     
     LaunchedEffect(jobId) {
-        // Load behavioral questions for this job
         viewModel.loadQuestions(jobId, QuestionType.BEHAVIORAL)
     }
     
-    // Handle session creation and navigation
     LaunchedEffect(sessionCreated) {
         sessionCreated?.let { sessionId ->
             onNavigateToMockInterview?.invoke(sessionId)
@@ -64,128 +58,180 @@ fun BehavioralQuestionsScreen(
             .background(colorResource(R.color.background))
             .padding(16.dp)
     ) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = colorResource(R.color.text_primary)
-                    )
-                }
-                Text(
-                    text = "Behavioral Questions",
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = colorResource(R.color.text_primary)
-                    )
-                )
-            }
-            
-            val completedCount = behavioralQuestions.count { it.isCompleted }
-            Badge(
-                containerColor = colorResource(R.color.primary).copy(alpha = 0.2f),
-                contentColor = colorResource(R.color.primary)
-            ) {
-                Text("$completedCount/${behavioralQuestions.size}")
-            }
-        }
+        BehavioralQuestionsHeader(
+            onNavigateBack = onNavigateBack,
+            completedCount = behavioralQuestions.count { it.isCompleted },
+            totalCount = behavioralQuestions.size
+        )
         
         Spacer(modifier = Modifier.height(24.dp))
         
-        // Error Message
         error?.let { errorMessage ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = colorResource(R.color.error).copy(alpha = 0.1f)
-                )
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Warning, contentDescription = null, tint = colorResource(R.color.error))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = errorMessage,
-                        color = colorResource(R.color.error),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    TextButton(onClick = { viewModel.clearError() }) {
-                        Text("Dismiss")
-                    }
-                }
-            }
+            ErrorMessageCard(
+                errorMessage = errorMessage,
+                onDismiss = { viewModel.clearError() }
+            )
             Spacer(modifier = Modifier.height(16.dp))
         }
         
-        // Loading State
-        if (isLoading && behavioralQuestions.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator(color = colorResource(R.color.primary))
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Loading behavioral questions...",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = colorResource(R.color.text_secondary)
-                        )
-                    )
-                }
+        BehavioralQuestionsContent(
+            isLoading = isLoading,
+            behavioralQuestions = behavioralQuestions,
+            jobId = jobId,
+            viewModel = viewModel,
+            mainViewModel = mainViewModel
+        )
+    }
+}
+
+@Composable
+private fun BehavioralQuestionsHeader(
+    onNavigateBack: () -> Unit,
+    completedCount: Int,
+    totalCount: Int
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onNavigateBack) {
+                Icon(
+                    Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = colorResource(R.color.text_primary)
+                )
+            }
+            Text(
+                text = "Behavioral Questions",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = colorResource(R.color.text_primary)
+                )
+            )
+        }
+        
+        Badge(
+            containerColor = colorResource(R.color.primary).copy(alpha = 0.2f),
+            contentColor = colorResource(R.color.primary)
+        ) {
+            Text("$completedCount/$totalCount")
+        }
+    }
+}
+
+@Composable
+private fun ErrorMessageCard(
+    errorMessage: String,
+    onDismiss: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = colorResource(R.color.error).copy(alpha = 0.1f)
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Warning, contentDescription = null, tint = colorResource(R.color.error))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = errorMessage,
+                color = colorResource(R.color.error),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            TextButton(onClick = onDismiss) {
+                Text("Dismiss")
             }
         }
-        // Empty State
-        else if (behavioralQuestions.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Default.Help,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = colorResource(R.color.text_tertiary)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "No behavioral questions yet",
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            color = colorResource(R.color.text_secondary)
-                        )
-                    )
-                }
-            }
+    }
+}
+
+@Composable
+private fun BehavioralQuestionsContent(
+    isLoading: Boolean,
+    behavioralQuestions: List<BehavioralQuestion>,
+    jobId: String,
+    viewModel: QuestionViewModel,
+    mainViewModel: MainViewModel
+) {
+    when {
+        isLoading && behavioralQuestions.isEmpty() -> LoadingState()
+        behavioralQuestions.isEmpty() -> EmptyState()
+        else -> QuestionsList(
+            behavioralQuestions = behavioralQuestions,
+            jobId = jobId,
+            viewModel = viewModel,
+            mainViewModel = mainViewModel
+        )
+    }
+}
+
+@Composable
+private fun LoadingState() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CircularProgressIndicator(color = colorResource(R.color.primary))
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Loading behavioral questions...",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = colorResource(R.color.text_secondary)
+                )
+            )
         }
-        // Questions List
-        else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(behavioralQuestions) { question ->
-                    BehavioralQuestionCard(
-                        question = question,
-                        onClick = { 
-                            // Create mock interview session for this specific question
-                            // Pass the question ID to create a focused session
-                            mainViewModel.createMockInterviewSessionForQuestion(jobId, question.id)
-                        },
-                        onToggleCompletion = { 
-                            viewModel.updateQuestionCompletion(question.id, !question.isCompleted)
-                        }
-                    )
+    }
+}
+
+@Composable
+private fun EmptyState() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                Icons.Default.Help,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = colorResource(R.color.text_tertiary)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "No behavioral questions yet",
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    color = colorResource(R.color.text_secondary)
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuestionsList(
+    behavioralQuestions: List<BehavioralQuestion>,
+    jobId: String,
+    viewModel: QuestionViewModel,
+    mainViewModel: MainViewModel
+) {
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        items(behavioralQuestions) { question ->
+            BehavioralQuestionCard(
+                question = question,
+                onClick = { 
+                    mainViewModel.createMockInterviewSessionForQuestion(jobId, question.id)
+                },
+                onToggleCompletion = { 
+                    viewModel.updateQuestionCompletion(question.id, !question.isCompleted)
                 }
-            }
+            )
         }
     }
 }
@@ -204,84 +250,128 @@ private fun BehavioralQuestionCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = if (question.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                        contentDescription = if (question.isCompleted) "Mark as incomplete" else "Mark as complete",
-                        tint = if (question.isCompleted) colorResource(R.color.success) else colorResource(R.color.text_tertiary),
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clickable { onToggleCompletion() }
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    
-                    Badge(
-                        containerColor = when (question.difficulty) {
-                            QuestionDifficulty.EASY -> colorResource(R.color.success).copy(alpha = 0.2f)
-                            QuestionDifficulty.MEDIUM -> colorResource(R.color.warning).copy(alpha = 0.2f)
-                            QuestionDifficulty.HARD -> colorResource(R.color.error).copy(alpha = 0.2f)
-                            null -> colorResource(R.color.warning).copy(alpha = 0.2f)
-                        },
-                        contentColor = when (question.difficulty) {
-                            QuestionDifficulty.EASY -> colorResource(R.color.success)
-                            QuestionDifficulty.MEDIUM -> colorResource(R.color.warning)
-                            QuestionDifficulty.HARD -> colorResource(R.color.error)
-                            null -> colorResource(R.color.warning)
-                        }
-                    ) {
-                        Text(question.difficulty?.displayName ?: "MEDIUM")
-                    }
-                }
-                
-                Badge(
-                    containerColor = colorResource(R.color.primary).copy(alpha = 0.2f),
-                    contentColor = colorResource(R.color.primary)
-                ) {
-                    Text(question.category.replace("-", " ").uppercase())
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // Question Text
-            Text(
-                text = question.question,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    color = colorResource(R.color.text_primary),
-                    fontWeight = FontWeight.Medium
-                ),
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
+            QuestionCardHeader(
+                question = question,
+                onToggleCompletion = onToggleCompletion
             )
             
             Spacer(modifier = Modifier.height(12.dp))
             
-            // Footer
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = if (question.isCompleted) "Completed" else "Not completed",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = if (question.isCompleted) colorResource(R.color.success) else colorResource(R.color.text_tertiary)
-                    )
-                )
-                
-                Button(
-                    onClick = onClick,
-                    colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.primary))
-                ) {
-                    Text("Start Mock Interview")
-                }
-            }
+            QuestionCardText(questionText = question.question)
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            QuestionCardFooter(
+                isCompleted = question.isCompleted,
+                onClick = onClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuestionCardHeader(
+    question: BehavioralQuestion,
+    onToggleCompletion: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            CompletionIcon(
+                isCompleted = question.isCompleted,
+                onToggleCompletion = onToggleCompletion
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            DifficultyBadge(difficulty = question.difficulty)
+        }
+        
+        CategoryBadge(category = question.category)
+    }
+}
+
+@Composable
+private fun CompletionIcon(
+    isCompleted: Boolean,
+    onToggleCompletion: () -> Unit
+) {
+    Icon(
+        imageVector = if (isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+        contentDescription = if (isCompleted) "Mark as incomplete" else "Mark as complete",
+        tint = if (isCompleted) colorResource(R.color.success) else colorResource(R.color.text_tertiary),
+        modifier = Modifier
+            .size(24.dp)
+            .clickable { onToggleCompletion() }
+    )
+}
+
+@Composable
+private fun DifficultyBadge(difficulty: QuestionDifficulty?) {
+    Badge(
+        containerColor = when (difficulty) {
+            QuestionDifficulty.EASY -> colorResource(R.color.success).copy(alpha = 0.2f)
+            QuestionDifficulty.MEDIUM -> colorResource(R.color.warning).copy(alpha = 0.2f)
+            QuestionDifficulty.HARD -> colorResource(R.color.error).copy(alpha = 0.2f)
+            null -> colorResource(R.color.warning).copy(alpha = 0.2f)
+        },
+        contentColor = when (difficulty) {
+            QuestionDifficulty.EASY -> colorResource(R.color.success)
+            QuestionDifficulty.MEDIUM -> colorResource(R.color.warning)
+            QuestionDifficulty.HARD -> colorResource(R.color.error)
+            null -> colorResource(R.color.warning)
+        }
+    ) {
+        Text(difficulty?.displayName ?: "MEDIUM")
+    }
+}
+
+@Composable
+private fun CategoryBadge(category: String) {
+    Badge(
+        containerColor = colorResource(R.color.primary).copy(alpha = 0.2f),
+        contentColor = colorResource(R.color.primary)
+    ) {
+        Text(category.replace("-", " ").uppercase())
+    }
+}
+
+@Composable
+private fun QuestionCardText(questionText: String) {
+    Text(
+        text = questionText,
+        style = MaterialTheme.typography.bodyLarge.copy(
+            color = colorResource(R.color.text_primary),
+            fontWeight = FontWeight.Medium
+        ),
+        maxLines = 3,
+        overflow = TextOverflow.Ellipsis
+    )
+}
+
+@Composable
+private fun QuestionCardFooter(
+    isCompleted: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = if (isCompleted) "Completed" else "Not completed",
+            style = MaterialTheme.typography.bodySmall.copy(
+                color = if (isCompleted) colorResource(R.color.success) else colorResource(R.color.text_tertiary)
+            )
+        )
+        
+        Button(
+            onClick = onClick,
+            colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.primary))
+        ) {
+            Text("Start Mock Interview")
         }
     }
 }

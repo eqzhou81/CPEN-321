@@ -43,7 +43,6 @@ fun TechnicalQuestionsScreen(
     val context = LocalContext.current
     
     LaunchedEffect(jobId) {
-        // Load technical questions for this job
         viewModel.loadQuestions(jobId, QuestionType.TECHNICAL)
     }
     
@@ -53,129 +52,185 @@ fun TechnicalQuestionsScreen(
             .background(colorResource(R.color.background))
             .padding(16.dp)
     ) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = colorResource(R.color.text_primary)
-                    )
-                }
-                Text(
-                    text = "Technical Questions",
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = colorResource(R.color.text_primary)
-                    )
-                )
-            }
-            
-            val completedCount = technicalQuestions.count { it.isCompleted }
-            Badge(
-                containerColor = colorResource(R.color.primary).copy(alpha = 0.2f),
-                contentColor = colorResource(R.color.primary)
-            ) {
-                Text("$completedCount/${technicalQuestions.size}")
-            }
-        }
+        TechnicalQuestionsHeader(
+            onNavigateBack = onNavigateBack,
+            completedCount = technicalQuestions.count { it.isCompleted },
+            totalCount = technicalQuestions.size
+        )
         
         Spacer(modifier = Modifier.height(24.dp))
         
-        // Error Message
         error?.let { errorMessage ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = colorResource(R.color.error).copy(alpha = 0.1f)
-                )
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Warning, contentDescription = null, tint = colorResource(R.color.error))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = errorMessage,
-                        color = colorResource(R.color.error),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    TextButton(onClick = { viewModel.clearError() }) {
-                        Text("Dismiss")
-                    }
-                }
-            }
+            ErrorMessageCard(errorMessage = errorMessage, onDismiss = { viewModel.clearError() })
             Spacer(modifier = Modifier.height(16.dp))
         }
         
-        // Loading State
-        if (isLoading && technicalQuestions.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator(color = colorResource(R.color.primary))
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Loading technical questions...",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = colorResource(R.color.text_secondary)
-                        )
-                    )
-                }
+        TechnicalQuestionsContent(
+            isLoading = isLoading,
+            technicalQuestions = technicalQuestions,
+            context = context,
+            onNavigateToQuestion = onNavigateToQuestion,
+            onToggleCompletion = { questionId, isCompleted ->
+                viewModel.updateQuestionCompletion(questionId, isCompleted)
+            }
+        )
+    }
+}
+
+@Composable
+private fun TechnicalQuestionsHeader(
+    onNavigateBack: () -> Unit,
+    completedCount: Int,
+    totalCount: Int
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onNavigateBack) {
+                Icon(
+                    Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = colorResource(R.color.text_primary)
+                )
+            }
+            Text(
+                text = "Technical Questions",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = colorResource(R.color.text_primary)
+                )
+            )
+        }
+        
+        Badge(
+            containerColor = colorResource(R.color.primary).copy(alpha = 0.2f),
+            contentColor = colorResource(R.color.primary)
+        ) {
+            Text("$completedCount/$totalCount")
+        }
+    }
+}
+
+@Composable
+private fun ErrorMessageCard(errorMessage: String, onDismiss: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = colorResource(R.color.error).copy(alpha = 0.1f)
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Warning, contentDescription = null, tint = colorResource(R.color.error))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = errorMessage,
+                color = colorResource(R.color.error),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            TextButton(onClick = onDismiss) {
+                Text("Dismiss")
             }
         }
-        // Empty State
-        else if (technicalQuestions.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Default.Build,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = colorResource(R.color.text_tertiary)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "No technical questions yet",
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            color = colorResource(R.color.text_secondary)
-                        )
-                    )
-                }
-            }
+    }
+}
+
+@Composable
+private fun TechnicalQuestionsContent(
+    isLoading: Boolean,
+    technicalQuestions: List<TechnicalQuestion>,
+    context: android.content.Context,
+    onNavigateToQuestion: (String) -> Unit,
+    onToggleCompletion: (String, Boolean) -> Unit
+) {
+    when {
+        isLoading && technicalQuestions.isEmpty() -> {
+            LoadingState()
         }
-        // Questions List
-        else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(technicalQuestions) { question ->
-                    TechnicalQuestionCard(
-                        question = question,
-                        onClick = { 
-                            question.externalUrl?.let { url ->
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                context.startActivity(intent)
-                            } ?: onNavigateToQuestion(question.id)
-                        },
-                        onToggleCompletion = { 
-                            viewModel.updateQuestionCompletion(question.id, !question.isCompleted)
-                        }
-                    )
+        technicalQuestions.isEmpty() -> {
+            EmptyState()
+        }
+        else -> {
+            QuestionsList(
+                technicalQuestions = technicalQuestions,
+                context = context,
+                onNavigateToQuestion = onNavigateToQuestion,
+                onToggleCompletion = onToggleCompletion
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoadingState() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CircularProgressIndicator(color = colorResource(R.color.primary))
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Loading technical questions...",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = colorResource(R.color.text_secondary)
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun EmptyState() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                Icons.Default.Build,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = colorResource(R.color.text_tertiary)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "No technical questions yet",
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    color = colorResource(R.color.text_secondary)
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuestionsList(
+    technicalQuestions: List<TechnicalQuestion>,
+    context: android.content.Context,
+    onNavigateToQuestion: (String) -> Unit,
+    onToggleCompletion: (String, Boolean) -> Unit
+) {
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        items(technicalQuestions) { question ->
+            TechnicalQuestionCard(
+                question = question,
+                onClick = { 
+                    question.externalUrl?.let { url ->
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        context.startActivity(intent)
+                    } ?: onNavigateToQuestion(question.id)
+                },
+                onToggleCompletion = { 
+                    onToggleCompletion(question.id, !question.isCompleted)
                 }
-            }
+            )
         }
     }
 }

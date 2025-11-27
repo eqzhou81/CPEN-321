@@ -54,15 +54,25 @@ class QuestionGenerationTest : BaseComposeTest() {
     fun useCase_GenerateQuestions_Success() {
         android.util.Log.d("QuestionGenerationTest", "=== Use Case 1: Generate Questions - Main Success Scenario ===")
         
-        // Step 1: Navigate to job applications list
+        navigateToJobApplications()
+        selectJob()
+        clickGenerateQuestions()
+        waitForQuestionGeneration()
+        testQuestionNavigation()
+        
+        android.util.Log.d("QuestionGenerationTest", "✓ Use Case 1: Generate Questions - Main Success Scenario PASSED")
+    }
+    
+    private fun navigateToJobApplications() {
         android.util.Log.d("QuestionGenerationTest", "Step 1: Checking for 'My Job Applications' screen...")
         assert(checkText("My Job Applications", maxRetries = 6)) {
             "Failed: Main screen 'My Job Applications' not found"
         }
         composeTestRule.waitForIdle()
         Thread.sleep(1000)
-        
-        // Step 2: Select a saved job application
+    }
+    
+    private fun selectJob() {
         android.util.Log.d("QuestionGenerationTest", "Step 2: Checking for job to select...")
         val jobFound = check(maxRetries = 6) {
             try {
@@ -84,8 +94,9 @@ class QuestionGenerationTest : BaseComposeTest() {
         assert(jobClicked) { "Failed: Could not click on job" }
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
-        
-        // Step 3: Click on "Generate Questions" button
+    }
+    
+    private fun clickGenerateQuestions() {
         android.util.Log.d("QuestionGenerationTest", "Step 3: Checking for 'Job Details' screen...")
         assert(checkText("Job Details", maxRetries = 6)) {
             "Failed: Job Details screen not found"
@@ -102,8 +113,9 @@ class QuestionGenerationTest : BaseComposeTest() {
         assert(generateClicked) { "Failed: Could not click Generate Questions button" }
         composeTestRule.waitForIdle()
         Thread.sleep(3000)
-        
-        // Step 4-6: System generates and stores questions (Steps 4-6 happen on backend)
+    }
+    
+    private fun waitForQuestionGeneration() {
         android.util.Log.d("QuestionGenerationTest", "Step 4-6: Waiting for question generation to complete...")
         assert(checkText("Interview Questions", maxRetries = 6)) {
             "Failed: Interview Questions screen not found"
@@ -111,7 +123,7 @@ class QuestionGenerationTest : BaseComposeTest() {
         composeTestRule.waitForIdle()
         Thread.sleep(3000)
         
-        val loadingFinished = check(maxRetries = 12) { // Up to 60 seconds for loading
+        val loadingFinished = check(maxRetries = 12) {
             try {
                 !composeTestRule.onAllNodes(hasText("Generating your interview questions", substring = true))
                     .fetchSemanticsNodes(false).isNotEmpty()
@@ -123,8 +135,10 @@ class QuestionGenerationTest : BaseComposeTest() {
         assert(loadingFinished) { "Failed: Question generation loading did not complete" }
         composeTestRule.waitForIdle()
         Thread.sleep(3000)
-        
-        // Step 7: System displays "Behavioral Questions" and "Technical Questions" buttons
+    }
+    
+    private fun testQuestionNavigation() {
+        android.util.Log.d("QuestionGenerationTest", "Step 8: Testing navigation to question lists...")
         android.util.Log.d("QuestionGenerationTest", "Step 7: Checking for question type buttons...")
         val hasBehavioral = checkText("Behavioral Questions", maxRetries = 12) ||
                            checkText("Behavioral", maxRetries = 12)
@@ -136,70 +150,65 @@ class QuestionGenerationTest : BaseComposeTest() {
             "Check backend logs for errors in question generation API."
         }
         
-        // Step 8: User can click either button to view the respective list of generated questions
-        android.util.Log.d("QuestionGenerationTest", "Step 8: Testing navigation to question lists...")
-        
-        // Test Behavioral Questions navigation
         if (hasBehavioral) {
-            android.util.Log.d("QuestionGenerationTest", "Clicking on 'Behavioral Questions' button...")
-            val behavioralClicked = checkTextAndClick("Behavioral Questions", substring = true, maxRetries = 3) ||
-                                  checkTextAndClick("Behavioral", substring = true, maxRetries = 3)
-            
-            if (behavioralClicked) {
-                composeTestRule.waitForIdle()
-                Thread.sleep(2000)
-                
-                // Verify we navigated to Behavioral Questions screen
-                // The screen should show behavioral questions list
-                val onBehavioralScreen = check(maxRetries = 3) {
-                    try {
-                        // Check for any indication we're on the behavioral questions screen
-                        // This could be a title, question items, or navigation back button
-                        composeTestRule.onAllNodes(hasText("Behavioral", substring = true))
-                            .fetchSemanticsNodes(false).isNotEmpty()
-                    } catch (e: Exception) {
-                        false
-                    }
-                }
-                
-                if (onBehavioralScreen) {
-                    android.util.Log.d("QuestionGenerationTest", "✓ Successfully navigated to Behavioral Questions screen")
-                }
-                
-                // Navigate back to questions dashboard
-                pressBack()
-                composeTestRule.waitForIdle()
-                Thread.sleep(2000)
-            }
+            testBehavioralQuestionsNavigation()
         }
         
-        // Test Technical Questions navigation
         if (hasTechnical) {
-            android.util.Log.d("QuestionGenerationTest", "Clicking on 'Technical Questions' button...")
-            val technicalClicked = checkTextAndClick("Technical Questions", substring = true, maxRetries = 3) ||
-                                 checkTextAndClick("Technical", maxRetries = 3)
+            testTechnicalQuestionsNavigation()
+        }
+    }
+    
+    private fun testBehavioralQuestionsNavigation() {
+        android.util.Log.d("QuestionGenerationTest", "Clicking on 'Behavioral Questions' button...")
+        val behavioralClicked = checkTextAndClick("Behavioral Questions", substring = true, maxRetries = 3) ||
+                              checkTextAndClick("Behavioral", substring = true, maxRetries = 3)
+        
+        if (behavioralClicked) {
+            composeTestRule.waitForIdle()
+            Thread.sleep(2000)
             
-            if (technicalClicked) {
-                composeTestRule.waitForIdle()
-                Thread.sleep(2000)
-                
-                // Verify we navigated to Technical Questions screen
-                val onTechnicalScreen = check(maxRetries = 3) {
-                    try {
-                        composeTestRule.onAllNodes(hasText("Technical", substring = true))
-                            .fetchSemanticsNodes(false).isNotEmpty()
-                    } catch (e: Exception) {
-                        false
-                    }
-                }
-                
-                if (onTechnicalScreen) {
-                    android.util.Log.d("QuestionGenerationTest", "✓ Successfully navigated to Technical Questions screen")
+            val onBehavioralScreen = check(maxRetries = 3) {
+                try {
+                    composeTestRule.onAllNodes(hasText("Behavioral", substring = true))
+                        .fetchSemanticsNodes(false).isNotEmpty()
+                } catch (e: Exception) {
+                    false
                 }
             }
+            
+            if (onBehavioralScreen) {
+                android.util.Log.d("QuestionGenerationTest", "✓ Successfully navigated to Behavioral Questions screen")
+            }
+            
+            pressBack()
+            composeTestRule.waitForIdle()
+            Thread.sleep(2000)
         }
+    }
+    
+    private fun testTechnicalQuestionsNavigation() {
+        android.util.Log.d("QuestionGenerationTest", "Clicking on 'Technical Questions' button...")
+        val technicalClicked = checkTextAndClick("Technical Questions", substring = true, maxRetries = 3) ||
+                             checkTextAndClick("Technical", maxRetries = 3)
         
-        android.util.Log.d("QuestionGenerationTest", "✓ Use Case 1: Generate Questions - Main Success Scenario PASSED")
+        if (technicalClicked) {
+            composeTestRule.waitForIdle()
+            Thread.sleep(2000)
+            
+            val onTechnicalScreen = check(maxRetries = 3) {
+                try {
+                    composeTestRule.onAllNodes(hasText("Technical", substring = true))
+                        .fetchSemanticsNodes(false).isNotEmpty()
+                } catch (e: Exception) {
+                    false
+                }
+            }
+            
+            if (onTechnicalScreen) {
+                android.util.Log.d("QuestionGenerationTest", "✓ Successfully navigated to Technical Questions screen")
+            }
+        }
     }
 
     /**

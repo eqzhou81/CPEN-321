@@ -48,10 +48,13 @@ class JobRepository @Inject constructor(
             if (response.isSuccessful && response.body()?.data != null) {
                 Result.success(response.body()!!.data!!.jobApplication)
             } else {
-                Result.failure(Exception(response.message() ?: "Failed to fetch job application"))
+                val errorBody = response.errorBody()?.string()
+                val errorMessage = errorBody ?: (response.message() ?: "Failed to fetch job application")
+                Result.failure(Exception("HTTP ${response.code()}: $errorMessage"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            android.util.Log.e("JobRepository", "Error fetching job application: ${e.message}", e)
+            Result.failure(Exception("Network error: ${e.message ?: "Unknown error"}"))
         }
     }
     

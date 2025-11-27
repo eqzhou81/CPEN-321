@@ -13,14 +13,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.data.remote.api.MessageResponse
 import com.cpen321.usermanagement.ui.viewmodels.DiscussionViewModel
-import kotlinx.coroutines.launch
+import com.cpen321.usermanagement.ui.viewmodels.DiscussionUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,15 +34,12 @@ fun DiscussionDetailScreen(
     var newMessage by remember { mutableStateOf("") }
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
+    var lastMessageCount by remember { mutableStateOf(0) }
 
-    // Combine backend messages + new socket messages (prevent duplicates)
     val storedMessages = uiState.selectedDiscussion?.messages ?: emptyList()
-
-    // 2. Combine the stored messages with the new live messages from the socket.
-    //    Use a Set to automatically handle duplicates based on message ID.
     val allMessages = remember(storedMessages, liveMessages) {
         (storedMessages + liveMessages).distinctBy { it.id }
+            .sortedBy { it.createdAt }
     }
 
     DisposableEffect(Unit) {
@@ -52,40 +48,91 @@ fun DiscussionDetailScreen(
             viewModel.clearSelectedDiscussion()
         }
     }
-    // Connect socket + load discussion data
+    
     LaunchedEffect(discussionId) {
+        // Clear state first
         viewModel.clearMessages()
         viewModel.clearSelectedDiscussion()
+        
+        // Connect socket and load discussion in parallel (non-blocking)
         viewModel.connectToSocket(discussionId)
+        kotlinx.coroutines.delay(100) // Small delay to let socket initialize
         viewModel.loadDiscussionById(discussionId)
     }
 
-    // Auto-scroll to bottom when new messages appear
+    // Optimized scrolling - only scroll when new messages arrive, not on every recomposition
     LaunchedEffect(allMessages.size) {
-        if (allMessages.isNotEmpty()) {
-            coroutineScope.launch {
+        if (allMessages.isNotEmpty() && allMessages.size > lastMessageCount) {
+            lastMessageCount = allMessages.size
+            kotlinx.coroutines.delay(100) // Small delay to ensure item is rendered
+            try {
                 listState.animateScrollToItem(allMessages.lastIndex)
+            } catch (e: Exception) {
+                // Silently handle scroll errors to prevent ANR
             }
         }
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        uiState.selectedDiscussion?.topic ?: "Discussion",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
+            DiscussionTopBar(
+                topic = uiState.selectedDiscussion?.topic ?: "Discussion",
+                onBack = onBack
             )
         },
         bottomBar = {
+            MessageInputBar(
+                newMessage = newMessage,
+                onMessageChange = { newMessage = it },
+                onSendMessage = {
+                    if (newMessage.isNotBlank()) {
+                        val messageToSend = newMessage.trim()
+                        newMessage = ""
+                        viewModel.sendMessage(
+                            discussionId,
+                            messageToSend,
+                            currentUserName,
+                            currentUserId
+                        )
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        DiscussionContent(
+            uiState = uiState,
+            allMessages = allMessages,
+            currentUserId = currentUserId,
+            listState = listState,
+            padding = padding
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DiscussionTopBar(topic: String, onBack: () -> Unit) {
+    TopAppBar(
+        title = {
+            Text(
+                topic,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+            }
+        }
+    )
+}
+
+@Composable
+private fun MessageInputBar(
+    newMessage: String,
+    onMessageChange: (String) -> Unit,
+    onSendMessage: () -> Unit
+) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -94,59 +141,129 @@ fun DiscussionDetailScreen(
             ) {
                 OutlinedTextField(
                     value = newMessage,
-                    onValueChange = { newMessage = it },
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("message_input"),
+            onValueChange = onMessageChange,
+            modifier = Modifier
+                .weight(1f)
+                .testTag("message_input"),
                     placeholder = { Text("Write a message...") }
                 )
-                IconButton(
-                    onClick = {
-                        if (newMessage.isNotBlank()) {
-                            // ✅ Only emit via socket — backend already saves message
-                            viewModel.sendMessage(
-                                discussionId,
-                                newMessage.trim(),
-                                currentUserName,
-                                currentUserId
-                            )
-                            newMessage = ""
-                        }
-                    }
-                ) {
-                    Icon(Icons.Default.Send, contentDescription = "Send Message")
-                }
+        IconButton(onClick = onSendMessage) {
+            Icon(Icons.Filled.Send, contentDescription = "Send Message")
+        }
             }
         }
-    ) { padding ->
+
+@Composable
+private fun DiscussionContent(
+    uiState: DiscussionUiState,
+    allMessages: List<MessageResponse>,
+    currentUserId: String,
+    listState: androidx.compose.foundation.lazy.LazyListState,
+    padding: PaddingValues
+) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F5F5))
+            .background(MaterialTheme.colorScheme.surface)
                 .padding(padding)
         ) {
             when {
-                uiState.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                uiState.error != null -> Text(
-                    text = uiState.error ?: "Error",
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.align(Alignment.Center)
+            uiState.isLoading && allMessages.isEmpty() -> {
+                LoadingState()
+            }
+            uiState.error != null -> {
+                ErrorState(errorMessage = uiState.error ?: "Error loading discussion")
+            }
+            else -> {
+                MessagesList(
+                    allMessages = allMessages,
+                    currentUserId = currentUserId,
+                    listState = listState
                 )
-                else -> LazyColumn(
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoadingState() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            CircularProgressIndicator()
+            Text(
+                text = "Loading messages...",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ErrorState(errorMessage: String) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Error",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.error
+            )
+            Text(
+                text = errorMessage,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun MessagesList(
+    allMessages: List<MessageResponse>,
+    currentUserId: String,
+    listState: androidx.compose.foundation.lazy.LazyListState
+) {
+    if (allMessages.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "No messages yet. Start the conversation!",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+    } else {
+        LazyColumn(
                     state = listState,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
                     reverseLayout = false
                 ) {
-                    items(allMessages) { message ->
+            items(
+                items = allMessages,
+                key = { it.id }
+            ) { message ->
                         MessageItem(
                             message = message,
                             isOwn = message.userId == currentUserId
                         )
-                    }
-                }
             }
         }
     }
@@ -154,33 +271,51 @@ fun DiscussionDetailScreen(
 
 @Composable
 fun MessageItem(message: MessageResponse, isOwn: Boolean) {
-    val bubbleColor = if (isOwn) Color(0xFF1A365D) else Color.White
-    val textColor = if (isOwn) Color.White else Color.Black
+    val bubbleColor = if (isOwn) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant
+    }
+    val textColor = if (isOwn) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
 
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 6.dp)
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        horizontalArrangement = if (isOwn) Arrangement.End else Arrangement.Start
     ) {
-        // Show username for all messages
+        Column(
+            modifier = Modifier.widthIn(max = 280.dp),
+            horizontalAlignment = if (isOwn) Alignment.End else Alignment.Start
+        ) {
+            if (!isOwn) {
         Text(
             text = message.userName,
-            style = MaterialTheme.typography.labelMedium.copy(
-                color = Color.Gray,
-                fontWeight = FontWeight.Bold
-            ),
-            modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
-        )
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        fontWeight = FontWeight.Medium
+                    ),
+                    modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+                )
+            }
 
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = bubbleColor),
-            shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(
+                    topStart = 16.dp,
+                    topEnd = 16.dp,
+                    bottomStart = if (isOwn) 16.dp else 4.dp,
+                    bottomEnd = if (isOwn) 4.dp else 16.dp
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
             Column(
-                modifier = Modifier
-                    .padding(10.dp)
-                    .fillMaxWidth()
+                    modifier = Modifier.padding(12.dp)
             ) {
                 Text(
                     text = message.content,
@@ -189,7 +324,7 @@ fun MessageItem(message: MessageResponse, isOwn: Boolean) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = message.createdAt.takeIf { it.isNotBlank() } ?: "",
+                        text = formatMessageTime(message.createdAt),
                     style = MaterialTheme.typography.labelSmall.copy(
                         color = textColor.copy(alpha = 0.7f)
                     ),
@@ -197,5 +332,19 @@ fun MessageItem(message: MessageResponse, isOwn: Boolean) {
                 )
             }
         }
+        }
+    }
+}
+
+private fun formatMessageTime(createdAt: String): String {
+    return if (createdAt.isNotBlank()) {
+        try {
+            // Simple formatting - just show time if available
+            createdAt.takeLast(8).take(5) // Extract HH:MM from timestamp
+        } catch (e: Exception) {
+            ""
+        }
+    } else {
+        ""
     }
 }

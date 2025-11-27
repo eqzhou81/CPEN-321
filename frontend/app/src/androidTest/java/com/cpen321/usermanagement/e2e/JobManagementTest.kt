@@ -407,15 +407,25 @@ class JobManagementTest : BaseComposeTest() {
     fun useCase_PasteJobPosting_EmptyText_Failure() {
         android.util.Log.d("JobManagementTest", "=== Use Case 1 - Failure Scenario: Empty Text ===")
         
-        // Step 1: Navigate to job dashboard
+        navigateToJobDashboard()
+        openAddJobForm()
+        attemptSubmitWithEmptyText()
+        navigateBackToJobList()
+        verifyJobWasNotCreated()
+        
+        android.util.Log.d("JobManagementTest", "✓ Side effect verified: Job was NOT created - test PASSED")
+    }
+    
+    private fun navigateToJobDashboard() {
         android.util.Log.d("JobManagementTest", "Step 1: Verifying we're on job applications list...")
         assert(checkText("My Job Applications", maxRetries = 6)) {
             "Failed: Main screen not found"
         }
         composeTestRule.waitForIdle()
         Thread.sleep(1000)
-        
-        // Step 2: Click "Add Job" button
+    }
+    
+    private fun openAddJobForm() {
         android.util.Log.d("JobManagementTest", "Step 2: Opening Add Job form...")
         val addClicked = checkTagAndClick("add_job_button", maxRetries = 3) ||
                         checkTextAndClick("Add", maxRetries = 3)
@@ -423,26 +433,25 @@ class JobManagementTest : BaseComposeTest() {
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
         
-        // Step 3: Check for Add Job dialog
         assert(checkText("Add Job Application", maxRetries = 6) || checkText("Add Job", maxRetries = 6)) {
             "Failed: Add Job dialog not found"
         }
         composeTestRule.waitForIdle()
         Thread.sleep(1000)
-        
-        // Step 4: Attempt to submit with empty text (don't enter anything)
+    }
+    
+    private fun attemptSubmitWithEmptyText() {
         android.util.Log.d("JobManagementTest", "Step 4: Attempting to submit with empty text...")
-        
-        // Try to click "Add to Portfolio" button (may be disabled or may allow click)
         val submitClicked = checkTextAndClick("Add to Portfolio", maxRetries = 2)
         if (submitClicked) {
             composeTestRule.waitForIdle()
-            Thread.sleep(3000) // Wait to see if submission happens
+            Thread.sleep(3000)
         } else {
             android.util.Log.d("JobManagementTest", "Button is disabled (expected with empty text)")
         }
-        
-        // Step 5: Navigate back to job list
+    }
+    
+    private fun navigateBackToJobList() {
         android.util.Log.d("JobManagementTest", "Step 5: Navigating back to job list...")
         val cancelClicked = checkTextAndClick("Cancel", maxRetries = 3)
         if (!cancelClicked) {
@@ -452,31 +461,27 @@ class JobManagementTest : BaseComposeTest() {
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
         
-        // Step 6: Verify we're on job applications list
-        android.util.Log.d("JobManagementTest", "Step 6: Verifying we're on job applications list...")
         assert(checkText("My Job Applications", maxRetries = 6)) {
             "Failed: Not on job applications list"
         }
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
-        
-        // Step 7: Verify side effect - Job with empty text was NOT created
+    }
+    
+    private fun verifyJobWasNotCreated() {
         android.util.Log.d("JobManagementTest", "Step 7: Verifying side effect - job was NOT created...")
-        
-        // Verify we're on the list (not on a job detail page)
         val stillOnList = checkText("My Job Applications", maxRetries = 3)
         assert(stillOnList) {
             "Failed: Side effect check failed. Expected to be on job list, " +
             "but job creation may have succeeded (which should not happen with empty text)."
         }
         
-        // Verify we're NOT on a job detail page (which would indicate a job was created)
         val notOnDetailPage = check(maxRetries = 3) {
             try {
                 !composeTestRule.onAllNodes(hasText("Job Details", substring = true))
                     .fetchSemanticsNodes(false).isNotEmpty()
             } catch (e: Exception) {
-                true // If check fails, assume we're on list (good)
+                true
             }
         }
         
@@ -484,8 +489,6 @@ class JobManagementTest : BaseComposeTest() {
             "Failed: Side effect check failed. Appears to be on job detail page, " +
             "which suggests a job was created despite empty text. This should not happen."
         }
-        
-        android.util.Log.d("JobManagementTest", "✓ Side effect verified: Job was NOT created - test PASSED")
     }
     
     /**
@@ -499,23 +502,36 @@ class JobManagementTest : BaseComposeTest() {
     fun useCase_PasteJobPostingLink_InvalidUrl_Failure() {
         android.util.Log.d("JobManagementTest", "=== Use Case 2 - Failure Scenario: Invalid URL ===")
         
-        // Step 1: Navigate to job dashboard
+        navigateToJobDashboard()
+        openAddJobForm()
+        selectPasteLinkMode()
+        enterInvalidUrl("not-a-valid-url")
+        attemptSubmitInvalidUrl()
+        navigateBackToJobList()
+        verifyJobNotCreated()
+        
+        android.util.Log.d("JobManagementTest", "✓ Side effect verified: Job was NOT created - test PASSED")
+    }
+    
+    private fun navigateToJobDashboard() {
         android.util.Log.d("JobManagementTest", "Step 1: Verifying we're on job applications list...")
         assert(checkText("My Job Applications", maxRetries = 6)) {
             "Failed: Main screen not found"
         }
         composeTestRule.waitForIdle()
         Thread.sleep(1000)
-        
-        // Step 2: Click "Add Job" button
+    }
+    
+    private fun openAddJobForm() {
         android.util.Log.d("JobManagementTest", "Step 2: Opening Add Job form...")
         val addClicked = checkTagAndClick("add_job_button", maxRetries = 3) ||
                         checkTextAndClick("Add", maxRetries = 3)
         assert(addClicked) { "Failed: Could not click Add Job button" }
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
-        
-        // Step 3: Select "Paste Link" mode
+    }
+    
+    private fun selectPasteLinkMode() {
         android.util.Log.d("JobManagementTest", "Step 3: Selecting 'Paste Link' mode...")
         assert(checkText("Add Job Application", maxRetries = 6) || checkText("Add Job", maxRetries = 6)) {
             "Failed: Add Job dialog not found"
@@ -527,11 +543,10 @@ class JobManagementTest : BaseComposeTest() {
         assert(linkModeClicked) { "Failed: Could not click 'Paste Link' option" }
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
-        
-        // Step 4: Enter invalid URL
+    }
+    
+    private fun enterInvalidUrl(invalidUrl: String) {
         android.util.Log.d("JobManagementTest", "Step 4: Entering invalid URL...")
-        val invalidUrl = "not-a-valid-url"
-        
         try {
             composeTestRule.onAllNodes(hasText("https://", substring = true))
                 .onFirst()
@@ -540,7 +555,6 @@ class JobManagementTest : BaseComposeTest() {
             composeTestRule.waitForIdle()
         } catch (e: Exception) {
             android.util.Log.w("JobManagementTest", "Could not input URL: ${e.message}")
-            // Try alternative approach
             try {
                 composeTestRule.onAllNodes(hasText("Job Posting URL", substring = true))
                     .onFirst()
@@ -551,18 +565,20 @@ class JobManagementTest : BaseComposeTest() {
                 android.util.Log.w("JobManagementTest", "Could not input URL using alternative: ${e2.message}")
             }
         }
-        
-        // Step 5: Attempt to submit invalid URL
+    }
+    
+    private fun attemptSubmitInvalidUrl() {
         android.util.Log.d("JobManagementTest", "Step 5: Attempting to submit invalid URL...")
         val submitClicked = checkTextAndClick("Add to Portfolio", maxRetries = 3) ||
                            checkTextAndClick("Add", maxRetries = 3)
         
         if (submitClicked) {
             composeTestRule.waitForIdle()
-            Thread.sleep(5000) // Wait to see if scraping fails or error occurs
+            Thread.sleep(5000)
         }
-        
-        // Step 6: Navigate back to job list
+    }
+    
+    private fun navigateBackToJobList() {
         android.util.Log.d("JobManagementTest", "Step 6: Navigating back to job list...")
         val cancelClicked = checkTextAndClick("Cancel", maxRetries = 3)
         if (!cancelClicked) {
@@ -572,31 +588,29 @@ class JobManagementTest : BaseComposeTest() {
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
         
-        // Step 7: Verify we're on job applications list
         android.util.Log.d("JobManagementTest", "Step 7: Verifying we're on job applications list...")
         assert(checkText("My Job Applications", maxRetries = 6)) {
             "Failed: Not on job applications list"
         }
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
-        
-        // Step 8: Verify side effect - Job with invalid URL was NOT created
+    }
+    
+    private fun verifyJobNotCreated() {
         android.util.Log.d("JobManagementTest", "Step 8: Verifying side effect - job was NOT created...")
         
-        // Verify we're on the list (not on a job detail page)
         val stillOnList = checkText("My Job Applications", maxRetries = 3)
         assert(stillOnList) {
             "Failed: Side effect check failed. Expected to be on job list, " +
             "but job creation may have succeeded (which should not happen with invalid URL)."
         }
         
-        // Verify we're NOT on a job detail page (which would indicate a job was created)
         val notOnDetailPage = check(maxRetries = 3) {
             try {
                 !composeTestRule.onAllNodes(hasText("Job Details", substring = true))
                     .fetchSemanticsNodes(false).isNotEmpty()
             } catch (e: Exception) {
-                true // If check fails, assume we're on list (good)
+                true
             }
         }
         
@@ -604,7 +618,5 @@ class JobManagementTest : BaseComposeTest() {
             "Failed: Side effect check failed. Appears to be on job detail page, " +
             "which suggests a job was created despite invalid URL. This should not happen."
         }
-        
-        android.util.Log.d("JobManagementTest", "✓ Side effect verified: Job was NOT created - test PASSED")
     }
 }
