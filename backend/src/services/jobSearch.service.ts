@@ -178,25 +178,29 @@ export class JobSearchService {
       logger.info('Starting job search with params:', params);
 
       // Search multiple job sites in parallel with timeout
-      const searchPromises = Object.keys(this.scraperConfigs).map(source =>
+      const scraperKeys = Object.keys(this.scraperConfigs);
+      const searchPromises = scraperKeys.map(source =>
         Promise.race([
           this.scrapeJobSite(source, params),
-          new Promise((_, reject) => 
+          new Promise((_, reject) =>
             setTimeout(() => { reject(new Error(`Timeout for ${source}`)); }, 30000) // 30 second timeout
           )
         ])
       );
 
       const results = await Promise.allSettled(searchPromises);
-      
+
       // Combine results from all sources
       let allJobs: ISimilarJob[] = [];
-      
+
       results.forEach((result, index) => {
         if (result.status === 'fulfilled' && result.value && typeof result.value === 'object' && 'jobs' in result.value) {
           allJobs = allJobs.concat((result.value as { jobs: ISimilarJob[] }).jobs);
         } else {
-          logger.warn(`Failed to scrape ${Object.keys(this.scraperConfigs)[index]}:`, result);
+          const sourceName = scraperKeys[index];
+          if (sourceName !== undefined) {
+            logger.warn(`Failed to scrape ${sourceName}:`, result);
+          }
         }
       });
 
@@ -256,12 +260,15 @@ export class JobSearchService {
       );
 
       const results = await Promise.allSettled(scrapingPromises);
-      
+
       // Combine results from all sources
       results.forEach((result, index) => {
         if (result.status === 'fulfilled' && result.value.length > 0) {
           similarJobs.push(...result.value);
-          logger.info(`Found ${result.value.length} jobs from ${scrapingSources[index].name}`);
+          const source = scrapingSources[index];
+          if (source !== undefined) {
+            logger.info(`Found ${result.value.length} jobs from ${source.name}`);
+          }
         }
       });
 
@@ -605,7 +612,7 @@ export class JobSearchService {
                 company: companyEl.textContent?.trim() || '',
                 location: locationEl?.textContent?.trim() || 'Not specified',
                 description: '',
-                url: linkEl?.href || '',
+                url: linkEl?.href ?? '',
                 salary: '',
                 postedDate: new Date(),
                 source: 'glassdoor'
@@ -974,8 +981,12 @@ export class JobSearchService {
             const linkMatches = xmlText.match(/<link>(.*?)<\/link>/g) ?? [];
             
             for (let i = 0; i < Math.min(titleMatches.length, 5); i++) {
-              const title = titleMatches[i]?.replace(/<title><!\[CDATA\[(.*?)\]\]><\/title>/, '$1') || '';
-              const link = linkMatches[i]?.replace(/<link>(.*?)<\/link>/, '$1') || '';
+              const titleMatch = titleMatches[i];
+              const linkMatch = linkMatches[i];
+              if (titleMatch === undefined || linkMatch === undefined) continue;
+
+              const title = titleMatch.replace(/<title><!\[CDATA\[(.*?)\]\]><\/title>/, '$1') || '';
+              const link = linkMatch.replace(/<link>(.*?)<\/link>/, '$1') || '';
               
               if (title && keywords.some(keyword => title.toLowerCase().includes(keyword.toLowerCase()))) {
                 jobs.push({
@@ -1142,13 +1153,19 @@ export class JobSearchService {
    * Scrape a specific job site
    */
   private async scrapeJobSite(
-    source: string, 
+    source: string,
     params: IJobSearchParams
   ): Promise<IScraperResult> {
     try {
+      // Validate source is a known key
+      const validSources = ['indeed', 'linkedin', 'glassdoor', 'amazon'] as const;
+      if (!validSources.includes(source as typeof validSources[number])) {
+        throw new Error(`Unknown job source: ${source}`);
+      }
+
       const config = this.scraperConfigs[source];
       if (!config) {
-        throw new Error(`Unknown job source: ${source}`);
+        throw new Error(`Configuration not found for source: ${source}`);
       }
 
       // Build search URL
@@ -1732,6 +1749,8 @@ export class JobSearchService {
         
         for (let i = 0; i < Math.min(jobElements.length, 10); i++) {
           const jobEl = jobElements[i];
+          if (!jobEl) continue;
+
           const titleEl = jobEl.querySelector('h2 a');
           const companyEl = jobEl.querySelector('.company');
           const locationEl = jobEl.querySelector('.location');
