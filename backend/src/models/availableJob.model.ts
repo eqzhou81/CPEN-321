@@ -108,15 +108,15 @@ availableJobSchema.index({ experienceLevel: 1 });
 availableJobSchema.index({ isRemote: 1 });
 
 export class AvailableJobModel {
-  private availableJob: mongoose.Model<IAvailableJob>;
+  private AvailableJob: mongoose.Model<IAvailableJob>;
 
   constructor() {
-    this.availableJob = mongoose.model<IAvailableJob>('AvailableJob', availableJobSchema);
+    this.AvailableJob = mongoose.model<IAvailableJob>('AvailableJob', availableJobSchema);
   }
 
   async create(jobData: Partial<IAvailableJob>): Promise<IAvailableJob> {
     try {
-      const job = new this.availableJob(jobData);
+      const job = new this.AvailableJob(jobData);
       return await job.save();
     } catch (error) {
       throw new Error(`Failed to create available job: ${String(error)}`);
@@ -125,7 +125,7 @@ export class AvailableJobModel {
 
   async findById(jobId: mongoose.Types.ObjectId): Promise<IAvailableJob | null> {
     try {
-      return await this.availableJob.findById(jobId);
+      return await this.AvailableJob.findById(jobId);
     } catch (error) {
       throw new Error(`Failed to find job by ID: ${String(error)}`);
     }
@@ -133,7 +133,7 @@ export class AvailableJobModel {
 
   async findAll(): Promise<IAvailableJob[]> {
     try {
-      return await this.availableJob.find().sort({ createdAt: -1, _id: -1 });
+      return await this.AvailableJob.find().sort({ createdAt: -1, _id: -1 });
     } catch (error) {
       throw new Error(`Failed to find all jobs: ${String(error)}`);
     }
@@ -141,7 +141,7 @@ export class AvailableJobModel {
 
   async findByCompany(company: string): Promise<IAvailableJob[]> {
     try {
-      return await this.availableJob.find({ company: { $regex: company, $options: 'i' } });
+      return await this.AvailableJob.find({ company: { $regex: company, $options: 'i' } });
     } catch (error) {
       throw new Error(`Failed to find jobs by company: ${String(error)}`);
     }
@@ -149,7 +149,7 @@ export class AvailableJobModel {
 
   async findByLocation(location: string): Promise<IAvailableJob[]> {
     try {
-      return await this.availableJob.find({ jobLocation: { $regex: location, $options: 'i' } });
+      return await this.AvailableJob.find({ jobLocation: { $regex: location, $options: 'i' } });
     } catch (error) {
       throw new Error(`Failed to find jobs by location: ${String(error)}`);
     }
@@ -195,7 +195,7 @@ export class AvailableJobModel {
       }
 
       const limit = searchParams.limit ?? 20;
-      return (await this.availableJob.find(query).limit(limit).sort({ createdAt: -1 })) as IAvailableJob[];
+      return (await this.AvailableJob.find(query).limit(limit).sort({ createdAt: -1 })) as IAvailableJob[];
     } catch (error) {
       throw new Error(`Failed to search jobs: ${String(error)}`);
     }
@@ -203,7 +203,7 @@ export class AvailableJobModel {
 
   async updateById(jobId: mongoose.Types.ObjectId, updateData: Partial<IAvailableJob>): Promise<IAvailableJob | null> {
     try {
-      return await this.availableJob.findByIdAndUpdate(jobId, updateData, { new: true });
+      return await this.AvailableJob.findByIdAndUpdate(jobId, updateData, { new: true });
     } catch (error) {
       throw new Error(`Failed to update job: ${String(error)}`);
     }
@@ -211,7 +211,7 @@ export class AvailableJobModel {
 
   async deleteById(jobId: mongoose.Types.ObjectId): Promise<boolean> {
     try {
-      const result = await this.availableJob.findByIdAndDelete(jobId);
+      const result = await this.AvailableJob.findByIdAndDelete(jobId);
       return !!result;
     } catch (error) {
       throw new Error(`Failed to delete job: ${String(error)}`);
@@ -220,7 +220,7 @@ export class AvailableJobModel {
 
   async count(): Promise<number> {
     try {
-      return await this.availableJob.countDocuments();
+      return await this.AvailableJob.countDocuments();
     } catch (error) {
       throw new Error(`Failed to count jobs: ${String(error)}`);
     }
@@ -228,7 +228,7 @@ export class AvailableJobModel {
 
   async clearAll(): Promise<void> {
     try {
-      await this.availableJob.deleteMany({});
+      await this.AvailableJob.deleteMany({});
     } catch (error) {
       throw new Error(`Failed to clear all jobs: ${String(error)}`);
     }

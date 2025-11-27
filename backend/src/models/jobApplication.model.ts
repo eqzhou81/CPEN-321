@@ -94,10 +94,10 @@ jobApplicationSchema.index({ company: 1 });
 jobApplicationSchema.index({ location: 1 });
 
 export class JobApplicationModel {
-  private jobApplication: mongoose.Model<IJobApplication>;
+  private JobApplication: mongoose.Model<IJobApplication>;
 
   constructor() {
-    this.jobApplication = mongoose.model<IJobApplication>('JobApplication', jobApplicationSchema);
+    this.JobApplication = mongoose.model<IJobApplication>('JobApplication', jobApplicationSchema);
   }
 
   async create(
@@ -106,7 +106,7 @@ export class JobApplicationModel {
   ): Promise<IJobApplication> {
     try {
       const validatedData = createJobApplicationSchema.parse(jobData);
-      const jobApplication = new this.jobApplication({
+      const jobApplication = new this.JobApplication({
         userId,
         ...validatedData,
       });
@@ -127,7 +127,7 @@ export class JobApplicationModel {
     userId: mongoose.Types.ObjectId
   ): Promise<IJobApplication | null> {
     try {
-      const jobApplication = await this.jobApplication.findOne({
+      const jobApplication = await this.JobApplication.findOne({
         _id: jobId,
         userId,
       });
@@ -146,12 +146,12 @@ export class JobApplicationModel {
   ): Promise<{ jobApplications: IJobApplication[]; total: number }> {
     try {
       const [jobApplications, total] = await Promise.all([
-        this.jobApplication
+        this.JobApplication
           .find({ userId })
           .sort({ createdAt: -1 })
           .limit(limit)
           .skip(skip),
-        this.jobApplication.countDocuments({ userId }),
+        this.JobApplication.countDocuments({ userId }),
       ]);
 
       return { jobApplications, total };
@@ -169,7 +169,7 @@ export class JobApplicationModel {
     try {
       const validatedData = updateJobApplicationSchema.parse(updateData);
 
-      const updatedJobApplication = await this.jobApplication.findOneAndUpdate(
+      const updatedJobApplication = await this.JobApplication.findOneAndUpdate(
         { _id: jobId, userId },
         validatedData,
         { new: true }
@@ -191,7 +191,7 @@ export class JobApplicationModel {
     userId: mongoose.Types.ObjectId
   ): Promise<boolean> {
     try {
-      const result = await this.jobApplication.deleteOne({
+      const result = await this.JobApplication.deleteOne({
         _id: jobId,
         userId,
       });
@@ -216,12 +216,12 @@ export class JobApplicationModel {
       };
 
       const [jobApplications, total] = await Promise.all([
-        this.jobApplication
+        this.JobApplication
           .find(searchQuery, { score: { $meta: 'textScore' } })
           .sort({ score: { $meta: 'textScore' } })
           .limit(limit)
           .skip(skip),
-        this.jobApplication.countDocuments(searchQuery),
+        this.JobApplication.countDocuments(searchQuery),
       ]);
 
       return { jobApplications, total };
@@ -239,12 +239,12 @@ export class JobApplicationModel {
   ): Promise<{ jobApplications: IJobApplication[]; total: number }> {
     try {
       const [jobApplications, total] = await Promise.all([
-        this.jobApplication
+        this.JobApplication
           .find({ userId, company: { $regex: company, $options: 'i' } })
           .sort({ createdAt: -1 })
           .limit(limit)
           .skip(skip),
-        this.jobApplication.countDocuments({
+        this.JobApplication.countDocuments({
           userId,
           company: { $regex: company, $options: 'i' },
         }),
@@ -259,7 +259,7 @@ export class JobApplicationModel {
 
   async deleteAllByUserId(userId: mongoose.Types.ObjectId): Promise<number> {
     try {
-      const result = await this.jobApplication.deleteMany({ userId });
+      const result = await this.JobApplication.deleteMany({ userId });
       return result.deletedCount;
     } catch (error) {
       logger.error('Error deleting all job applications by user ID:', error);
