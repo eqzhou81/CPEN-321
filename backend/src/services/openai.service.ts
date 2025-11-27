@@ -41,7 +41,7 @@ class OpenAIService {
     const title = this.sanitizeText(jobApplication.title);
     const company = this.sanitizeText(jobApplication.company);
     const description = this.sanitizeText(jobApplication.description);
-    const skills = jobApplication.skills?.map(s => this.sanitizeText(s)).join(', ') || 'Not specified';
+    const skills = (jobApplication.skills?.map(s => this.sanitizeText(s)).join(', ') ?? '') || 'Not specified';
     const experienceLevel = this.sanitizeText(jobApplication.experienceLevel) || 'Not specified';
 
     const prompt = `Generate ${count} behavioral interview questions for:
@@ -91,7 +91,7 @@ class OpenAIService {
     
     const questions = JSON.parse(content) as OpenAIQuestionResponse[];
     return questions.map((q: OpenAIQuestionResponse): OpenAIBehavioralQuestion => ({
-      question: (q.question ?? q.title) || '',
+      question: (q.question ?? q.title) ?? '',
       context: q.context ?? '',
       tips: q.tips ?? []
     }));
@@ -196,7 +196,7 @@ Generate ${count} behavioral interview questions for the following job position:
 Job Title: ${jobApplication.title}
 Company: ${jobApplication.company}
 Job Description: ${jobApplication.description}
-    Required Skills: ${jobApplication.skills?.join(', ') || 'Not specified'}
+    Required Skills: ${(jobApplication.skills?.join(', ') ?? '') || 'Not specified'}
     Experience Level: ${jobApplication.experienceLevel || 'Not specified'}
 
 Please create questions that are:

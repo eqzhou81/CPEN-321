@@ -97,7 +97,7 @@ export class DiscussionsController {
         topic: discussion.topic,
         description: discussion.description,
         creatorId: discussion.userId,
-        creatorName: creator?.name || 'Unknown User',
+        creatorName: creator?.name ?? 'Unknown User',
         messageCount: discussion.messageCount,
         participantCount: discussion.participantCount,
         messages: discussion.messages.map((m) => ({

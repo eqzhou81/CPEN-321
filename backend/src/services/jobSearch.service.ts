@@ -514,11 +514,11 @@ export class JobSearchService {
             
             if (titleEl && companyEl) {
               jobs.push({
-                title: titleEl.textContent?.trim() || '',
-                company: companyEl.textContent?.trim() || '',
-                location: locationEl?.textContent?.trim() || 'Not specified',
+                title: titleEl.textContent?.trim() ?? '',
+                company: companyEl.textContent?.trim() ?? '',
+                location: locationEl?.textContent?.trim() ?? 'Not specified',
                 description: '',
-                url: (linkEl as HTMLAnchorElement).href || '',
+                url: (linkEl as HTMLAnchorElement).href ?? '',
                 salary: '',
                 postedDate: new Date(),
                 source: 'linkedin'
@@ -1260,11 +1260,11 @@ export class JobSearchService {
                 // For Amazon, try a more flexible approach - assume it's Amazon if no company found
                 if (titleEl?.textContent?.trim()) {
                   const job: RawJobData = {
-                    title: (titleEl.textContent || '').trim(),
+                    title: (titleEl.textContent ?? '').trim(),
                     company: 'Amazon', // Default to Amazon since we're on amazon.jobs
-                    location: (locationEl?.textContent || '').trim(),
-                    description: (descriptionEl?.textContent || '').trim(),
-                    url: urlEl?.getAttribute('href') || '',
+                    location: (locationEl?.textContent ?? '').trim(),
+                    description: (descriptionEl?.textContent ?? '').trim(),
+                    url: urlEl?.getAttribute('href') ?? '',
                     salary: salaryEl?.textContent?.trim(),
                     postedDate: postedEl?.textContent?.trim(),
                     source
@@ -2037,7 +2037,7 @@ export class JobSearchService {
     ];
     
     const titleLower = title.toLowerCase();
-    return roles.find(role => titleLower.includes(role)) || null;
+    return roles.find(role => titleLower.includes(role)) ?? null;
   }
 
   /**

@@ -726,6 +726,7 @@ describe('OpenAIService - Mocked Unit Tests', () => {
       const callArgs = mockedAxios.post.mock.calls[0];
       const prompt = callArgs[1].messages[1].content;
 
+      // Empty array results in empty string, then || catches it
       expect(prompt).toContain('Skills: Not specified');
     });
 
@@ -759,6 +760,7 @@ describe('OpenAIService - Mocked Unit Tests', () => {
       const callArgs = mockedAxios.post.mock.calls[0];
       const prompt = callArgs[1].messages[1].content;
 
+      // When experienceLevel is undefined, ?? will use 'Not specified'
       expect(prompt).toContain('Experience Level: Not specified');
     });
 
