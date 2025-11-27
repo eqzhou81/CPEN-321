@@ -30,18 +30,124 @@ fun QuestionsDashboardScreen(
     viewModel: QuestionViewModel = hiltViewModel(),
     mainViewModel: MainViewModel = hiltViewModel()
 ) {
-    val questions by viewModel.questions.collectAsStateWithLifecycle()
-    val questionProgress by viewModel.questionProgress.collectAsStateWithLifecycle()
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val error by viewModel.error.collectAsStateWithLifecycle()
-    
-    val sessionCreated by mainViewModel.sessionCreated.collectAsStateWithLifecycle()
-    val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
-    
+    val state = QuestionsDashboardState(viewModel, mainViewModel)
     var hasAttemptedGeneration by remember { mutableStateOf(false) }
     var shouldReload by remember { mutableStateOf(false) }
     var showGenerateDialog by remember { mutableStateOf(false) }
     
+    QuestionsDashboardEffects(
+        jobId = jobId,
+        sessionCreated = state.sessionCreated,
+        questions = state.questions,
+        isLoading = state.isLoading,
+        hasAttemptedGeneration = hasAttemptedGeneration,
+        shouldReload = shouldReload,
+        onNavigateToMockInterview = onNavigateToMockInterview,
+        viewModel = viewModel,
+        mainViewModel = mainViewModel,
+        onHasAttemptedGenerationChanged = { hasAttemptedGeneration = it },
+        onShouldReloadChanged = { shouldReload = it }
+    )
+    
+    val handlers = createQuestionsDashboardHandlers(
+        jobId = jobId,
+        viewModel = viewModel,
+        onShouldReloadChanged = { shouldReload = it },
+        onShowGenerateDialogChanged = { showGenerateDialog = it },
+        onHasAttemptedGenerationChanged = { hasAttemptedGeneration = it }
+    )
+    
+    QuestionsDashboardLayout(
+        onNavigateBack = onNavigateBack,
+        error = state.error,
+        sessionError = state.mainUiState.errorMessage,
+        isLoading = state.isLoading,
+        shouldReload = shouldReload,
+        questions = state.questions,
+        mainUiState = state.mainUiState,
+        jobId = jobId,
+        showGenerateDialog = showGenerateDialog,
+        viewModel = viewModel,
+        mainViewModel = mainViewModel,
+        onNavigateToTechnicalQuestions = { onNavigateToTechnicalQuestions(jobId) },
+        onCreateMockInterview = { mainViewModel.createMockInterviewSession(jobId) },
+        onShowGenerateDialog = { showGenerateDialog = true },
+        onDismissGenerateDialog = { showGenerateDialog = false },
+        onGenerateQuestions = handlers.generateQuestions,
+        onRetry = handlers.retry
+    )
+}
+
+@Composable
+private fun QuestionsDashboardState(
+    viewModel: QuestionViewModel,
+    mainViewModel: MainViewModel
+) = QuestionsDashboardStateData(
+    questions = viewModel.questions.collectAsStateWithLifecycle().value,
+    questionProgress = viewModel.questionProgress.collectAsStateWithLifecycle().value,
+    isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value,
+    error = viewModel.error.collectAsStateWithLifecycle().value,
+    sessionCreated = mainViewModel.sessionCreated.collectAsStateWithLifecycle().value,
+    mainUiState = mainViewModel.uiState.collectAsStateWithLifecycle().value
+)
+
+private data class QuestionsDashboardStateData(
+    val questions: QuestionsResponse?,
+    val questionProgress: QuestionProgress?,
+    val isLoading: Boolean,
+    val error: String?,
+    val sessionCreated: String?,
+    val mainUiState: MainViewModel.UiState
+)
+
+private data class QuestionsDashboardHandlers(
+    val generateQuestions: (List<String>) -> Unit,
+    val retry: () -> Unit
+)
+
+private fun createQuestionsDashboardHandlers(
+    jobId: String,
+    viewModel: QuestionViewModel,
+    onShouldReloadChanged: (Boolean) -> Unit,
+    onShowGenerateDialogChanged: (Boolean) -> Unit,
+    onHasAttemptedGenerationChanged: (Boolean) -> Unit
+): QuestionsDashboardHandlers {
+    return QuestionsDashboardHandlers(
+        generateQuestions = { selectedTypes ->
+            val types = selectedTypes.map { typeName ->
+                when (typeName) {
+                    "behavioral" -> com.cpen321.usermanagement.data.remote.dto.QuestionType.BEHAVIORAL
+                    "technical" -> com.cpen321.usermanagement.data.remote.dto.QuestionType.TECHNICAL
+                    else -> com.cpen321.usermanagement.data.remote.dto.QuestionType.BEHAVIORAL
+                }
+            }
+            viewModel.generateQuestions(jobId, types)
+            onShouldReloadChanged(true)
+            onShowGenerateDialogChanged(false)
+        },
+        retry = {
+            onHasAttemptedGenerationChanged(false)
+            onShouldReloadChanged(false)
+            viewModel.generateQuestions(jobId)
+            onShouldReloadChanged(true)
+        }
+    )
+}
+
+@Composable
+private fun QuestionsDashboardEffects(
+    jobId: String,
+    sessionCreated: String?,
+    questions: QuestionsResponse?,
+    isLoading: Boolean,
+    hasAttemptedGeneration: Boolean,
+    shouldReload: Boolean,
+    onNavigateToMockInterview: ((String) -> Unit)?,
+    viewModel: QuestionViewModel,
+    mainViewModel: MainViewModel,
+    onHasAttemptedGenerationChanged: (Boolean) -> Unit,
+    onShouldReloadChanged: (Boolean) -> Unit
+) {
     LaunchedEffect(sessionCreated) {
         sessionCreated?.let { sessionId ->
             onNavigateToMockInterview?.invoke(sessionId)
@@ -61,9 +167,9 @@ fun QuestionsDashboardScreen(
             !hasAttemptedGeneration
 
         if (shouldAutoGenerate) {
-            hasAttemptedGeneration = true
+            onHasAttemptedGenerationChanged(true)
             viewModel.generateQuestions(jobId)
-            shouldReload = true
+            onShouldReloadChanged(true)
         }
     }
 
@@ -72,10 +178,31 @@ fun QuestionsDashboardScreen(
             kotlinx.coroutines.delay(1000)
             viewModel.loadQuestions(jobId)
             viewModel.loadQuestionProgress(jobId)
-            shouldReload = false
+            onShouldReloadChanged(false)
         }
     }
-    
+}
+
+@Composable
+private fun QuestionsDashboardLayout(
+    onNavigateBack: () -> Unit,
+    error: String?,
+    sessionError: String?,
+    isLoading: Boolean,
+    shouldReload: Boolean,
+    questions: QuestionsResponse?,
+    mainUiState: MainViewModel.UiState,
+    jobId: String,
+    showGenerateDialog: Boolean,
+    viewModel: QuestionViewModel,
+    mainViewModel: MainViewModel,
+    onNavigateToTechnicalQuestions: () -> Unit,
+    onCreateMockInterview: () -> Unit,
+    onShowGenerateDialog: () -> Unit,
+    onDismissGenerateDialog: () -> Unit,
+    onGenerateQuestions: (List<String>) -> Unit,
+    onRetry: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -84,69 +211,51 @@ fun QuestionsDashboardScreen(
     ) {
         QuestionsDashboardHeader(onNavigateBack = onNavigateBack)
         Spacer(modifier = Modifier.height(24.dp))
-        
         QuestionsDashboardErrorStates(
             error = error,
-            sessionError = mainUiState.errorMessage,
+            sessionError = sessionError,
             viewModel = viewModel,
             mainViewModel = mainViewModel,
             jobId = jobId,
-            onRetry = {
-                hasAttemptedGeneration = false
-                shouldReload = false
-                viewModel.generateQuestions(jobId)
-                shouldReload = true
-            }
+            onRetry = onRetry
         )
-        
         QuestionsDashboardContent(
             isLoading = isLoading,
             shouldReload = shouldReload,
             questions = questions,
             mainUiState = mainUiState,
             jobId = jobId,
-            onNavigateToTechnicalQuestions = { onNavigateToTechnicalQuestions(jobId) },
-            onCreateMockInterview = { mainViewModel.createMockInterviewSession(jobId) },
+            onNavigateToTechnicalQuestions = onNavigateToTechnicalQuestions,
+            onCreateMockInterview = onCreateMockInterview,
             showGenerateDialog = showGenerateDialog,
-            onShowGenerateDialog = { showGenerateDialog = true },
-            onDismissGenerateDialog = { showGenerateDialog = false },
-            onGenerateQuestions = { selectedTypes ->
-                val types = selectedTypes.map { typeName ->
-                    when (typeName) {
-                        "behavioral" -> com.cpen321.usermanagement.data.remote.dto.QuestionType.BEHAVIORAL
-                        "technical" -> com.cpen321.usermanagement.data.remote.dto.QuestionType.TECHNICAL
-                        else -> com.cpen321.usermanagement.data.remote.dto.QuestionType.BEHAVIORAL
-                    }
-                }
-                viewModel.generateQuestions(jobId, types)
-                shouldReload = true
-                showGenerateDialog = false
-            }
+            onShowGenerateDialog = onShowGenerateDialog,
+            onDismissGenerateDialog = onDismissGenerateDialog,
+            onGenerateQuestions = onGenerateQuestions
         )
     }
 }
 
 @Composable
 private fun QuestionsDashboardHeader(onNavigateBack: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onNavigateBack) {
-            Icon(
-                Icons.Default.ArrowBack,
-                contentDescription = "Back",
-                tint = colorResource(R.color.text_primary)
-            )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = colorResource(R.color.text_primary)
+                    )
+                }
+                    Text(
+                        text = "Interview Questions",
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = colorResource(R.color.text_primary)
+                        )
+                    )
         }
-        Text(
-            text = "Interview Questions",
-            style = MaterialTheme.typography.headlineMedium.copy(
-                fontWeight = FontWeight.Bold,
-                color = colorResource(R.color.text_primary)
-            )
-        )
-    }
 }
 
 @Composable
@@ -185,42 +294,42 @@ private fun QuestionsDashboardErrorStates(
 
 @Composable
 private fun ErrorCard(title: String, message: String, onRetry: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = colorResource(R.color.error).copy(alpha = 0.1f)
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.Default.Warning,
-                contentDescription = null,
-                tint = colorResource(R.color.error)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = colorResource(R.color.error).copy(alpha = 0.1f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = colorResource(R.color.error)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
                     text = title,
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        color = colorResource(R.color.error),
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-                Text(
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                color = colorResource(R.color.error),
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    Text(
                     text = message,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = colorResource(R.color.error)
-                    )
-                )
-            }
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = colorResource(R.color.error)
+                            )
+                        )
+                    }
             TextButton(onClick = onRetry) {
-                Text("Retry")
+                        Text("Retry")
+                    }
+                }
             }
-        }
-    }
 }
 
 @Composable
@@ -262,36 +371,36 @@ private fun QuestionsDashboardContent(
 
 @Composable
 private fun LoadingState() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            CircularProgressIndicator(
-                color = colorResource(R.color.primary),
-                modifier = Modifier.size(64.dp)
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                text = "Generating your interview questions...",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    color = colorResource(R.color.text_primary),
-                    fontWeight = FontWeight.Medium
-                )
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "This may take a few moments",
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = colorResource(R.color.text_secondary)
-                )
-            )
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = colorResource(R.color.primary),
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(
+                        text = "Generating your interview questions...",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            color = colorResource(R.color.text_primary),
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "This may take a few moments",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = colorResource(R.color.text_secondary)
+                        )
+                    )
+                }
+            }
         }
-    }
-}
 
 @Composable
 private fun SessionCreationLoadingState() {
@@ -299,7 +408,7 @@ private fun SessionCreationLoadingState() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Column(
+            Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -336,10 +445,10 @@ private fun QuestionsAvailableContent(
         )
 
         if (questions.technicalQuestions.isNotEmpty()) {
-            QuestionTypeCard(
-                title = "Technical Questions",
-                description = "Solve coding challenges on LeetCode",
-                icon = Icons.Default.Code,
+                    QuestionTypeCard(
+                            title = "Technical Questions",
+                        description = "Solve coding challenges on LeetCode",
+                            icon = Icons.Default.Code,
                 questionCount = questions.technicalQuestions.size,
                 completedCount = questions.technicalQuestions.count { it.status == "completed" },
                 onClick = onNavigateToTechnicalQuestions
@@ -350,34 +459,34 @@ private fun QuestionsAvailableContent(
 
 @Composable
 private fun EmptyState(onShowGenerateDialog: () -> Unit) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                Icons.Default.QuestionAnswer,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = colorResource(R.color.text_tertiary)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "No questions available",
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    color = colorResource(R.color.text_secondary)
-                )
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+                    Icon(
+                        Icons.Default.QuestionAnswer,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = colorResource(R.color.text_tertiary)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No questions available",
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            color = colorResource(R.color.text_secondary)
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
             Button(
                 onClick = onShowGenerateDialog,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = colorResource(R.color.primary)
                 )
             ) {
-                Text("Generate Questions")
-            }
-        }
+                        Text("Generate Questions")
+                    }
+                }
     }
 }
 
@@ -416,13 +525,13 @@ private fun QuestionTypeCardContent(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     questionCount: Int,
     completedCount: Int
-) {
-    Row(
-        modifier = Modifier
-            .padding(20.dp)
-            .fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(20.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
     ) {
         QuestionTypeCardInfo(
             title = title,
@@ -446,21 +555,21 @@ private fun QuestionTypeCardInfo(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     questionCount: Int,
     completedCount: Int
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.weight(1f)
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            modifier = Modifier.size(48.dp),
-            tint = colorResource(R.color.primary)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Column {
-            Text(
-                text = title,
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+        ) {
+            Icon(
+                    icon,
+                contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = colorResource(R.color.primary)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+        Text(
+                        text = title,
                 modifier = Modifier.testTag("${title.lowercase().replace(" ", "_")}_button"),
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold,
@@ -469,18 +578,18 @@ private fun QuestionTypeCardInfo(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = description,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = colorResource(R.color.text_secondary)
+                        text = description,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = colorResource(R.color.text_secondary)
+                    )
                 )
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Badge(
-                containerColor = colorResource(R.color.primary).copy(alpha = 0.2f),
-                contentColor = colorResource(R.color.primary)
-            ) {
-                Text("$completedCount/$questionCount completed")
-            }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Badge(
+                        containerColor = colorResource(R.color.primary).copy(alpha = 0.2f),
+                        contentColor = colorResource(R.color.primary)
+                    ) {
+                        Text("$completedCount/$questionCount completed")
+                    }
         }
     }
 }
