@@ -197,7 +197,8 @@ export class JobSearchService {
         if (result.status === 'fulfilled' && result.value && typeof result.value === 'object' && 'jobs' in result.value) {
           allJobs = allJobs.concat((result.value as { jobs: ISimilarJob[] }).jobs);
         } else if (index < scraperKeys.length) {
-          logger.warn(`Failed to scrape ${scraperKeys[index] || 'unknown'}:`, result);
+          const sourceName = scraperKeys[index];
+          logger.warn(`Failed to scrape ${sourceName || 'unknown'}:`, result);
         }
       });
 
@@ -262,7 +263,8 @@ export class JobSearchService {
       results.forEach((result, index) => {
         if (result.status === 'fulfilled' && result.value.length > 0 && index < scrapingSources.length) {
           similarJobs.push(...result.value);
-          logger.info(`Found ${result.value.length} jobs from ${scrapingSources[index]?.name || 'unknown'}`);
+          const sourceName = scrapingSources[index]?.name || 'unknown';
+          logger.info(`Found ${result.value.length} jobs from ${sourceName}`);
         }
       });
 
@@ -1153,13 +1155,15 @@ export class JobSearchService {
   ): Promise<IScraperResult> {
     try {
       // Validate source is a known key
-      const validSources: ReadonlyArray<string> = ['indeed', 'linkedin', 'glassdoor', 'amazon'];
+      const validSources: readonly string[] = ['indeed', 'linkedin', 'glassdoor', 'amazon'];
 
       if (!validSources.includes(source)) {
         throw new Error(`Unknown job source: ${source}`);
       }
 
-      const config = this.scraperConfigs[source];
+      // Type assertion is safe after validation
+      const typedSource = source as keyof typeof this.scraperConfigs;
+      const config = this.scraperConfigs[typedSource];
       if (!config) {
         throw new Error(`Configuration not found for source: ${source}`);
       }
@@ -1746,9 +1750,7 @@ export class JobSearchService {
         const maxJobs = Math.min(jobElements.length, 10);
         for (let i = 0; i < maxJobs; i++) {
           const jobEl = jobElements[i];
-          if (!jobEl) continue;
-
-          const titleEl = jobEl.querySelector('h2 a');
+          const titleEl = jobEl?.querySelector('h2 a');
           const companyEl = jobEl.querySelector('.company');
           const locationEl = jobEl.querySelector('.location');
           const descriptionEl = jobEl.querySelector('.job-summary-content');
