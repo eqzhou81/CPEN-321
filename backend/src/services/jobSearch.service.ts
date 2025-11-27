@@ -266,8 +266,10 @@ export class JobSearchService {
         if (result.status === 'fulfilled' && result.value.length > 0 && index >= 0 && index < scrapingSources.length) {
           similarJobs.push(...result.value);
           const source = scrapingSources[index];
-          const sourceName = source?.name || 'unknown';
-          logger.info(`Found ${result.value.length} jobs from ${sourceName}`);
+          if (source) {
+            const sourceName = source.name || 'unknown';
+            logger.info(`Found ${result.value.length} jobs from ${sourceName}`);
+          }
         }
       });
 
@@ -1757,9 +1759,7 @@ export class JobSearchService {
           if (i < 0 || i >= jobElements.length) continue;
 
           const jobEl = jobElements[i];
-          if (!jobEl) continue;
-
-          const titleEl = jobEl.querySelector('h2 a');
+          const titleEl = jobEl?.querySelector('h2 a');
           const companyEl = jobEl.querySelector('.company');
           const locationEl = jobEl.querySelector('.location');
           const descriptionEl = jobEl.querySelector('.job-summary-content');
