@@ -3,7 +3,6 @@ package com.cpen321.usermanagement.data.repository
 import android.content.Context
 import android.util.Log
 import com.cpen321.usermanagement.data.local.preferences.TokenManager
-import com.cpen321.usermanagement.data.remote.api.ImageInterface
 import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.data.remote.api.UserInterface
 import com.cpen321.usermanagement.data.remote.dto.User
@@ -18,8 +17,7 @@ import javax.inject.Singleton
 class ProfileRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val userInterface: UserInterface,
-    private val tokenManager: TokenManager,
-    private val imageInterface: ImageInterface
+    private val tokenManager: TokenManager
 ) : ProfileRepository {
 
     companion object {

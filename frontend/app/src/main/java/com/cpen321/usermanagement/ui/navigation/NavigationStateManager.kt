@@ -61,9 +61,6 @@ class NavigationStateManager @Inject constructor() {
         }
     }
 
-    /**
-     * Handle navigation decisions based on authentication state
-     */
     private fun determineAndTriggerNavigationBasedOnAuthState(
         currentRoute: String,
         isAuthenticated: Boolean,

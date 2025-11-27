@@ -41,7 +41,6 @@ object RetrofitClient {
         _retrofit = null
         // Clear lazy service instances so they're recreated with new base URL
         _authInterface = null
-        _imageInterface = null
         _userInterface = null
         _jobApiService = null
         _questionApiService = null
@@ -53,8 +52,6 @@ object RetrofitClient {
     // Lazy service instances that can be reset
     @Volatile
     private var _authInterface: AuthInterface? = null
-    @Volatile
-    private var _imageInterface: ImageInterface? = null
     @Volatile
     private var _userInterface: UserInterface? = null
     @Volatile
@@ -106,15 +103,7 @@ object RetrofitClient {
             }
             return _authInterface!!
         }
-    
-    val imageInterface: ImageInterface
-        get() {
-            if (_imageInterface == null) {
-                _imageInterface = retrofit.create(ImageInterface::class.java)
-            }
-            return _imageInterface!!
-        }
-    
+
     val userInterface: UserInterface
         get() {
             if (_userInterface == null) {

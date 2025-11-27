@@ -39,9 +39,6 @@ import org.junit.Test
  */
 class LiveDiscussionsTest : BaseComposeTest() {
 
-    /**
-     * Navigate to discussions screen by clicking the discussions button in the top app bar
-     */
     private fun navigateFromMainScreenToDiscussionsScreen() {
         android.util.Log.d("LiveDiscussionsTest", "Navigating to discussions screen...")
 
