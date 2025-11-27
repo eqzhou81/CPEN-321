@@ -1645,9 +1645,9 @@ export class JobSearchService {
     const extractText = (selector: string): string => {
       const elements = $(selector);
       for (const element of elements) {
-        const text = $(element).text().trim();
-        if (text && text.length > 0) {
-          return text;
+        const trimmedText = $(element).text().trim();
+        if (trimmedText.length > 0) {
+          return trimmedText;
         }
       }
       return '';
