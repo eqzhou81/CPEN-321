@@ -53,7 +53,7 @@ class DiscussionsMockTest : BaseComposeTest() {
             android.util.Log.d("DiscussionsMockTest", "MockWebServer initialized in init block at: $baseUrl")
         } catch (e: Exception) {
             android.util.Log.e("DiscussionsMockTest", "Failed to initialize MockWebServer: ${e.message}", e)
-            throw RuntimeException("Failed to setup MockWebServer: ${e.message}", e)
+            throw java.io.IOException("Failed to setup MockWebServer: ${e.message}", e)
         }
     }
 
@@ -128,7 +128,7 @@ class DiscussionsMockTest : BaseComposeTest() {
             android.util.Log.d("DiscussionsMockTest", "Dispatcher configured for MockWebServer")
         } catch (e: Exception) {
             android.util.Log.e("DiscussionsMockTest", "Failed to setup dispatcher: ${e.message}", e)
-            throw RuntimeException("Failed to setup MockWebServer dispatcher: ${e.message}", e)
+            throw java.io.IOException("Failed to setup MockWebServer dispatcher: ${e.message}", e)
         }
 
         // BaseComposeTest.setup() handles: auth bypass, waitForAppToBeReady, UI Automator device, etc.

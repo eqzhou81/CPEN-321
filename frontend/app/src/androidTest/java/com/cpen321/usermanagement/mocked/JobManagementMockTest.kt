@@ -45,7 +45,7 @@ class JobManagementMockTest : BaseComposeTest() {
             android.util.Log.d("JobManagementMockTest", "MockWebServer initialized in init block at: $baseUrl")
         } catch (e: Exception) {
             android.util.Log.e("JobManagementMockTest", "Failed to initialize MockWebServer: ${e.message}", e)
-            throw RuntimeException("Failed to setup MockWebServer: ${e.message}", e)
+            throw java.io.IOException("Failed to setup MockWebServer: ${e.message}", e)
         }
     }
     

@@ -58,7 +58,7 @@ class QuestionGenerationMockTest : BaseComposeTest() {
             android.util.Log.d("QuestionGenerationMockTest", "MockWebServer initialized in init block at: $baseUrl")
         } catch (e: Exception) {
             android.util.Log.e("QuestionGenerationMockTest", "Failed to initialize MockWebServer in init: ${e.message}", e)
-            throw RuntimeException("Failed to setup MockWebServer: ${e.message}", e)
+            throw java.io.IOException("Failed to setup MockWebServer: ${e.message}", e)
         }
     }
     
@@ -118,7 +118,7 @@ class QuestionGenerationMockTest : BaseComposeTest() {
             android.util.Log.d("QuestionGenerationMockTest", "Enqueued initialization responses")
         } catch (e: Exception) {
             android.util.Log.e("QuestionGenerationMockTest", "Failed to enqueue responses: ${e.message}", e)
-            throw RuntimeException("Failed to enqueue MockWebServer responses: ${e.message}", e)
+            throw java.io.IOException("Failed to enqueue MockWebServer responses: ${e.message}", e)
         }
         
         // super.setup() includes:

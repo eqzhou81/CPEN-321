@@ -40,7 +40,7 @@ class JobRepositoryTest {
             apiService = retrofit.create(JobApiService::class.java)
             repository = JobRepository(apiService)
         } catch (e: Exception) {
-            throw RuntimeException("Failed to setup MockWebServer: ${e.message}", e)
+            throw java.io.IOException("Failed to setup MockWebServer: ${e.message}", e)
         }
     }
     

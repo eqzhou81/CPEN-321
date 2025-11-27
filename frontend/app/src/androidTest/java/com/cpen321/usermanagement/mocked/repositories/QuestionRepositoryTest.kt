@@ -49,7 +49,7 @@ class QuestionRepositoryTest {
             repository = QuestionRepository(apiService)
         } catch (e: Exception) {
             // If setup fails, ensure mockWebServer is still initialized as null-safe
-            throw RuntimeException("Failed to setup MockWebServer: ${e.message}", e)
+            throw java.io.IOException("Failed to setup MockWebServer: ${e.message}", e)
         }
     }
     

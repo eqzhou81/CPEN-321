@@ -41,7 +41,7 @@ class DiscussionRepositoryTest {
             api = retrofit.create(DiscussionApi::class.java)
             repository = DiscussionRepository(api)
         } catch (e: Exception) {
-            throw RuntimeException("Failed to setup MockWebServer: ${e.message}", e)
+            throw java.io.IOException("Failed to setup MockWebServer: ${e.message}", e)
         }
     }
     
