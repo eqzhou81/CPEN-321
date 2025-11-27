@@ -193,16 +193,18 @@ export class JobSearchService {
       // Combine results from all sources
       let allJobs: ISimilarJob[] = [];
 
-      results.forEach((result, index) => {
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i];
+        if (!result) continue;
+
         if (result.status === 'fulfilled' && result.value && typeof result.value === 'object' && 'jobs' in result.value) {
           allJobs = allJobs.concat((result.value as { jobs: ISimilarJob[] }).jobs);
         } else {
-          const sourceName = scraperKeys[index];
-          if (sourceName !== undefined) {
-            logger.warn(`Failed to scrape ${sourceName}:`, result);
-          }
+          if (i< 0 || i >= scraperKeys.length) continue;
+          const sourceName = scraperKeys[i];
+          logger.warn(`Failed to scrape ${sourceName ?? 'unknown'}:`, result);
         }
-      });
+      }
 
       // Remove duplicates and calculate similarity scores
       const uniqueJobs = this.removeDuplicateJobs(allJobs);
@@ -262,15 +264,16 @@ export class JobSearchService {
       const results = await Promise.allSettled(scrapingPromises);
 
       // Combine results from all sources
-      results.forEach((result, index) => {
+      for (let i = 0; i < Math.min(results.length, scrapingSources.length); i++) {
+        const result = results[i];
+        if (!result) continue;
+
         if (result.status === 'fulfilled' && result.value.length > 0) {
           similarJobs.push(...result.value);
-          const source = scrapingSources[index];
-          if (source !== undefined) {
-            logger.info(`Found ${result.value.length} jobs from ${source.name}`);
-          }
+          const source = scrapingSources[i];
+          logger.info(`Found ${result.value.length} jobs from ${source?.name ?? 'unknown'}`);
         }
-      });
+      }
 
       // Calculate similarity scores and filter
       const scoredJobs = similarJobs.map(job => {
@@ -979,14 +982,16 @@ export class JobSearchService {
             // Simple XML parsing for job titles and companies
             const titleMatches = xmlText.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/g) ?? [];
             const linkMatches = xmlText.match(/<link>(.*?)<\/link>/g) ?? [];
-            
-            for (let i = 0; i < Math.min(titleMatches.length, 5); i++) {
-              const titleMatch = titleMatches[i];
-              const linkMatch = linkMatches[i];
-              if (titleMatch === undefined || linkMatch === undefined) continue;
 
-              const title = titleMatch.replace(/<title><!\[CDATA\[(.*?)\]\]><\/title>/, '$1') || '';
-              const link = linkMatch.replace(/<link>(.*?)<\/link>/, '$1') || '';
+            const maxItems = Math.min(titleMatches.length, linkMatches.length, 5);
+            for (let i = 0; i < maxItems; i++) {
+              if (i < 0 || i >= titleMatches.length) continue;
+              const titleMatch = titleMatches[i];
+              if (i < 0 || i >= linkMatches.length) continue;
+              const linkMatch = linkMatches[i];
+
+              const title = titleMatch?.replace(/<title><!\[CDATA\[(.*?)\]\]><\/title>/, '$1') || '';
+              const link = linkMatch?.replace(/<link>(.*?)<\/link>/, '$1') || '';
               
               if (title && keywords.some(keyword => title.toLowerCase().includes(keyword.toLowerCase()))) {
                 jobs.push({
@@ -1159,11 +1164,15 @@ export class JobSearchService {
     try {
       // Validate source is a known key
       const validSources = ['indeed', 'linkedin', 'glassdoor', 'amazon'] as const;
-      if (!validSources.includes(source as typeof validSources[number])) {
+
+      if (!validSources.includes(source as any)) {
         throw new Error(`Unknown job source: ${source}`);
       }
 
-      const config = this.scraperConfigs[source];
+      // Narrow the type:
+      const safeSource = source as typeof validSources[number];
+
+      const config = this.scraperConfigs[safeSource];
       if (!config) {
         throw new Error(`Configuration not found for source: ${source}`);
       }
@@ -1746,12 +1755,11 @@ export class JobSearchService {
         }
         const jobs: RawStackJob[] = [];
         const jobElements = document.querySelectorAll('.job-summary');
-        
-        for (let i = 0; i < Math.min(jobElements.length, 10); i++) {
-          const jobEl = jobElements[i];
-          if (!jobEl) continue;
 
-          const titleEl = jobEl.querySelector('h2 a');
+        const maxJobs = Math.min(jobElements.length, 10);
+        for (let i = 0; i < maxJobs; i++) {
+          const jobEl = jobElements[i];
+          const titleEl = jobEl?.querySelector('h2 a');
           const companyEl = jobEl.querySelector('.company');
           const locationEl = jobEl.querySelector('.location');
           const descriptionEl = jobEl.querySelector('.job-summary-content');
