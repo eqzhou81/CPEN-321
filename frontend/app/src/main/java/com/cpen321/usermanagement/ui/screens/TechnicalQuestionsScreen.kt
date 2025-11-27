@@ -83,32 +83,32 @@ private fun TechnicalQuestionsHeader(
     completedCount: Int,
     totalCount: Int
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onNavigateBack) {
-                Icon(
-                    Icons.Default.ArrowBack,
-                    contentDescription = "Back",
-                    tint = colorResource(R.color.text_primary)
+                IconButton(onClick = onNavigateBack) {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = colorResource(R.color.text_primary)
+                    )
+                }
+                Text(
+                    text = "Technical Questions",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = colorResource(R.color.text_primary)
+                    )
                 )
             }
-            Text(
-                text = "Technical Questions",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = colorResource(R.color.text_primary)
-                )
-            )
-        }
-        
-        Badge(
-            containerColor = colorResource(R.color.primary).copy(alpha = 0.2f),
-            contentColor = colorResource(R.color.primary)
-        ) {
+            
+            Badge(
+                containerColor = colorResource(R.color.primary).copy(alpha = 0.2f),
+                contentColor = colorResource(R.color.primary)
+            ) {
             Text("$completedCount/$totalCount")
         }
     }
@@ -116,29 +116,29 @@ private fun TechnicalQuestionsHeader(
 
 @Composable
 private fun ErrorMessageCard(errorMessage: String, onDismiss: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = colorResource(R.color.error).copy(alpha = 0.1f)
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Default.Warning, contentDescription = null, tint = colorResource(R.color.error))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = errorMessage,
-                color = colorResource(R.color.error),
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(modifier = Modifier.weight(1f))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = colorResource(R.color.error).copy(alpha = 0.1f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = colorResource(R.color.error))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = errorMessage,
+                        color = colorResource(R.color.error),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
             TextButton(onClick = onDismiss) {
-                Text("Dismiss")
+                        Text("Dismiss")
+                    }
+                }
             }
-        }
-    }
 }
 
 @Composable
@@ -169,46 +169,46 @@ private fun TechnicalQuestionsContent(
 
 @Composable
 private fun LoadingState() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator(color = colorResource(R.color.primary))
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Loading technical questions...",
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = colorResource(R.color.text_secondary)
-                )
-            )
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = colorResource(R.color.primary))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Loading technical questions...",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = colorResource(R.color.text_secondary)
+                        )
+                    )
+                }
+            }
         }
-    }
-}
 
 @Composable
 private fun EmptyState() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                Icons.Default.Build,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = colorResource(R.color.text_tertiary)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "No technical questions yet",
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    color = colorResource(R.color.text_secondary)
-                )
-            )
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Default.Build,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = colorResource(R.color.text_tertiary)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No technical questions yet",
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            color = colorResource(R.color.text_secondary)
+                        )
+                    )
+                }
+            }
         }
-    }
-}
 
 @Composable
 private fun QuestionsList(
@@ -217,20 +217,20 @@ private fun QuestionsList(
     onNavigateToQuestion: (String) -> Unit,
     onToggleCompletion: (String, Boolean) -> Unit
 ) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(technicalQuestions) { question ->
-            TechnicalQuestionCard(
-                question = question,
-                onClick = { 
-                    question.externalUrl?.let { url ->
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                        context.startActivity(intent)
-                    } ?: onNavigateToQuestion(question.id)
-                },
-                onToggleCompletion = { 
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(technicalQuestions) { question ->
+                    TechnicalQuestionCard(
+                        question = question,
+                        onClick = { 
+                            question.externalUrl?.let { url ->
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                context.startActivity(intent)
+                            } ?: onNavigateToQuestion(question.id)
+                        },
+                        onToggleCompletion = { 
                     onToggleCompletion(question.id, !question.isCompleted)
-                }
-            )
+                        }
+                    )
         }
     }
 }
@@ -250,7 +250,27 @@ private fun TechnicalQuestionCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header
+            TechnicalQuestionCardHeader(
+                question = question,
+                onToggleCompletion = onToggleCompletion
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            TechnicalQuestionCardContent(question = question)
+            Spacer(modifier = Modifier.height(12.dp))
+            TechnicalQuestionCardFooter(
+                question = question,
+                context = context,
+                onClick = onClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun TechnicalQuestionCardHeader(
+    question: TechnicalQuestion,
+    onToggleCompletion: () -> Unit
+) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -266,38 +286,41 @@ private fun TechnicalQuestionCard(
                             .clickable { onToggleCompletion() }
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    
-                    Badge(
-                        containerColor = when (question.difficulty) {
-                            QuestionDifficulty.EASY -> colorResource(R.color.success).copy(alpha = 0.2f)
-                            QuestionDifficulty.MEDIUM -> colorResource(R.color.warning).copy(alpha = 0.2f)
-                            QuestionDifficulty.HARD -> colorResource(R.color.error).copy(alpha = 0.2f)
-                            null -> colorResource(R.color.warning).copy(alpha = 0.2f)
-                        },
-                        contentColor = when (question.difficulty) {
-                            QuestionDifficulty.EASY -> colorResource(R.color.success)
-                            QuestionDifficulty.MEDIUM -> colorResource(R.color.warning)
-                            QuestionDifficulty.HARD -> colorResource(R.color.error)
-                            null -> colorResource(R.color.warning)
-                        }
-                    ) {
-                        Text(question.difficulty?.displayName ?: "MEDIUM")
-                    }
-                }
-                
+            DifficultyBadge(difficulty = question.difficulty)
+        }
                 question.language?.let { language ->
                     Badge(
                         containerColor = colorResource(R.color.secondary).copy(alpha = 0.2f),
                         contentColor = colorResource(R.color.secondary_foreground)
                     ) {
                         Text(language.uppercase())
-                    }
-                }
             }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // Question Title
+        }
+    }
+}
+
+@Composable
+private fun DifficultyBadge(difficulty: QuestionDifficulty?) {
+    Badge(
+        containerColor = when (difficulty) {
+            QuestionDifficulty.EASY -> colorResource(R.color.success).copy(alpha = 0.2f)
+            QuestionDifficulty.MEDIUM -> colorResource(R.color.warning).copy(alpha = 0.2f)
+            QuestionDifficulty.HARD -> colorResource(R.color.error).copy(alpha = 0.2f)
+            null -> colorResource(R.color.warning).copy(alpha = 0.2f)
+        },
+        contentColor = when (difficulty) {
+            QuestionDifficulty.EASY -> colorResource(R.color.success)
+            QuestionDifficulty.MEDIUM -> colorResource(R.color.warning)
+            QuestionDifficulty.HARD -> colorResource(R.color.error)
+            null -> colorResource(R.color.warning)
+        }
+    ) {
+        Text(difficulty?.displayName ?: "MEDIUM")
+    }
+}
+
+@Composable
+private fun TechnicalQuestionCardContent(question: TechnicalQuestion) {
             Text(
                 text = question.title,
                 style = MaterialTheme.typography.titleMedium.copy(
@@ -307,10 +330,7 @@ private fun TechnicalQuestionCard(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            
             Spacer(modifier = Modifier.height(8.dp))
-            
-            // Question Description
             Text(
                 text = question.description,
                 style = MaterialTheme.typography.bodyMedium.copy(
@@ -319,20 +339,21 @@ private fun TechnicalQuestionCard(
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
-            
             Spacer(modifier = Modifier.height(12.dp))
-            
-            // Category
             Badge(
                 containerColor = colorResource(R.color.primary).copy(alpha = 0.2f),
                 contentColor = colorResource(R.color.primary)
             ) {
                 Text(question.category.replace("-", " ").uppercase())
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // Footer
+    }
+}
+
+@Composable
+private fun TechnicalQuestionCardFooter(
+    question: TechnicalQuestion,
+    context: android.content.Context,
+    onClick: () -> Unit
+) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -344,7 +365,6 @@ private fun TechnicalQuestionCard(
                         color = if (question.isCompleted) colorResource(R.color.success) else colorResource(R.color.text_tertiary)
                     )
                 )
-                
                 Button(
                     onClick = { 
                         question.externalUrl?.let { url ->
@@ -355,8 +375,6 @@ private fun TechnicalQuestionCard(
                     colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.primary))
                 ) {
                     Text("Solve on LeetCode")
-                }
-            }
         }
     }
 }
