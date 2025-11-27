@@ -1,5 +1,6 @@
 package com.cpen321.usermanagement.ui.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cpen321.usermanagement.data.remote.dto.SessionModels.Session
@@ -20,6 +21,10 @@ import javax.inject.Inject
 class MockInterviewViewModel @Inject constructor(
     private val sessionRepository: SessionRepository
 ) : ViewModel() {
+    
+    companion object {
+        private const val TAG = "MockInterviewViewModel"
+    }
     
     private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -159,6 +164,7 @@ class MockInterviewViewModel @Inject constructor(
                         currentAnswer = preservedAnswer
                     }
                 } catch (e: Exception) {
+                    Log.e(TAG, "Failed to navigate to previous question", e)
                 }
             }
         }
@@ -195,6 +201,7 @@ class MockInterviewViewModel @Inject constructor(
                         }
                     }
                 } catch (e: Exception) {
+                    Log.e(TAG, "Failed to save session", e)
                     // Error saving - answer is still preserved in currentAnswer
                 }
             }
@@ -248,6 +255,8 @@ class MockInterviewViewModel @Inject constructor(
                             )
                         }
                     } catch (e: Exception) {
+                        Log.e(TAG, "Failed to navigate to next question", e)
+                        // Keep current state - navigation failure shouldn't disrupt user experience
                     }
                 }
             }

@@ -20,21 +20,44 @@ import logger from '../utils/logger.util';
 export class SessionsController {
   private formatSessionResponse(session: unknown): ISessionWithQuestions {
     const s = session as ISession & { questionIds: IQuestion[] };
-    return {
-      ...s.toObject(),
-      progressPercentage: Math.round((s.answeredQuestions / s.totalQuestions) * 100),
+    const sessionObj = s.toObject();
+    
+    // Explicitly construct ISessionWithQuestions with only required properties
+    const result = {
+      _id: sessionObj._id as mongoose.Types.ObjectId,
+      userId: sessionObj.userId as mongoose.Types.ObjectId,
+      jobId: sessionObj.jobId as mongoose.Types.ObjectId,
+      questionIds: s.questionIds, // Populated questions array
+      currentQuestionIndex: sessionObj.currentQuestionIndex as number,
+      status: sessionObj.status as SessionStatus,
+      startedAt: sessionObj.startedAt as Date,
+      completedAt: sessionObj.completedAt as Date | undefined,
+      totalQuestions: sessionObj.totalQuestions as number,
+      answeredQuestions: sessionObj.answeredQuestions as number,
+      createdAt: sessionObj.createdAt as Date,
+      updatedAt: sessionObj.updatedAt as Date,
+      // Additional computed properties
+      progressPercentage: Math.round((sessionObj.answeredQuestions as number) / (sessionObj.totalQuestions as number) * 100),
       currentQuestion: s.currentQuestionIndex < s.questionIds.length 
         ? s.questionIds[s.currentQuestionIndex] 
         : null,
-      remainingQuestions: s.totalQuestions - s.answeredQuestions,
+      remainingQuestions: (sessionObj.totalQuestions as number) - (sessionObj.answeredQuestions as number),
     };
+    
+    return result as unknown as ISessionWithQuestions;
   }
+  
   async createSession(
     req: Request<unknown, unknown, CreateSessionRequest>,
     res: Response<SessionResponse>
   ) {
     try {
-      const user = req.user!;
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({
+          message: 'User not found in request',
+        });
+      }
       const { jobId, specificQuestionId } = req.body;
 
       if (!jobId || typeof jobId !== 'string') {

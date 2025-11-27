@@ -31,7 +31,7 @@ export class QuestionsController {
           message: 'Job ID is required',
         });
       }
-      if (!types || !Array.isArray(types) || types.length === 0) {
+      if (!types || types.length === 0) {
         return res.status(400).json({
           message: 'At least one question type is required',
         });
@@ -165,7 +165,7 @@ export class QuestionsController {
           behavioralQuestions,
           technicalQuestions,
           totalQuestions: savedQuestions.length,
-          jobApplication: jobApplication || null
+          jobApplication,
         },
       });
     } catch (error) {
