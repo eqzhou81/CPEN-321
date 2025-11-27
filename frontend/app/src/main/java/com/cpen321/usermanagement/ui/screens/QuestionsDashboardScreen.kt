@@ -399,28 +399,69 @@ private fun QuestionTypeCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .padding(20.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-        ) {
-            Icon(
-                    icon,
-                contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = colorResource(R.color.primary)
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
-        Text(
-                        text = title,
-                        modifier = Modifier.testTag("${title.lowercase().replace(" ", "_")}_button"),
+        QuestionTypeCardContent(
+            title = title,
+            description = description,
+            icon = icon,
+            questionCount = questionCount,
+            completedCount = completedCount
+        )
+    }
+}
+
+@Composable
+private fun QuestionTypeCardContent(
+    title: String,
+    description: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    questionCount: Int,
+    completedCount: Int
+) {
+    Row(
+        modifier = Modifier
+            .padding(20.dp)
+            .fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        QuestionTypeCardInfo(
+            title = title,
+            description = description,
+            icon = icon,
+            questionCount = questionCount,
+            completedCount = completedCount
+        )
+        Icon(
+            Icons.Default.ChevronRight,
+            contentDescription = "Navigate",
+            tint = colorResource(R.color.text_tertiary)
+        )
+    }
+}
+
+@Composable
+private fun QuestionTypeCardInfo(
+    title: String,
+    description: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    questionCount: Int,
+    completedCount: Int
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.weight(1f)
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            modifier = Modifier.size(48.dp),
+            tint = colorResource(R.color.primary)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(
+                text = title,
+                modifier = Modifier.testTag("${title.lowercase().replace(" ", "_")}_button"),
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold,
                     color = colorResource(R.color.text_primary)
@@ -428,25 +469,18 @@ private fun QuestionTypeCard(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                        text = description,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = colorResource(R.color.text_secondary)
-                    )
+                text = description,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = colorResource(R.color.text_secondary)
                 )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Badge(
-                        containerColor = colorResource(R.color.primary).copy(alpha = 0.2f),
-                        contentColor = colorResource(R.color.primary)
-                    ) {
-                        Text("$completedCount/$questionCount completed")
-                    }
-                }
-            }
-        Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = "Navigate",
-            tint = colorResource(R.color.text_tertiary)
             )
+            Spacer(modifier = Modifier.height(8.dp))
+            Badge(
+                containerColor = colorResource(R.color.primary).copy(alpha = 0.2f),
+                contentColor = colorResource(R.color.primary)
+            ) {
+                Text("$completedCount/$questionCount completed")
+            }
         }
     }
 }
