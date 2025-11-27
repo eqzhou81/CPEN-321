@@ -25,7 +25,7 @@ export class UserController {
     };
   }
 
-  getProfile(req: Request, res: Response<{ data: { user: GetProfileResponse } }>) {
+  async getProfile(req: Request, res: Response<{ data: { user: GetProfileResponse } }>): Promise<void> {
     const user = req.user!;
 
     const profileResponse = this.transformUserToResponse(user);
