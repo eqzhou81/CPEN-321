@@ -1032,7 +1032,7 @@ export class JobSearchService {
    */
   async findSimilarJobsFromDatabase(
     jobApplication: IJobApplication | Partial<IJobApplication>,
-    limit: number = 5
+    limit = 5
   ): Promise<ISimilarJob[]> {
     try {
       logger.info('Finding similar jobs for:', jobApplication.title);
@@ -1162,7 +1162,7 @@ export class JobSearchService {
       }
 
       // Type assertion is safe after validation
-      const typedSource = source as keyof typeof this.scraperConfigs;
+      const typedSource = source;
       const config = this.scraperConfigs[typedSource];
       if (!config) {
         throw new Error(`Configuration not found for source: ${source}`);

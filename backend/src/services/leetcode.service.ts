@@ -1,4 +1,5 @@
 import axios from 'axios';
+import crypto from 'crypto';
 import { CreateQuestionInput } from '../types/question.types';
 
 export interface ExternalQuestion {
@@ -39,7 +40,7 @@ export class LeetCodeService {
       topicTags?: string[];
     }
     const results: ExternalQuestion[] = data.map((item: LeetCodeAPIResponse) => ({
-      id: item.id ?? item.slug ?? item.title ?? String(Math.random()),
+      id: item.id ?? item.slug ?? item.title ?? `temp-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
       title: item.title ?? item.name ?? item.slug ?? '',
       url: item.url ?? item.link ?? item.leetcodeUrl ?? item.title ?? '',
       difficulty: item.difficulty ?? item.level ?? undefined,

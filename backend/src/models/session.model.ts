@@ -157,10 +157,14 @@ export class SessionModel {
   // Find active session by job ID
   async findActiveByJobId(jobId: mongoose.Types.ObjectId, userId: mongoose.Types.ObjectId): Promise<ISession | null> {
     try {
-      return await Session.findOne({ 
-        jobId, 
-        userId, 
-        status: SessionStatus.ACTIVE 
+      if (mongoose.connection.readyState !== 1) {
+        throw new Error('Database connection is not ready');
+      }
+
+      return await Session.findOne({
+        jobId,
+        userId,
+        status: SessionStatus.ACTIVE
       })
         .populate('questionIds')
         .exec();
