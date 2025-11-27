@@ -215,10 +215,10 @@ describe('GET /api/discussions - getAllDiscussions (No Mocking)', () => {
   test('should return 400 when topic exceeds 100 characters', async () => {
   const invalidData = { topic: 'A'.repeat(101), description: 'Valid' };
   const response = await request(app).post('/api/discussions').send(invalidData).expect(400);
-  
-  expect(response.body.success).toBe(false);
-  expect(response.body.message).toBe('Topic cannot exceed 100 characters.');
-  expect(response.body.error).toBe('TopicTooLongException');
+
+  expect(response.body.error).toBe('Validation error');
+  expect(response.body.message).toBe('Invalid input data');
+  expect(response.body.details).toBeDefined();
   });
 
   /**
@@ -228,10 +228,10 @@ describe('GET /api/discussions - getAllDiscussions (No Mocking)', () => {
   test('should return 400 when description exceeds 500 characters', async () => {
   const invalidData = { topic: 'Valid', description: 'A'.repeat(501) };
   const response = await request(app).post('/api/discussions').send(invalidData).expect(400);
-  
-  expect(response.body.success).toBe(false);
-  expect(response.body.message).toBe('Description cannot exceed 500 characters.');
-  expect(response.body.error).toBe('DescriptionTooLongException');
+
+  expect(response.body.error).toBe('Validation error');
+  expect(response.body.message).toBe('Invalid input data');
+  expect(response.body.details).toBeDefined();
 });
 
 
@@ -239,7 +239,7 @@ describe('GET /api/discussions - getAllDiscussions (No Mocking)', () => {
    * Test: Generic invalid dicsussion creation
    * Mock Behavior: should throw error
    */
-test('should return 400 with InternalServerError for invalid data type', async () => {
+test('should return 400 for invalid data type', async () => {
   const invalidData = {
     topic: 123, // number instead of string
     description: 'Valid description',
@@ -248,11 +248,11 @@ test('should return 400 with InternalServerError for invalid data type', async (
   const response = await request(app)
     .post('/api/discussions')
     .send(invalidData)
-    .expect(500);
+    .expect(400);
 
-  expect(response.body.success).toBe(false);
-  expect(response.body.error).toBe('InternalServerError'); // Generic fallback
-  expect(response.body.message).toBeDefined();
+  expect(response.body.error).toBe('Validation error');
+  expect(response.body.message).toBe('Invalid input data');
+  expect(response.body.details).toBeDefined();
 });
 
 });
@@ -392,7 +392,7 @@ describe('POST /api/discussions - createDiscussion (No Mocking)', () => {
    * Test: Create discussion with missing topic
    * Input: POST /api/discussions with { description } only
    * Expected Status: 400
-   * Expected Output: { success: false, message: error }
+   * Expected Output: { error: '...', message: '...', details: [...] }
    * Expected Behavior: Rejects request due to missing topic
    */
   test('should return 400 when topic is missing', async () => {
@@ -405,15 +405,17 @@ describe('POST /api/discussions - createDiscussion (No Mocking)', () => {
       .send(invalidData)
       .expect(400);
 
-    expect(response.body.success).toBe(false);
-    expect(response.body.message).toBeDefined();
+    expect(response.body.error).toBe('Validation error');
+    expect(response.body.message).toBe('Invalid input data');
+    expect(response.body.details).toBeDefined();
+    expect(Array.isArray(response.body.details)).toBe(true);
   });
 
   /**
    * Test: Create discussion with empty topic
    * Input: POST /api/discussions with { topic: '', description }
    * Expected Status: 400
-   * Expected Output: { success: false, message: 'Topic cannot be empty' }
+   * Expected Output: { error: '...', message: '...', details: [...] }
    * Expected Behavior: Rejects empty topic
    */
   test('should return 400 when topic is empty string', async () => {
@@ -427,15 +429,16 @@ describe('POST /api/discussions - createDiscussion (No Mocking)', () => {
       .send(invalidData)
       .expect(400);
 
-    expect(response.body.success).toBe(false);
-    expect(response.body.message).toContain('Topic');
+    expect(response.body.error).toBe('Validation error');
+    expect(response.body.message).toBe('Invalid input data');
+    expect(response.body.details).toBeDefined();
   });
 
   /**
    * Test: Create discussion with topic exceeding max length
    * Input: POST /api/discussions with topic > 100 chars
    * Expected Status: 400
-   * Expected Output: { success: false, message: validation error }
+   * Expected Output: { error: '...', message: '...', details: [...] }
    * Expected Behavior: Rejects topic that's too long
    */
   test('should return 400 when topic exceeds 100 characters', async () => {
@@ -446,18 +449,19 @@ describe('POST /api/discussions - createDiscussion (No Mocking)', () => {
 
     const response = await request(app)
       .post('/api/discussions')
+      .send(invalidData)
       .expect(400);
 
-    expect(response.body.success).toBe(false);
-    // Your Zod schema returns "Invalid input data." - adjust expectation
-    expect(response.body.message).toBeDefined();
+    expect(response.body.error).toBe('Validation error');
+    expect(response.body.message).toBe('Invalid input data');
+    expect(response.body.details).toBeDefined();
   });
 
   /**
    * Test: Create discussion with description exceeding max length
    * Input: POST /api/discussions with description > 500 chars
    * Expected Status: 400
-   * Expected Output: { success: false, message: validation error }
+   * Expected Output: { error: '...', message: '...', details: [...] }
    * Expected Behavior: Rejects description that's too long
    */
   test('should return 400 when description exceeds 500 characters', async () => {
@@ -471,8 +475,9 @@ describe('POST /api/discussions - createDiscussion (No Mocking)', () => {
       .send(invalidData)
       .expect(400);
 
-    expect(response.body.success).toBe(false);
-    expect(response.body.message).toBeDefined();
+    expect(response.body.error).toBe('Validation error');
+    expect(response.body.message).toBe('Invalid input data');
+    expect(response.body.details).toBeDefined();
   });
 });
 

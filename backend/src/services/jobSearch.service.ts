@@ -266,10 +266,8 @@ export class JobSearchService {
         if (result.status === 'fulfilled' && result.value.length > 0 && index >= 0 && index < scrapingSources.length) {
           similarJobs.push(...result.value);
           const source = scrapingSources[index];
-          if (source) {
-            const sourceName = source.name || 'unknown';
-            logger.info(`Found ${result.value.length} jobs from ${sourceName}`);
-          }
+          const sourceName = source.name || 'unknown';
+          logger.info(`Found ${result.value.length} jobs from ${sourceName}`);
         }
       });
 
@@ -518,7 +516,7 @@ export class JobSearchService {
                 company: companyEl.textContent?.trim() ?? '',
                 location: locationEl?.textContent?.trim() ?? 'Not specified',
                 description: '',
-                url: (linkEl as HTMLAnchorElement).href ?? '',
+                url: (linkEl as HTMLAnchorElement).href,
                 salary: '',
                 postedDate: new Date(),
                 source: 'linkedin'
@@ -1171,9 +1169,6 @@ export class JobSearchService {
       // Type assertion is safe after validation
       const typedSource = source as 'indeed' | 'linkedin' | 'glassdoor' | 'amazon';
       const config = this.scraperConfigs[typedSource];
-      if (!config) {
-        throw new Error(`Configuration not found for source: ${source}`);
-      }
 
       // Build search URL
       const searchUrl = this.buildSearchUrl(config, params);
@@ -1260,7 +1255,7 @@ export class JobSearchService {
                 // For Amazon, try a more flexible approach - assume it's Amazon if no company found
                 if (titleEl?.textContent?.trim()) {
                   const job: RawJobData = {
-                    title: (titleEl.textContent ?? '').trim(),
+                    title: titleEl.textContent.trim(),
                     company: 'Amazon', // Default to Amazon since we're on amazon.jobs
                     location: (locationEl?.textContent ?? '').trim(),
                     description: (descriptionEl?.textContent ?? '').trim(),
@@ -1759,7 +1754,7 @@ export class JobSearchService {
           if (i < 0 || i >= jobElements.length) continue;
 
           const jobEl = jobElements[i];
-          const titleEl = jobEl?.querySelector('h2 a');
+          const titleEl = jobEl.querySelector('h2 a');
           const companyEl = jobEl.querySelector('.company');
           const locationEl = jobEl.querySelector('.location');
           const descriptionEl = jobEl.querySelector('.job-summary-content');
@@ -2004,7 +1999,7 @@ export class JobSearchService {
    * Compare skills arrays
    */
   private compareSkills(skills1: string[], skills2: string[]): number {
-    if (!skills1?.length || !skills2?.length) return 0;
+    if (!skills1.length || !skills2?.length) return 0;
     
     const s1 = new Set(skills1.map(s => s.toLowerCase()));
     const s2 = new Set(skills2.map(s => s.toLowerCase()));

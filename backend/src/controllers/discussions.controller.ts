@@ -150,7 +150,7 @@ export class DiscussionsController {
 
       // ✅ Custom, readable error messages
       // errorMessage is always a string (either firstError?.message or 'Validation error')
-      if (errorMessage.includes("required") || !topic?.trim()) {
+      if (errorMessage.includes("required") || !topic.trim()) {
         return res.status(400).json({
           success: false,
           message: "Topic cannot be empty.",

@@ -90,7 +90,7 @@ export class SessionsController {
       if (existingSession) {
         // If creating a session for a specific question, cancel the existing session first
         if (specificQuestionId) {
-          logger.info(`Canceling existing session ${existingSession._id} to create new session for specific question`);
+          logger.info(`Canceling existing session ${String(existingSession._id)} to create new session for specific question`);
           await sessionModel.updateStatus(existingSession._id, new mongoose.Types.ObjectId(user._id), SessionStatus.CANCELLED);
         } else {
           return res.status(409).json({
@@ -106,7 +106,7 @@ export class SessionsController {
 
       if (specificQuestionId) {
         // Create session with existing questions from the job, starting with the specific question
-        logger.info(`Looking for existing questions for job: ${jobObjectId}, user: ${user._id}`);
+        logger.info(`Looking for existing questions for job: ${String(jobObjectId)}, user: ${String(user._id)}`);
         const existingQuestions = await questionModel.findByJobId(jobObjectId, new mongoose.Types.ObjectId(user._id));
         logger.info(`Found ${existingQuestions.length} existing questions`);
         
@@ -432,7 +432,7 @@ export class SessionsController {
       const sessionId = new mongoose.Types.ObjectId(req.params.sessionId);
       const { status } = req.body;
 
-      if (!status || typeof status !== 'string') {
+      if (typeof status !== 'string') {
         return res.status(400).json({
           message: 'Status is required and must be a string',
         });

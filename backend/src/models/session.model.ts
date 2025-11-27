@@ -116,7 +116,7 @@ export class SessionModel {
   async create(
     userId: mongoose.Types.ObjectId,
     jobId: mongoose.Types.ObjectId,
-    questionIds: mongoose.Types.ObjectId[]
+    questionIds?: mongoose.Types.ObjectId[]
   ): Promise<ISession> {
     try {
       if (!questionIds || questionIds.length === 0) {

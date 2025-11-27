@@ -119,7 +119,7 @@ export class AvailableJobModel {
       const job = new this.availableJob(jobData);
       return await job.save();
     } catch (error) {
-      throw new Error(`Failed to create available job: ${error}`);
+      throw new Error(`Failed to create available job: ${String(error)}`);
     }
   }
 
@@ -127,7 +127,7 @@ export class AvailableJobModel {
     try {
       return await this.availableJob.findById(jobId);
     } catch (error) {
-      throw new Error(`Failed to find job by ID: ${error}`);
+      throw new Error(`Failed to find job by ID: ${String(error)}`);
     }
   }
 
@@ -135,7 +135,7 @@ export class AvailableJobModel {
     try {
       return await this.availableJob.find().sort({ createdAt: -1, _id: -1 });
     } catch (error) {
-      throw new Error(`Failed to find all jobs: ${error}`);
+      throw new Error(`Failed to find all jobs: ${String(error)}`);
     }
   }
 
@@ -143,7 +143,7 @@ export class AvailableJobModel {
     try {
       return await this.availableJob.find({ company: { $regex: company, $options: 'i' } });
     } catch (error) {
-      throw new Error(`Failed to find jobs by company: ${error}`);
+      throw new Error(`Failed to find jobs by company: ${String(error)}`);
     }
   }
 
@@ -151,7 +151,7 @@ export class AvailableJobModel {
     try {
       return await this.availableJob.find({ jobLocation: { $regex: location, $options: 'i' } });
     } catch (error) {
-      throw new Error(`Failed to find jobs by location: ${error}`);
+      throw new Error(`Failed to find jobs by location: ${String(error)}`);
     }
   }
 
@@ -197,7 +197,7 @@ export class AvailableJobModel {
       const limit = searchParams.limit ?? 20;
       return (await this.availableJob.find(query).limit(limit).sort({ createdAt: -1 })) as IAvailableJob[];
     } catch (error) {
-      throw new Error(`Failed to search jobs: ${error}`);
+      throw new Error(`Failed to search jobs: ${String(error)}`);
     }
   }
 
@@ -205,7 +205,7 @@ export class AvailableJobModel {
     try {
       return await this.availableJob.findByIdAndUpdate(jobId, updateData, { new: true });
     } catch (error) {
-      throw new Error(`Failed to update job: ${error}`);
+      throw new Error(`Failed to update job: ${String(error)}`);
     }
   }
 
@@ -214,7 +214,7 @@ export class AvailableJobModel {
       const result = await this.availableJob.findByIdAndDelete(jobId);
       return !!result;
     } catch (error) {
-      throw new Error(`Failed to delete job: ${error}`);
+      throw new Error(`Failed to delete job: ${String(error)}`);
     }
   }
 
@@ -222,7 +222,7 @@ export class AvailableJobModel {
     try {
       return await this.availableJob.countDocuments();
     } catch (error) {
-      throw new Error(`Failed to count jobs: ${error}`);
+      throw new Error(`Failed to count jobs: ${String(error)}`);
     }
   }
 
@@ -230,7 +230,7 @@ export class AvailableJobModel {
     try {
       await this.availableJob.deleteMany({});
     } catch (error) {
-      throw new Error(`Failed to clear all jobs: ${error}`);
+      throw new Error(`Failed to clear all jobs: ${String(error)}`);
     }
   }
 }

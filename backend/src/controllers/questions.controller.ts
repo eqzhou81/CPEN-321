@@ -31,7 +31,7 @@ export class QuestionsController {
           message: 'Job ID is required',
         });
       }
-      if (!types || types.length === 0) {
+      if (types.length === 0) {
         return res.status(400).json({
           message: 'At least one question type is required',
         });

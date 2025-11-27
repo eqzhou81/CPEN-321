@@ -53,7 +53,7 @@ export class LeetCodeService {
   toCreateInput(ext: ExternalQuestion): CreateQuestionInput {
     return {
       name: ext.title,
-      link: ext.url ?? '',
+      link: ext.url,
       url: ext.url,
       difficulty: ext.difficulty,
       tags: ext.tags ?? [],

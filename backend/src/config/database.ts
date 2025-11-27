@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import logger from '../utils/logger.util';
-import { asyncHandler } from '../utils/asyncHandler.util';
+
 
 export const connectDB = async (): Promise<void> => {
   try {
