@@ -219,6 +219,23 @@ private data class QuestionsDashboardLayoutCallbacks(
     val onRetry: () -> Unit
 )
 
+private data class QuestionsDashboardContentState(
+    val isLoading: Boolean,
+    val shouldReload: Boolean,
+    val questions: com.cpen321.usermanagement.data.remote.dto.QuestionsResponse?,
+    val mainUiState: com.cpen321.usermanagement.ui.viewmodels.MainViewModel.MainUiState,
+    val jobId: String,
+    val showGenerateDialog: Boolean
+)
+
+private data class QuestionsDashboardContentCallbacks(
+    val onNavigateToTechnicalQuestions: () -> Unit,
+    val onCreateMockInterview: () -> Unit,
+    val onShowGenerateDialog: () -> Unit,
+    val onDismissGenerateDialog: () -> Unit,
+    val onGenerateQuestions: (List<String>) -> Unit
+)
+
 @Composable
 private fun QuestionsDashboardLayout(
     state: QuestionsDashboardLayoutState,
@@ -244,17 +261,21 @@ private fun QuestionsDashboardLayout(
             onRetry = callbacks.onRetry
         )
         QuestionsDashboardContent(
-            isLoading = state.isLoading,
-            shouldReload = state.shouldReload,
-            questions = state.questions,
-            mainUiState = state.mainUiState,
-            jobId = jobId,
-            onNavigateToTechnicalQuestions = callbacks.onNavigateToTechnicalQuestions,
-            onCreateMockInterview = callbacks.onCreateMockInterview,
-            showGenerateDialog = state.showGenerateDialog,
-            onShowGenerateDialog = callbacks.onShowGenerateDialog,
-            onDismissGenerateDialog = callbacks.onDismissGenerateDialog,
-            onGenerateQuestions = callbacks.onGenerateQuestions
+            state = QuestionsDashboardContentState(
+                isLoading = state.isLoading,
+                shouldReload = state.shouldReload,
+                questions = state.questions,
+                mainUiState = state.mainUiState,
+                jobId = jobId,
+                showGenerateDialog = state.showGenerateDialog
+            ),
+            callbacks = QuestionsDashboardContentCallbacks(
+                onNavigateToTechnicalQuestions = callbacks.onNavigateToTechnicalQuestions,
+                onCreateMockInterview = callbacks.onCreateMockInterview,
+                onShowGenerateDialog = callbacks.onShowGenerateDialog,
+                onDismissGenerateDialog = callbacks.onDismissGenerateDialog,
+                onGenerateQuestions = callbacks.onGenerateQuestions
+            )
         )
     }
 }
@@ -358,38 +379,29 @@ private fun ErrorCard(title: String, message: String, onRetry: () -> Unit) {
 
 @Composable
 private fun QuestionsDashboardContent(
-    isLoading: Boolean,
-    shouldReload: Boolean,
-    questions: com.cpen321.usermanagement.data.remote.dto.QuestionsResponse?,
-    mainUiState: com.cpen321.usermanagement.ui.viewmodels.MainViewModel.MainUiState,
-    jobId: String,
-    onNavigateToTechnicalQuestions: () -> Unit,
-    onCreateMockInterview: () -> Unit,
-    showGenerateDialog: Boolean,
-    onShowGenerateDialog: () -> Unit,
-    onDismissGenerateDialog: () -> Unit,
-    onGenerateQuestions: (List<String>) -> Unit
+    state: QuestionsDashboardContentState,
+    callbacks: QuestionsDashboardContentCallbacks
 ) {
     when {
-        isLoading || shouldReload -> LoadingState()
-        questions != null && questions.totalQuestions > 0 -> {
-            if (mainUiState.isCreatingSession) {
+        state.isLoading || state.shouldReload -> LoadingState()
+        state.questions != null && state.questions.totalQuestions > 0 -> {
+            if (state.mainUiState.isCreatingSession) {
                 SessionCreationLoadingState()
             } else {
                 QuestionsAvailableContent(
-                    questions = questions,
-                    onNavigateToTechnicalQuestions = onNavigateToTechnicalQuestions,
-                    onCreateMockInterview = onCreateMockInterview
+                    questions = state.questions,
+                    onNavigateToTechnicalQuestions = callbacks.onNavigateToTechnicalQuestions,
+                    onCreateMockInterview = callbacks.onCreateMockInterview
                 )
             }
         }
-        else -> EmptyState(onShowGenerateDialog = onShowGenerateDialog)
+        else -> EmptyState(onShowGenerateDialog = callbacks.onShowGenerateDialog)
     }
     
     GenerateQuestionsDialog(
-        showDialog = showGenerateDialog,
-        onDismiss = onDismissGenerateDialog,
-        onGenerate = onGenerateQuestions
+        showDialog = state.showGenerateDialog,
+        onDismiss = callbacks.onDismissGenerateDialog,
+        onGenerate = callbacks.onGenerateQuestions
     )
 }
 

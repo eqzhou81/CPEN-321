@@ -61,15 +61,19 @@ fun JobDashboardScreen(
         JobDashboardHeader(onAddJobClick = { showAddJobDialog = true })
         Spacer(modifier = Modifier.height(24.dp))
         JobDashboardContent(
-            jobStatistics = jobStatistics,
-            error = error,
-            isLoading = isLoading,
-            jobApplications = jobApplications,
-            context = context,
-            viewModel = viewModel,
-            onNavigateToJobDetails = onNavigateToJobDetails,
-            onNavigateToQuestions = onNavigateToQuestions,
-            onAddJobClick = { showAddJobDialog = true }
+            state = JobDashboardContentState(
+                jobStatistics = jobStatistics,
+                error = error,
+                isLoading = isLoading,
+                jobApplications = jobApplications,
+                context = context,
+                viewModel = viewModel
+            ),
+            callbacks = JobDashboardContentCallbacks(
+                onNavigateToJobDetails = onNavigateToJobDetails,
+                onNavigateToQuestions = onNavigateToQuestions,
+                onAddJobClick = { showAddJobDialog = true }
+            )
         )
     }
     
@@ -122,37 +126,45 @@ private fun JobDashboardHeader(onAddJobClick: () -> Unit) {
     }
 }
 
+private data class JobDashboardContentState(
+    val jobStatistics: JobStatistics?,
+    val error: String?,
+    val isLoading: Boolean,
+    val jobApplications: List<JobApplication>,
+    val context: android.content.Context,
+    val viewModel: JobViewModel
+)
+
+private data class JobDashboardContentCallbacks(
+    val onNavigateToJobDetails: (String) -> Unit,
+    val onNavigateToQuestions: (String) -> Unit,
+    val onAddJobClick: () -> Unit
+)
+
 @Composable
 private fun JobDashboardContent(
-    jobStatistics: JobStatistics?,
-    error: String?,
-    isLoading: Boolean,
-    jobApplications: List<JobApplication>,
-    context: android.content.Context,
-    viewModel: JobViewModel,
-    onNavigateToJobDetails: (String) -> Unit,
-    onNavigateToQuestions: (String) -> Unit,
-    onAddJobClick: () -> Unit
+    state: JobDashboardContentState,
+    callbacks: JobDashboardContentCallbacks
 ) {
-        jobStatistics?.let { stats ->
+        state.jobStatistics?.let { stats ->
             StatisticsSection(stats = stats)
             Spacer(modifier = Modifier.height(24.dp))
         }
         
-        error?.let { errorMessage ->
-        ErrorMessageCard(errorMessage = errorMessage, onDismiss = { viewModel.clearError() })
+        state.error?.let { errorMessage ->
+        ErrorMessageCard(errorMessage = errorMessage, onDismiss = { state.viewModel.clearError() })
         Spacer(modifier = Modifier.height(16.dp))
     }
     
     when {
-        isLoading && jobApplications.isEmpty() -> LoadingState()
-        jobApplications.isEmpty() -> EmptyState(onAddJob = onAddJobClick)
+        state.isLoading && state.jobApplications.isEmpty() -> LoadingState()
+        state.jobApplications.isEmpty() -> EmptyState(onAddJob = callbacks.onAddJobClick)
         else -> JobApplicationsList(
-            jobApplications = jobApplications,
-            context = context,
-            onNavigateToJobDetails = onNavigateToJobDetails,
-            onNavigateToQuestions = onNavigateToQuestions,
-            onDeleteJob = { viewModel.deleteJobApplication(it) }
+            jobApplications = state.jobApplications,
+            context = state.context,
+            onNavigateToJobDetails = callbacks.onNavigateToJobDetails,
+            onNavigateToQuestions = callbacks.onNavigateToQuestions,
+            onDeleteJob = { state.viewModel.deleteJobApplication(it) }
         )
     }
 }
