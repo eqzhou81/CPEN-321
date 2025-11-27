@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import { connectDB } from './database';
 import { app } from '../config/app';
+import logger from '../utils/logger.util';
 
 //for real time socket
 import { Server } from 'socket.io';
@@ -30,13 +31,13 @@ const io = new Server(server, {
 app.set('io', io); // <── important line
 
 io.on('connection', (socket) => {
-  console.log('🟢 User connected:', socket.id);
+  logger.info('🟢 User connected:', socket.id);
   socket.on('joinDiscussion', (discussionId: string) => {
     socket.join(discussionId);
-    console.log(`📥 ${socket.id} joined ${discussionId}`);
+    logger.info('📥 User joined discussion:', socket.id, discussionId);
   });
   socket.on('disconnect', () => {
-    console.log('🔴 User disconnected.');
+    logger.info('🔴 User disconnected.');
   });
 });
 
@@ -45,22 +46,22 @@ connectDB();
 
 // Start BOTH Express + Socket.IO
 server.listen(PORT, () => {
-  console.log(` Server + Socket.IO running on port ${PORT}`);
+  logger.info('Server + Socket.IO running on port', PORT);
 });
 
 // Graceful shutdown handling
 process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
+  logger.info('SIGTERM received. Shutting down gracefully...');
   server.close(() => {
-    console.log('✅ Server closed');
+    logger.info('✅ Server closed');
     process.exit(0);
   });
 });
 
 process.on('SIGINT', () => {
-  console.log('\nSIGINT received. Shutting down gracefully...');
+  logger.info('SIGINT received. Shutting down gracefully...');
   server.close(() => {
-    console.log('✅ Server closed');
+    logger.info('✅ Server closed');
     process.exit(0);
   });
 });

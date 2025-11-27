@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { ExternalQuestion, leetService } from './leetcode.service';
+import logger from '../utils/logger.util';
 
 // List of available LeetCode question types
 const LEETCODE_TOPICS = [
@@ -40,15 +41,15 @@ export async function generateQuestions(jobDescription: string): Promise<Generat
 
 
     // Log the full OpenAI API response
-    console.log('FULL OPENAI API RESPONSE:', JSON.stringify(openAIResponse.data, null, 2));
+    logger.debug('FULL OPENAI API RESPONSE:', JSON.stringify(openAIResponse.data, null, 2));
 
     // Log the raw OpenAI response
     const rawOpenAI = openAIResponse.data.choices[0].message.content;
-    console.log('RAW OPENAI RESPONSE:', rawOpenAI);
+    logger.debug('RAW OPENAI RESPONSE:', rawOpenAI);
 
     // Parse the response to extract suggested types
     const suggestedTypes = extractTypesFromOpenAI(rawOpenAI);
-    console.log('PARSED SUGGESTED TYPES:', suggestedTypes);
+    logger.debug('PARSED SUGGESTED TYPES:', suggestedTypes);
 
     // 2. For each type, call LeetCode search API to get questions (no difficulty split)
     const dbResults: GenerateQuestionsResult[] = [];
@@ -63,12 +64,12 @@ export async function generateQuestions(jobDescription: string): Promise<Generat
     return dbResults;
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[generateQuestions] Error calling OpenAI API:', errorMessage);
+    logger.error('[generateQuestions] Error calling OpenAI API:', errorMessage);
     if (error && typeof error === 'object' && 'response' in error) {
       const axiosError = error as { response?: { status?: number; data?: unknown } };
       if (axiosError.response) {
-        console.error('[generateQuestions] OpenAI Response Status:', axiosError.response.status);
-        console.error('[generateQuestions] OpenAI Response Data:', JSON.stringify(axiosError.response.data, null, 2));
+        logger.error('[generateQuestions] OpenAI Response Status:', axiosError.response.status);
+        logger.error('[generateQuestions] OpenAI Response Data:', JSON.stringify(axiosError.response.data, null, 2));
       }
     }
     throw error;

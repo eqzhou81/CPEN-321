@@ -5,6 +5,7 @@ import http from 'http';
 import { Server } from 'socket.io';
 import { errorHandler, notFoundHandler } from '../middleware/errorHandler.middleware';
 import router from '../routes/routes';
+import logger from '../utils/logger.util';
 
 const app = express();
 
@@ -43,15 +44,15 @@ app.set('io', io);
 
 // ✅ Socket.IO event handlers
 io.on('connection', (socket) => {
-  console.log('🟢 User connected:', socket.id);
-  
+  logger.info('🟢 User connected:', socket.id);
+
   socket.on('joinDiscussion', (discussionId: string) => {
     socket.join(discussionId);
-    console.log(`📥 ${socket.id} joined ${discussionId}`);
+    logger.info('📥 User joined discussion:', socket.id, discussionId);
   });
-  
+
   socket.on('disconnect', () => {
-    console.log('🔴 User disconnected:', socket.id);
+    logger.info('🔴 User disconnected:', socket.id);
   });
 });
 
