@@ -196,9 +196,11 @@ export class JobSearchService {
       results.forEach((result, index) => {
         if (result.status === 'fulfilled' && result.value && typeof result.value === 'object' && 'jobs' in result.value) {
           allJobs = allJobs.concat((result.value as { jobs: ISimilarJob[] }).jobs);
-        } else if (index < scraperKeys.length) {
+        } else if (index >= 0 && index < scraperKeys.length) {
           const sourceName = scraperKeys[index];
-          logger.warn(`Failed to scrape ${sourceName || 'unknown'}:`, result);
+          if (sourceName) {
+            logger.warn(`Failed to scrape ${sourceName}:`, result);
+          }
         }
       });
 
@@ -261,9 +263,10 @@ export class JobSearchService {
 
       // Combine results from all sources
       results.forEach((result, index) => {
-        if (result.status === 'fulfilled' && result.value.length > 0 && index < scrapingSources.length) {
+        if (result.status === 'fulfilled' && result.value.length > 0 && index >= 0 && index < scrapingSources.length) {
           similarJobs.push(...result.value);
-          const sourceName = scrapingSources[index]?.name || 'unknown';
+          const source = scrapingSources[index];
+          const sourceName = source?.name || 'unknown';
           logger.info(`Found ${result.value.length} jobs from ${sourceName}`);
         }
       });
@@ -978,6 +981,8 @@ export class JobSearchService {
 
             const maxItems = Math.min(titleMatches.length, linkMatches.length, 5);
             for (let i = 0; i < maxItems; i++) {
+              if (i < 0 || i >= titleMatches.length || i >= linkMatches.length) continue;
+
               const titleMatch = titleMatches[i];
               const linkMatch = linkMatches[i];
               if (!titleMatch || !linkMatch) continue;
@@ -1162,7 +1167,7 @@ export class JobSearchService {
       }
 
       // Type assertion is safe after validation
-      const typedSource = source;
+      const typedSource = source as 'indeed' | 'linkedin' | 'glassdoor' | 'amazon';
       const config = this.scraperConfigs[typedSource];
       if (!config) {
         throw new Error(`Configuration not found for source: ${source}`);
@@ -1749,8 +1754,12 @@ export class JobSearchService {
 
         const maxJobs = Math.min(jobElements.length, 10);
         for (let i = 0; i < maxJobs; i++) {
+          if (i < 0 || i >= jobElements.length) continue;
+
           const jobEl = jobElements[i];
-          const titleEl = jobEl?.querySelector('h2 a');
+          if (!jobEl) continue;
+
+          const titleEl = jobEl.querySelector('h2 a');
           const companyEl = jobEl.querySelector('.company');
           const locationEl = jobEl.querySelector('.location');
           const descriptionEl = jobEl.querySelector('.job-summary-content');
