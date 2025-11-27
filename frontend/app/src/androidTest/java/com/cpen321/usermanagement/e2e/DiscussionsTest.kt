@@ -357,10 +357,6 @@ class DiscussionsTest : BaseComposeTest() {
     @Test
     fun useCase_CreateDiscussion_TopicTooLong_Failure() {
         android.util.Log.d("DiscussionsTest", "=== Use Case: Create Discussion - Topic Too Long Failure ===")
-<<<<<<< HEAD
-
-        // Step 1: Verify we're on discussions list
-=======
         
         verifyOnDiscussionsList()
         openCreateDiscussionForm()
@@ -374,20 +370,10 @@ class DiscussionsTest : BaseComposeTest() {
     
     private fun verifyOnDiscussionsList() {
         android.util.Log.d("DiscussionsTest", "Step 1: Verifying we're on discussions list...")
->>>>>>> ae5e8c9 (Fix Codacy issues: Refactor long functions, improve exception handling, fix ANR issues)
         assert(checkText("Community Discussions", maxRetries = 6)) {
             "Failed: Not on Community Discussions screen"
         }
         composeTestRule.waitForIdle()
-<<<<<<< HEAD
-
-        // Step 2: Click "Create Discussion"
-        val createClicked = checkTagAndClick("new_discussion_button", maxRetries = 3)
-        assert(createClicked) { "Failed: Could not click Create Discussion button" }
-        composeTestRule.waitForIdle()
-
-        // Step 3: Check for form
-=======
         Thread.sleep(1000)
     }
     
@@ -398,44 +384,10 @@ class DiscussionsTest : BaseComposeTest() {
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
         
->>>>>>> ae5e8c9 (Fix Codacy issues: Refactor long functions, improve exception handling, fix ANR issues)
         assert(checkText("Create Discussion", maxRetries = 6)) {
             "Failed: Create Discussion form not found"
         }
         composeTestRule.waitForIdle()
-<<<<<<< HEAD
-
-        // Step 4: Enter topic exceeding 100 characters (invalid input)
-        val longTopic = "A".repeat(101)
-        composeTestRule.onNodeWithTag("discussion_topic_input").performTextInput(longTopic)
-        composeTestRule.waitForIdle()
-
-        // Step 5: Submit
-        val submitClicked = checkTagAndClick("create_discussion_button", maxRetries = 3)
-        assert(submitClicked) { "Failed: Could not click Create Discussion button" }
-        composeTestRule.waitForIdle()
-
-        // Step 6: Wait for snackbar or navigation
-        composeTestRule.waitUntil(timeoutMillis = 10_000) {
-            composeTestRule.onAllNodes(hasText("too long", substring = true))
-                .fetchSemanticsNodes().isNotEmpty() ||
-                    composeTestRule.onAllNodes(hasText("Community Discussions", substring = true))
-                        .fetchSemanticsNodes().isNotEmpty()
-        }
-
-        // Step 7: Determine what happened
-        val snackbarAppeared = check {
-            composeTestRule.onAllNodes(hasText("too long", substring = true))
-                .fetchSemanticsNodes().isNotEmpty()
-        }
-        val onDiscussionList = check {
-            composeTestRule.onAllNodes(hasText("Community Discussions", substring = true))
-                .fetchSemanticsNodes().isNotEmpty()
-        }
-
-        assert(snackbarAppeared || onDiscussionList) {
-            "Failed: Neither snackbar appeared nor navigated back to list."
-=======
         Thread.sleep(1000)
     }
     
@@ -490,22 +442,8 @@ class DiscussionsTest : BaseComposeTest() {
         android.util.Log.d("DiscussionsTest", "Step 8: Verifying we're on discussions list...")
         assert(checkText("Community Discussions", maxRetries = 6)) {
             "Failed: Not on Community Discussions screen"
->>>>>>> ae5e8c9 (Fix Codacy issues: Refactor long functions, improve exception handling, fix ANR issues)
         }
-
-        // Step 8: Ensure discussion was NOT created
         composeTestRule.waitForIdle()
-<<<<<<< HEAD
-        val topicExists = check {
-            composeTestRule.onAllNodes(hasText(longTopic.take(20), substring = true))
-                .fetchSemanticsNodes().isNotEmpty()
-        }
-        assert(!topicExists) {
-            "Failed: Discussion with long topic was created."
-        }
-
-        android.util.Log.d("DiscussionsTest", "✓ Validation verified: Discussion not created, snackbar or navigation occurred - test PASSED")
-=======
         Thread.sleep(2000)
     }
     
@@ -550,7 +488,6 @@ class DiscussionsTest : BaseComposeTest() {
             "Failed: Side effect check failed. Appears to be on discussion detail page, " +
             "which suggests a discussion was created despite topic being too long."
         }
->>>>>>> ae5e8c9 (Fix Codacy issues: Refactor long functions, improve exception handling, fix ANR issues)
     }
 
 
@@ -564,35 +501,6 @@ class DiscussionsTest : BaseComposeTest() {
     @Test
     fun useCase_CreateDiscussion_DescriptionTooLong_Failure() {
         android.util.Log.d("DiscussionsTest", "=== Use Case: Create Discussion - Description Too Long Failure ===")
-<<<<<<< HEAD
-
-        // Note: Navigation to discussions is already done in setup()
-        // We're already on discussions screen
-
-        // Step 1: Verify we're on discussions list
-        android.util.Log.d("DiscussionsTest", "Step 1: Verifying we're on discussions list...")
-        assert(checkText("Community Discussions", maxRetries = 6)) {
-            "Failed: Not on Community Discussions screen"
-        }
-        composeTestRule.waitForIdle()
-        Thread.sleep(1000)
-
-        // Step 2: Click "Create Discussion"
-        android.util.Log.d("DiscussionsTest", "Step 2: Opening Create Discussion form...")
-        val createClicked = checkTagAndClick("new_discussion_button", maxRetries = 3)
-        assert(createClicked) { "Failed: Could not click Create Discussion button" }
-        composeTestRule.waitForIdle()
-        Thread.sleep(2000)
-
-        // Step 3: Check for form
-        assert(checkText("Create Discussion", maxRetries = 6)) {
-            "Failed: Create Discussion form not found"
-        }
-        composeTestRule.waitForIdle()
-        Thread.sleep(1000)
-
-        // Step 4: Enter valid topic
-=======
         
         verifyOnDiscussionsList()
         openCreateDiscussionForm()
@@ -606,7 +514,6 @@ class DiscussionsTest : BaseComposeTest() {
     }
     
     private fun enterValidTopic(): String {
->>>>>>> ae5e8c9 (Fix Codacy issues: Refactor long functions, improve exception handling, fix ANR issues)
         android.util.Log.d("DiscussionsTest", "Step 4: Entering valid topic...")
         val testTopic = "Test Discussion ${System.currentTimeMillis()}"
         try {
@@ -618,15 +525,10 @@ class DiscussionsTest : BaseComposeTest() {
             android.util.Log.w("DiscussionsTest", "Could not input topic: ${e.message}")
             assert(false) { "Failed: Could not input topic text" }
         }
-<<<<<<< HEAD
-
-        // Step 5: Enter description exceeding 500 characters (invalid input)
-=======
         return testTopic
     }
     
     private fun enterInvalidDescription(longDescription: String) {
->>>>>>> ae5e8c9 (Fix Codacy issues: Refactor long functions, improve exception handling, fix ANR issues)
         android.util.Log.d("DiscussionsTest", "Step 5: Entering description exceeding 500 characters...")
         try {
             composeTestRule.onNodeWithTag("discussion_description_input")
@@ -637,63 +539,6 @@ class DiscussionsTest : BaseComposeTest() {
             android.util.Log.w("DiscussionsTest", "Could not input description: ${e.message}")
             assert(false) { "Failed: Could not input description text" }
         }
-<<<<<<< HEAD
-
-        // Step 6: Try to submit
-        android.util.Log.d("DiscussionsTest", "Step 6: Attempting to submit with description too long...")
-        val submitClicked = checkTagAndClick("create_discussion_button", maxRetries = 3)
-        assert(submitClicked) { "Failed: Could not click Create Discussion button" }
-        composeTestRule.waitForIdle()
-        Thread.sleep(5000) // Wait longer to see if validation prevents submission
-
-        // Step 7: Check what happened after submission
-        // Step 7: Wait for either form to close OR snackbar to appear
-        composeTestRule.waitForIdle()
-        Thread.sleep(2000)
-
-        // Check if the snackbar shows validation error
-        val snackbarAppeared = check(maxRetries = 3) {
-            try {
-                composeTestRule.onAllNodes(hasText("Description too long", substring = true))
-                    .fetchSemanticsNodes(false).isNotEmpty()
-            } catch (e: Exception) {
-                false
-            }
-        }
-
-// Check if we navigated back to the list (form closed)
-        val onDiscussionList = check(maxRetries = 3) {
-            try {
-                composeTestRule.onAllNodes(hasText("Community Discussions", substring = true))
-                    .fetchSemanticsNodes(false).isNotEmpty()
-            } catch (e: Exception) {
-                false
-            }
-        }
-
-// Step 8: Accept either “snackbar shown” or “on list” as a valid outcome
-        assert(snackbarAppeared || onDiscussionList) {
-            "Failed: Neither validation snackbar appeared nor navigated back to discussion list."
-        }
-
-// Step 9: Ensure no discussion with the invalid topic exists
-        composeTestRule.waitForIdle()
-        val testTopicExists = check(maxRetries = 3) {
-            try {
-                composeTestRule.onAllNodes(hasText(testTopic, substring = true))
-                    .fetchSemanticsNodes(false).isNotEmpty()
-            } catch (e: Exception) {
-                false
-            }
-        }
-        assert(!testTopicExists) {
-            "Failed: Discussion with topic '$testTopic' exists despite invalid input."
-        }
-
-        android.util.Log.d("DiscussionsTest", "✓ Validation verified: Discussion not created, snackbar or navigation occurred - test PASSED")
-
-=======
->>>>>>> ae5e8c9 (Fix Codacy issues: Refactor long functions, improve exception handling, fix ANR issues)
     }
 
 
@@ -708,12 +553,6 @@ class DiscussionsTest : BaseComposeTest() {
     @Test
     fun useCase_PostMessage_Success() {
         android.util.Log.d("DiscussionsTest", "=== Use Case: Post Message - Success ===")
-<<<<<<< HEAD
-
-        // Note: Navigation to discussions is already done in setup()
-        // Step 1: We're already on discussions screen, now open a discussion
-
-=======
         
         openDiscussion()
         waitForMessageInputField()
@@ -725,7 +564,6 @@ class DiscussionsTest : BaseComposeTest() {
     }
     
     private fun openDiscussion() {
->>>>>>> ae5e8c9 (Fix Codacy issues: Refactor long functions, improve exception handling, fix ANR issues)
         val discussionClicked = checkTextAndClick("Amazon", substring = true, maxRetries = 3) ||
                 checkTextAndClick("Discussion", substring = true, maxRetries = 3)
         assert(discussionClicked) { "Failed: Could not click on discussion" }
@@ -737,15 +575,6 @@ class DiscussionsTest : BaseComposeTest() {
         }
         composeTestRule.waitForIdle()
         Thread.sleep(1000)
-<<<<<<< HEAD
-
-        // Step 2: Type message
-        android.util.Log.d("DiscussionsTest", "Step 2: Waiting for message input field to be ready...")
-        composeTestRule.waitForIdle()
-        Thread.sleep(3000) // Give time for the bottom bar to render
-
-        // Wait for the message input field to be available (by test tag)
-=======
     }
     
     private fun waitForMessageInputField() {
@@ -753,7 +582,6 @@ class DiscussionsTest : BaseComposeTest() {
         composeTestRule.waitForIdle()
         Thread.sleep(3000)
         
->>>>>>> ae5e8c9 (Fix Codacy issues: Refactor long functions, improve exception handling, fix ANR issues)
         android.util.Log.d("DiscussionsTest", "Looking for message input field with test tag 'message_input'...")
         val inputFieldReady = check(maxRetries = 8, retryDelayMs = 2000) {
             try {
@@ -769,14 +597,9 @@ class DiscussionsTest : BaseComposeTest() {
         }
 
         android.util.Log.d("DiscussionsTest", "✓ Message input field found, now typing message...")
-<<<<<<< HEAD
-
-        // Type the message using the test tag
-=======
     }
     
     private fun typeMessage(message: String) {
->>>>>>> ae5e8c9 (Fix Codacy issues: Refactor long functions, improve exception handling, fix ANR issues)
         var messageTyped = false
         var attempt = 0
         val maxAttempts = 5
@@ -787,25 +610,6 @@ class DiscussionsTest : BaseComposeTest() {
                 Thread.sleep(1000)
 
                 android.util.Log.d("DiscussionsTest", "Attempt ${attempt + 1}: Typing message into input field...")
-<<<<<<< HEAD
-
-                // Find the TextField by test tag and type the message
-                val textFieldNode = composeTestRule.onNodeWithTag("message_input")
-                textFieldNode.assertExists()
-                textFieldNode.assertIsEnabled()
-
-                // Click to focus first
-                textFieldNode.performClick()
-                Thread.sleep(1000)
-                composeTestRule.waitForIdle()
-
-                // Clear any existing text and type new message
-                textFieldNode.performTextInput("Great tips! Thanks for sharing.")
-                Thread.sleep(1500)
-                composeTestRule.waitForIdle()
-
-                // Verify the text was entered by checking if it appears in the TextField
-=======
                 
                 val textFieldNode = composeTestRule.onNodeWithTag("message_input")
                 textFieldNode.assertExists()
@@ -819,7 +623,6 @@ class DiscussionsTest : BaseComposeTest() {
                 Thread.sleep(1500)
                 composeTestRule.waitForIdle()
                 
->>>>>>> ae5e8c9 (Fix Codacy issues: Refactor long functions, improve exception handling, fix ANR issues)
                 val textEntered = check(maxRetries = 4, retryDelayMs = 1000) {
                     try {
                         composeTestRule.onAllNodes(hasText("Great tips", substring = true))
@@ -859,14 +662,9 @@ class DiscussionsTest : BaseComposeTest() {
         android.util.Log.d("DiscussionsTest", "✓ Message typed successfully, waiting before submission...")
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
-<<<<<<< HEAD
-
-        // Step 3: Submit message
-=======
     }
     
     private fun submitMessage() {
->>>>>>> ae5e8c9 (Fix Codacy issues: Refactor long functions, improve exception handling, fix ANR issues)
         android.util.Log.d("DiscussionsTest", "Step 3: Submitting message...")
         val sendClicked = checkAndClick(maxRetries = 3) {
             try {
@@ -878,18 +676,6 @@ class DiscussionsTest : BaseComposeTest() {
         assert(sendClicked) { "Failed: Could not click Send button" }
         composeTestRule.waitForIdle()
         Thread.sleep(3000)
-<<<<<<< HEAD
-
-        // Step 4: Check that message appears
-        android.util.Log.d("DiscussionsTest", "Step 4: Checking for posted message...")
-        val messageFound = checkText("Great tips! Thanks for sharing.", maxRetries = 6)
-
-        assert(messageFound) {
-            "Failed: Message not found after posting. Check backend logs for errors."
-        }
-
-        android.util.Log.d("DiscussionsTest", "✓ Use Case: Post Message - Success PASSED")
-=======
     }
     
     private fun verifyMessagePosted(message: String) {
@@ -899,6 +685,5 @@ class DiscussionsTest : BaseComposeTest() {
         assert(messageFound) {
             "Failed: Message not found after posting. Check backend logs for errors."
         }
->>>>>>> ae5e8c9 (Fix Codacy issues: Refactor long functions, improve exception handling, fix ANR issues)
     }
 }
