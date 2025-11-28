@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { NextFunction, Request, RequestHandler, Response } from 'express';
 
 /**
  * Wraps async route handlers to properly handle promise rejections
@@ -9,7 +9,7 @@ export const asyncHandler = <T = unknown>(
   fn: (req: Request<T>, res: Response, next: NextFunction) => Promise<unknown>
 ): RequestHandler<T> => {
   return (req: Request<T>, res: Response, next: NextFunction): undefined => {
-    Promise.resolve(fn(req, res, next)).catch(next);
+    Promise.resolve(fn(req, res, next)).catch((error: unknown) => next(error));
     return undefined;
   };
 };

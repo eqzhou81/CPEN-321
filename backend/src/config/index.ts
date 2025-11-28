@@ -42,7 +42,10 @@ io.on('connection', (socket) => {
 });
 
 
-connectDB();
+connectDB().catch((error) => {
+  logger.error('Failed to connect to database:', error);
+  process.exit(1);
+});
 
 // Start BOTH Express + Socket.IO
 server.listen(PORT, () => {

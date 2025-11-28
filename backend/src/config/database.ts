@@ -21,10 +21,14 @@ export const connectDB = async (): Promise<void> => {
       logger.warn('⚠️ MongoDB disconnected');
     });
 
-    process.on('SIGINT', async () => {
-      await mongoose.connection.close();
-      logger.info('MongoDB connection closed through app termination');
-      process.exitCode = 0;
+    process.on('SIGINT', () => {
+      mongoose.connection.close().then(() => {
+        logger.info('MongoDB connection closed through app termination');
+        process.exitCode = 0;
+      }).catch((error) => {
+        logger.error('Error closing MongoDB connection:', error);
+        process.exitCode = 1;
+      });
     });
   } catch (error) {
     logger.error('❌ Failed to connect to MongoDB:', error);

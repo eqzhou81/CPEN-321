@@ -1,7 +1,7 @@
+import axios from 'axios';
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
 import { IJobApplication } from '../types/jobs.types';
-import axios from 'axios';
 import { OpenAIBehavioralQuestion, OpenAIFeedback } from '../types/questions.types';
 import logger from '../utils/logger.util';
 
@@ -28,7 +28,7 @@ class OpenAIService {
   private sanitizeText(text: string | undefined): string {
     if (!text) return '';
     return text
-      .replace(/[\r\n\t\f\v\u0000-\u001f\u007f-\u009f]/g, ' ')  // Remove all control characters
+      .replace(/[\r\n\t\f\v\u0000-\u001F\u007F-\u009F]/g, ' ')  // Remove all control characters
       .replace(/\s+/g, ' ')  // Collapse multiple spaces
     .trim();  // Remove leading/trailing spaces
  }

@@ -195,7 +195,8 @@ private fun AppNavHost(
         composable(
             route = "${GlobalNavRoutes.DiSCUSSION_DETAILS}/{discussionId}/{currentUserId}/{currentUserName}"
         ) { backStackEntry ->
-            val discussionId = backStackEntry.arguments?.getString("discussionId") ?: return@composable
+            val discussionId = backStackEntry.arguments?.getString("discussionId")
+            if (discussionId == null) return@composable
             val currentUserId = backStackEntry.arguments?.getString("currentUserId") ?: ""
             val currentUserName = backStackEntry.arguments?.getString("currentUserName") ?: ""
 

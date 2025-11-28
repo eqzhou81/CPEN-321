@@ -11,6 +11,7 @@ import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 
 /**
  * E2E Tests for Job Management Feature (Mocked)
@@ -91,7 +92,7 @@ class JobManagementMockTest : BaseComposeTest() {
                     .addHeader("Content-Type", "application/json")
             )
         } catch (e: Exception) {
-            throw RuntimeException("Failed to setup MockWebServer: ${e.message}", e)
+            throw IOException("Failed to setup MockWebServer: ${e.message}", e)
         }
         
         // super.setup() includes:

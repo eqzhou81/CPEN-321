@@ -226,7 +226,10 @@ class MockInterviewViewModel @Inject constructor(
                             _uiState.value = currentState.copy(session = updatedSession)
                         }
                     }
-                } catch (e: Exception) {
+                } catch (e: IOException) {
+                    android.util.Log.e("MockInterviewViewModel", "Error updating session status", e)
+                } catch (e: retrofit2.HttpException) {
+                    android.util.Log.e("MockInterviewViewModel", "Error updating session status", e)
                 }
             }
         }
