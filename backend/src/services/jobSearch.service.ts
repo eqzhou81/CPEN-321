@@ -1,7 +1,7 @@
-import mongoose from 'mongoose';
 import axios from 'axios';
-import puppeteer from 'puppeteer';
 import * as cheerio from 'cheerio';
+import mongoose from 'mongoose';
+import puppeteer from 'puppeteer';
 import { availableJobModel, IAvailableJob } from '../models/availableJob.model';
 import {
   IJobApplication,
@@ -197,7 +197,7 @@ export class JobSearchService {
         if (result.status === 'fulfilled' && result.value && typeof result.value === 'object' && 'jobs' in result.value) {
           allJobs = allJobs.concat((result.value as { jobs: ISimilarJob[] }).jobs);
         } else if (index >= 0 && index < scraperKeys.length) {
-          const sourceName = scraperKeys[index];
+          const sourceName = scraperKeys.at(index);
           if (sourceName) {
             logger.warn(`Failed to scrape ${sourceName}:`, result);
           }
@@ -265,9 +265,11 @@ export class JobSearchService {
       results.forEach((result, index) => {
         if (result.status === 'fulfilled' && result.value.length > 0 && index >= 0 && index < scrapingSources.length) {
           similarJobs.push(...result.value);
-          const source = scrapingSources[index];
-          const sourceName = source.name || 'unknown';
-          logger.info(`Found ${result.value.length} jobs from ${sourceName}`);
+          const source = scrapingSources.at(index);
+          if (source) {
+            const sourceName = source.name || 'unknown';
+            logger.info(`Found ${result.value.length} jobs from ${sourceName}`);
+          }
         }
       });
 
@@ -983,8 +985,8 @@ export class JobSearchService {
             for (let i = 0; i < maxItems; i++) {
               if (i < 0 || i >= titleMatches.length || i >= linkMatches.length) continue;
 
-              const titleMatch = titleMatches[i];
-              const linkMatch = linkMatches[i];
+              const titleMatch = titleMatches.at(i);
+              const linkMatch = linkMatches.at(i);
               if (!titleMatch || !linkMatch) continue;
 
               const title = titleMatch.replace(/<title><!\[CDATA\[(.*?)\]\]><\/title>/, '$1') || '';
@@ -1168,7 +1170,23 @@ export class JobSearchService {
 
       // Type assertion is safe after validation
       const typedSource = source as 'indeed' | 'linkedin' | 'glassdoor' | 'amazon';
-      const config = this.scraperConfigs[typedSource];
+      let config: IScraperConfig;
+      switch (typedSource) {
+        case 'indeed':
+          config = this.scraperConfigs.indeed;
+          break;
+        case 'linkedin':
+          config = this.scraperConfigs.linkedin;
+          break;
+        case 'glassdoor':
+          config = this.scraperConfigs.glassdoor;
+          break;
+        case 'amazon':
+          config = this.scraperConfigs.amazon;
+          break;
+        default:
+          throw new Error(`Unknown job source: ${typedSource}`);
+      }
 
       // Build search URL
       const searchUrl = this.buildSearchUrl(config, params);
@@ -1748,12 +1766,14 @@ export class JobSearchService {
         }
         const jobs: RawStackJob[] = [];
         const jobElements = document.querySelectorAll('.job-summary');
+        const jobElementsArray = Array.from(jobElements);
 
-        const maxJobs = Math.min(jobElements.length, 10);
+        const maxJobs = Math.min(jobElementsArray.length, 10);
         for (let i = 0; i < maxJobs; i++) {
-          if (i < 0 || i >= jobElements.length) continue;
+          if (i < 0 || i >= jobElementsArray.length) continue;
 
-          const jobEl = jobElements[i];
+          const jobEl = jobElementsArray.at(i);
+          if (!jobEl) continue;
           const titleEl = jobEl.querySelector('h2 a');
           const companyEl = jobEl.querySelector('.company');
           const locationEl = jobEl.querySelector('.location');
