@@ -53,6 +53,12 @@ class DiscussionViewModel @Inject constructor(
     // val discussions: LiveData<List<DiscussionListResponse>> = _discussions
 
     private fun setupSocketEventHandlers(discussionId: String?) {
+        setupConnectionHandlers(discussionId)
+        setupMessageReceivedHandler()
+        setupNewDiscussionHandler()
+    }
+    
+    private fun setupConnectionHandlers(discussionId: String?) {
         socket?.on(Socket.EVENT_CONNECT) {
             Log.d("SocketIO", "✅ Connected to server")
             discussionId?.let {
@@ -68,7 +74,9 @@ class DiscussionViewModel @Inject constructor(
         socket?.on(Socket.EVENT_CONNECT_ERROR) { args ->
             Log.e("SocketIO", "❌ Connection error: ${args.joinToString()}")
         }
-
+    }
+    
+    private fun setupMessageReceivedHandler() {
         socket?.on("messageReceived") { args ->
             if (args.isNotEmpty()) {
                 try {
@@ -94,7 +102,9 @@ class DiscussionViewModel @Inject constructor(
                 }
             }
         }
-
+    }
+    
+    private fun setupNewDiscussionHandler() {
         socket?.on("newDiscussion") { args ->
             if (args.isNotEmpty()) {
                 try {
