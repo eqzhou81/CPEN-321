@@ -218,43 +218,33 @@ class QuestionGenerationTest : BaseComposeTest() {
      * 4a1. System displays error message: "Unable to generate questions. Job description is missing or incomplete."
      * 4a2. System continues showing the saved job application screen.
      */
-    @Test
-    fun useCase_GenerateQuestions_NoJobDescription() {
-        android.util.Log.d("QuestionGenerationTest", "=== Use Case 1 - Failure Scenario 4a: No Job Description ===")
-        
-        // Step 1: Navigate to job applications
+    private fun navigateToJobAndClickGenerate() {
         assert(checkText("My Job Applications", maxRetries = 6)) {
             "Failed: Main screen not found"
         }
         composeTestRule.waitForIdle()
         Thread.sleep(1000)
-        
-        // Step 2: Find and click on a job (ideally one with empty description)
         val jobClicked = checkTextAndClick("Test Job", substring = true, maxRetries = 3) ||
                         checkTextAndClick("Job", substring = true, maxRetries = 3)
         assert(jobClicked) { "Failed: Could not click on job" }
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
-        
-        // Step 3: Click Generate Questions
         assert(checkText("Job Details", maxRetries = 6)) {
             "Failed: Job Details screen not found"
         }
         composeTestRule.waitForIdle()
         Thread.sleep(1000)
-        
         val generateClicked = checkTagAndClick("generate_questions_button", maxRetries = 3)
         assert(generateClicked) { "Failed: Could not click Generate Questions button" }
         composeTestRule.waitForIdle()
-        Thread.sleep(5000) // Wait to see if navigation happens or error occurs
-        
-        // Step 4a1: Check for error message
+        Thread.sleep(5000)
+    }
+
+    private fun checkErrorAndScreenState(): Pair<Boolean, Pair<Boolean, Boolean>> {
         android.util.Log.d("QuestionGenerationTest", "Step 4a1: Checking for error message...")
         val errorMessage = checkText("Unable to generate questions", substring = true, maxRetries = 3) ||
                           checkText("Job description is missing", substring = true, maxRetries = 3) ||
                           checkText("incomplete", substring = true, maxRetries = 3)
-        
-        // Step 4a2: Verify side effect - System continues showing the saved job application screen
         android.util.Log.d("QuestionGenerationTest", "Step 4a2: Verifying side effect - staying on Job Details screen...")
         val onJobDetailsScreen = check(maxRetries = 3) {
             try {
@@ -264,7 +254,6 @@ class QuestionGenerationTest : BaseComposeTest() {
                 false
             }
         }
-        
         val onQuestionsScreen = check(maxRetries = 3) {
             try {
                 composeTestRule.onAllNodes(hasText("Interview Questions", substring = true))
@@ -273,37 +262,60 @@ class QuestionGenerationTest : BaseComposeTest() {
                 false
             }
         }
-        
-        // Verify expected behavior
-        if (onJobDetailsScreen && !onQuestionsScreen) {
+        return Pair(errorMessage, Pair(onJobDetailsScreen, onQuestionsScreen))
+    }
+
+    private fun verifyErrorScenario(errorMessage: Boolean, onJobDetailsScreen: Boolean) {
+        if (onJobDetailsScreen) {
             android.util.Log.d("QuestionGenerationTest", "✓ Side effect verified: Still on Job Details screen (4a2)")
             if (errorMessage) {
                 android.util.Log.d("QuestionGenerationTest", "✓ Error message displayed (4a1)")
             } else {
                 android.util.Log.d("QuestionGenerationTest", "Note: Error message not found, but staying on Job Details is correct")
             }
-        } else if (onQuestionsScreen) {
-            // If we navigated, check if questions were generated
-            android.util.Log.d("QuestionGenerationTest", "Note: Navigated to questions screen - checking if questions were generated...")
-            composeTestRule.waitForIdle()
-            Thread.sleep(5000)
-            
-            val loadingFinished = check(maxRetries = 12) {
-                try {
-                    !composeTestRule.onAllNodes(hasText("Generating your interview questions", substring = true))
-                        .fetchSemanticsNodes(false).isNotEmpty()
-                } catch (e: Exception) {
-                    true
-                }
+        }
+    }
+
+    private fun verifyNavigationScenario() {
+        android.util.Log.d("QuestionGenerationTest", "Note: Navigated to questions screen - checking if questions were generated...")
+        composeTestRule.waitForIdle()
+        Thread.sleep(5000)
+        val loadingFinished = check(maxRetries = 12) {
+            try {
+                !composeTestRule.onAllNodes(hasText("Generating your interview questions", substring = true))
+                    .fetchSemanticsNodes(false).isNotEmpty()
+            } catch (e: Exception) {
+                true
             }
-            
-            if (loadingFinished) {
-                composeTestRule.waitForIdle()
-                Thread.sleep(3000)
-                
-                val hasBehavioral = checkText("Behavioral Questions", maxRetries = 3) ||
-                                   checkText("Behavioral", maxRetries = 3)
-                val hasTechnical = checkText("Technical Questions", maxRetries = 3) ||
+        }
+        if (loadingFinished) {
+            composeTestRule.waitForIdle()
+            Thread.sleep(3000)
+            val hasBehavioral = checkText("Behavioral Questions", maxRetries = 3) ||
+                               checkText("Behavioral", maxRetries = 3)
+            val hasTechnical = checkText("Technical Questions", maxRetries = 3) ||
+                              checkText("Technical", maxRetries = 3)
+            if (!hasBehavioral && !hasTechnical) {
+                android.util.Log.d("QuestionGenerationTest", "✓ Side effect verified: No question buttons found - questions were NOT generated")
+            } else {
+                android.util.Log.d("QuestionGenerationTest", "Note: Question buttons found - job had description (acceptable in E2E)")
+            }
+        }
+    }
+
+    @Test
+    fun useCase_GenerateQuestions_NoJobDescription() {
+        android.util.Log.d("QuestionGenerationTest", "=== Use Case 1 - Failure Scenario 4a: No Job Description ===")
+        navigateToJobAndClickGenerate()
+        val (errorMessage, screenState) = checkErrorAndScreenState()
+        val (onJobDetailsScreen, onQuestionsScreen) = screenState
+        if (onJobDetailsScreen && !onQuestionsScreen) {
+            verifyErrorScenario(errorMessage, onJobDetailsScreen)
+        } else if (onQuestionsScreen) {
+            verifyNavigationScenario()
+        }
+        android.util.Log.d("QuestionGenerationTest", "✓ Use Case 1 - Failure Scenario 4a: No Job Description PASSED")
+    }
                                   checkText("Technical", maxRetries = 3)
                 
                 if (!hasBehavioral && !hasTechnical) {

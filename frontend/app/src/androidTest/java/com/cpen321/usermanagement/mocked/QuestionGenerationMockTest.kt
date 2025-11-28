@@ -144,8 +144,7 @@ class QuestionGenerationMockTest : BaseComposeTest() {
      * Success scenario with mocked successful response
      */
     @Test
-    fun testGenerateQuestions_Success_Mocked() {
-        // Enqueue successful response
+    private fun enqueueSuccessResponse() {
         val successResponse = """
         {
             "success": true,
@@ -169,58 +168,53 @@ class QuestionGenerationMockTest : BaseComposeTest() {
             }
         }
         """.trimIndent()
-        
-        // Enqueue response for POST /api/questions/generate
         mockWebServer.enqueue(
             MockResponse()
                 .setResponseCode(201)
                 .setBody(successResponse)
                 .addHeader("Content-Type", "application/json")
         )
-        
-        // Navigate and generate questions
-        // Note: waitForAppToBeReady() in setup() already waited for main screen
-        // But we'll wait again to ensure we're on the right screen
+    }
+
+    private fun navigateToJobAndGenerate() {
         waitForText("My Job Applications", timeoutMillis = 10000)
         composeTestRule.waitForIdle()
-        
-        // Wait for job to be available before clicking
         composeTestRule.waitUntil(timeoutMillis = 5000) {
             try {
-                getNodeWithText("Software Engineer", substring = true)
-                    .assertExists()
+                getNodeWithText("Software Engineer", substring = true).assertExists()
                 true
             } catch (e: Exception) {
                 false
             }
         }
-        
         getNodeWithText("Software Engineer", substring = true)
             .assertIsDisplayed()
             .performClick()
-        
         waitForText("Job Details", timeoutMillis = 3000)
         composeTestRule.waitForIdle()
-        
         getNodeWithText("Generate Questions", substring = true)
             .assertIsDisplayed()
             .performClick()
-        
-        // Wait for success
+    }
+
+    private fun verifyQuestionsGenerated() {
         composeTestRule.waitUntil(timeoutMillis = 10000) {
             try {
-                getNodeWithText("Behavioral Questions", substring = true)
-                    .assertExists()
+                getNodeWithText("Behavioral Questions", substring = true).assertExists()
                 true
             } catch (e: Exception) {
                 false
             }
         }
-        
-        getNodeWithText("Behavioral Questions", substring = true)
-            .assertIsDisplayed()
-        getNodeWithText("Technical Questions", substring = true)
-            .assertIsDisplayed()
+        getNodeWithText("Behavioral Questions", substring = true).assertIsDisplayed()
+        getNodeWithText("Technical Questions", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun testGenerateQuestions_Success_Mocked() {
+        enqueueSuccessResponse()
+        navigateToJobAndGenerate()
+        verifyQuestionsGenerated()
     }
     
     /**

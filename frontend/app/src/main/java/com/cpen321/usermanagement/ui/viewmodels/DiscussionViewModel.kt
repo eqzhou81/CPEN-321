@@ -51,95 +51,86 @@ class DiscussionViewModel @Inject constructor(
     // private val _discussions = MutableLiveData<List<DiscussionListResponse>>(emptyList())
     // val discussions: LiveData<List<DiscussionListResponse>> = _discussions
 
+    private fun setupSocketEventHandlers(discussionId: String?) {
+        socket?.on(Socket.EVENT_CONNECT) {
+            Log.d("SocketIO", "✅ Connected to server")
+            discussionId?.let {
+                socket?.emit("joinDiscussion", it)
+                Log.d("SocketIO", "Joined discussion room $it")
+            }
+        }
+
+        socket?.on(Socket.EVENT_DISCONNECT) {
+            Log.d("SocketIO", "⚠️ Disconnected from server")
+        }
+
+        socket?.on(Socket.EVENT_CONNECT_ERROR) { args ->
+            Log.e("SocketIO", "❌ Connection error: ${args.joinToString()}")
+        }
+
+        socket?.on("messageReceived") { args ->
+            if (args.isNotEmpty()) {
+                try {
+                    val data = args[0] as JSONObject
+                    val message = MessageResponse(
+                        id = data.optString("id", data.optString("_id", "")),
+                        userId = data.getString("userId"),
+                        userName = data.getString("userName"),
+                        content = data.getString("content"),
+                        createdAt = data.getString("createdAt"),
+                        updatedAt = data.getString("updatedAt")
+                    )
+                    viewModelScope.launch {
+                        val exists = _messages.value.any { it.id == message.id }
+                        if (!exists) {
+                            _messages.value = _messages.value + message
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("SocketIO", "❌ Error parsing message: ${e.message}")
+                }
+            }
+        }
+
+        socket?.on("newDiscussion") { args ->
+            if (args.isNotEmpty()) {
+                try {
+                    val data = args[0] as JSONObject
+                    val discussion = DiscussionListResponse(
+                        id = data.optString("id", data.optString("_id", "")),
+                        topic = data.getString("topic"),
+                        description = data.optString("description", ""),
+                        creatorId = data.getString("creatorId"),
+                        creatorName = data.getString("creatorName"),
+                        messageCount = data.optInt("messageCount", 0),
+                        participantCount = data.optInt("participantCount", 0),
+                        lastActivityAt = data.optString("lastActivityAt", ""),
+                        createdAt = data.optString("createdAt", "")
+                    )
+                    viewModelScope.launch {
+                        val currentList = _uiState.value.discussions
+                        val exists = currentList.any { it.id == discussion.id }
+                        if (!exists) {
+                            val updatedList = listOf(discussion) + currentList
+                            _uiState.value = _uiState.value.copy(discussions = updatedList)
+                            Log.d("SocketIO", "🆕 New discussion received: ${discussion.topic}")
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("SocketIO", "❌ Error parsing newDiscussion: ${e.message}")
+                }
+            }
+        }
+    }
+
     fun connectToSocket(discussionId: String? = null) {
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
-                // Disconnect existing socket if any
                 socket?.disconnect()
                 socket = null
-                
-                // Create and connect socket on IO dispatcher to avoid blocking main thread
                 socket = IO.socket(BuildConfig.IMAGE_BASE_URL)
-                
-                socket?.on(Socket.EVENT_CONNECT) {
-                    Log.d("SocketIO", "✅ Connected to server")
-                    discussionId?.let {
-                        socket?.emit("joinDiscussion", it)
-                        Log.d("SocketIO", "Joined discussion room $it")
-                    }
-                }
-
-                socket?.on(Socket.EVENT_DISCONNECT) {
-                    Log.d("SocketIO", "⚠️ Disconnected from server")
-                }
-
-                socket?.on(Socket.EVENT_CONNECT_ERROR) { args ->
-                    Log.e("SocketIO", "❌ Connection error: ${args.joinToString()}")
-                }
-
-                // Listen for new messages
-                socket?.on("messageReceived") { args ->
-                    if (args.isNotEmpty()) {
-                        try {
-                            val data = args[0] as JSONObject
-                            val message = MessageResponse(
-                                id = data.optString("id", data.optString("_id", "")),
-                                userId = data.getString("userId"),
-                                userName = data.getString("userName"),
-                                content = data.getString("content"),
-                                createdAt = data.getString("createdAt"),
-                                updatedAt = data.getString("updatedAt")
-                            )
-
-                            viewModelScope.launch {
-                                val exists = _messages.value.any { it.id == message.id }
-                                if (!exists) {
-                                    _messages.value = _messages.value + message
-                                }
-                            }
-                        } catch (e: Exception) {
-                            Log.e("SocketIO", "❌ Error parsing message: ${e.message}")
-                        }
-                    }
-                }
-
-                // Listen for new discussions - UPDATE UI STATE
-                socket?.on("newDiscussion") { args ->
-                    if (args.isNotEmpty()) {
-                        try {
-                            val data = args[0] as JSONObject
-                            val discussion = DiscussionListResponse(
-                                id = data.optString("id", data.optString("_id", "")),
-                                topic = data.getString("topic"),
-                                description = data.optString("description", ""),
-                                creatorId = data.getString("creatorId"),
-                                creatorName = data.getString("creatorName"),
-                                messageCount = data.optInt("messageCount", 0),
-                                participantCount = data.optInt("participantCount", 0),
-                                lastActivityAt = data.optString("lastActivityAt", ""),
-                                createdAt = data.optString("createdAt", "")
-                            )
-
-                            viewModelScope.launch {
-                                val currentList = _uiState.value.discussions
-                                val exists = currentList.any { it.id == discussion.id }
-                                if (!exists) {
-                                    val updatedList = listOf(discussion) + currentList
-                                    _uiState.value = _uiState.value.copy(
-                                        discussions = updatedList
-                                    )
-                                    Log.d("SocketIO", "🆕 New discussion received: ${discussion.topic}")
-                                }
-                            }
-                        } catch (e: Exception) {
-                            Log.e("SocketIO", "❌ Error parsing newDiscussion: ${e.message}")
-                        }
-                    }
-                }
-
-                // Connect socket (non-blocking)
+                setupSocketEventHandlers(discussionId)
                 socket?.connect()
-                
             } catch (e: Exception) {
                 Log.e("SocketIO", "❌ Error connecting socket: ${e.message}", e)
                 viewModelScope.launch {
