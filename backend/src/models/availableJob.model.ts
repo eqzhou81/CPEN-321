@@ -52,8 +52,8 @@ const availableJobSchema = new Schema<IAvailableJob>(
       validate: {
         validator: function (url: string) {
           try {
-            void new URL(url);
-            return true;
+            const parsedUrl = new URL(url);
+            return !!parsedUrl;
           } catch {
             return false;
           }
