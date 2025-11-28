@@ -92,48 +92,13 @@ class MockInterviewViewModel @Inject constructor(
                     
                     val currentQuestionId = getCurrentQuestionId(currentState)
                     
-                    if (currentQuestionId.isBlank()) {
-                        _uiState.value = currentState.copy(isSubmitting = false)
-                        return@launch
-                    }
-                    
-                    val request = SubmitAnswerRequest(
-                        sessionId = currentState.session.id,
-                        questionId = currentQuestionId,
-                        answer = currentAnswer
-                    )
-                    
-                    val response = sessionRepository.submitAnswer(request)
-                    
-                    if (response.isSuccessful && response.body()?.data != null) {
-                        val responseData = response.body()!!.data!!
-                        currentAnswer = ""
-                        
-                        // Reload session to get the latest progress and current question
-                        val updatedSessionResponse = sessionRepository.getSession(currentState.session.id)
-                        if (updatedSessionResponse.isSuccessful && updatedSessionResponse.body()?.data != null) {
-                            val sessionData = updatedSessionResponse.body()!!.data!!
-                            _uiState.value = UiState.Success(
-                                session = sessionData.session,
-                                currentQuestion = sessionData.currentQuestion,
-                                feedback = responseData.feedback,
-                                answer = "",
-                                isSubmitting = false
-                            )
-                        } else {
-                            // Fallback to response data if reload fails
-                            _uiState.value = UiState.Success(
-                                session = responseData.session,
-                                currentQuestion = currentState.currentQuestion,
-                                feedback = responseData.feedback,
-                                answer = "",
-                                isSubmitting = false
-                            )
-                        }
-                    } else {
-                        _uiState.value = currentState.copy(
-                            isSubmitting = false
+                    if (currentQuestionId.isNotBlank()) {
+                        handleAnswerSubmission(
+                            currentState = currentState,
+                            currentQuestionId = currentQuestionId
                         )
+                    } else {
+                        _uiState.value = currentState.copy(isSubmitting = false)
                     }
                 } catch (e: IOException) {
                     _uiState.value = currentState.copy(isSubmitting = false)
