@@ -211,13 +211,6 @@ class QuestionGenerationTest : BaseComposeTest() {
         }
     }
 
-    /**
-     * Use Case 1 - Failure Scenario 4a: No job description content available
-     * 
-     * Expected behavior:
-     * 4a1. System displays error message: "Unable to generate questions. Job description is missing or incomplete."
-     * 4a2. System continues showing the saved job application screen.
-     */
     private fun navigateToJobAndClickGenerate() {
         assert(checkText("My Job Applications", maxRetries = 6)) {
             "Failed: Main screen not found"

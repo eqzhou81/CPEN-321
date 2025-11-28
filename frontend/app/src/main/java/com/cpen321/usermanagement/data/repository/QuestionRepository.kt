@@ -2,6 +2,8 @@ package com.cpen321.usermanagement.data.repository
 
 import com.cpen321.usermanagement.data.remote.api.QuestionApiService
 import com.cpen321.usermanagement.data.remote.dto.*
+import retrofit2.HttpException
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -32,7 +34,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to generate questions"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }
@@ -47,7 +51,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to generate questions from description"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }
@@ -63,7 +69,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to fetch questions"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }
@@ -76,7 +84,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to fetch question progress"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }
@@ -91,7 +101,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to fetch question"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }
@@ -109,7 +121,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to submit answer"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }
@@ -122,7 +136,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to toggle question completion"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }
@@ -135,7 +151,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to delete question"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }
@@ -150,7 +168,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to fetch question categories"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }
@@ -163,7 +183,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to fetch question difficulties"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }

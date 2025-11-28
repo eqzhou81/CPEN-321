@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import java.io.IOException
 import javax.inject.Inject
 
 /**
@@ -287,7 +289,9 @@ class QuestionViewModel @Inject constructor(
                         handleUpdateFailure(questionId, isCompleted, exception)
                     }
                 )
-            } catch (e: Exception) {
+            } catch (e: IOException) {
+                _error.value = e.message ?: "Failed to update question completion"
+            } catch (e: retrofit2.HttpException) {
                 _error.value = e.message ?: "Failed to update question completion"
             }
         }

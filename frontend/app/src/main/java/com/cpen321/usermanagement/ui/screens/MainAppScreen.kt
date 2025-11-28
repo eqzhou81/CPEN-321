@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,130 +31,160 @@ import com.cpen321.usermanagement.data.remote.api.DiscussionListResponse
 import com.cpen321.usermanagement.ui.navigation.Navigation
 import com.cpen321.usermanagement.ui.navigation.NavigationStateManager
 import com.cpen321.usermanagement.ui.viewmodels.AuthViewModel
+import com.cpen321.usermanagement.ui.viewmodels.AuthUiState
 
-/**
- * Main App Screen with bottom navigation bar
- * Includes tabs for Job Applications, Discussions, and Profile
- */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainAppScreen(
-    authViewModel: AuthViewModel = hiltViewModel(),
+private fun MainAppScreenEffects(
+    authState: AuthUiState,
+    snackBarHostState: SnackbarHostState,
+    authViewModel: AuthViewModel,
     navigationStateManager: NavigationStateManager
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var selectedTab by remember { mutableStateOf(MainTab.JOB_APPLICATIONS) }
-    val authState by authViewModel.uiState.collectAsState()
-    val snackBarHostState = remember { SnackbarHostState() }
-
     LaunchedEffect(authState.isAuthenticated, authState.errorMessage) {
         if (!authState.isAuthenticated) {
-            if(authState.isSigningOut){
+            if (authState.isSigningOut) {
                 navigationStateManager.handleAccountSignOut()
-            }
-            else{
+            } else {
                 navigationStateManager.handleAccountDeletion()
             }
         } else if (authState.errorMessage != null) {
-            // Show error message
             val errorMsg = authState.errorMessage
-            if(errorMsg != null){
+            if (errorMsg != null) {
                 snackBarHostState.showSnackbar(errorMsg)
                 authViewModel.clearError()
             }
         }
     }
+}
 
-    // Get view models for embedded screens
-    val profileViewModel: com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel = hiltViewModel()
-    val discussionViewModel: com.cpen321.usermanagement.ui.viewmodels.DiscussionViewModel = hiltViewModel()
-    val authStateForDiscussions by authViewModel.uiState.collectAsState()
-    val user = authStateForDiscussions.user
-
-    Scaffold(
-        topBar = {
+@Composable
+private fun MainAppTopBar(selectedTab: MainTab) {
             TopAppBar(
                 title = {
                     Text(
-                        text = when (selectedTab) {
-                            MainTab.JOB_APPLICATIONS -> "Job Applications"
-                            MainTab.DISCUSSIONS -> "Discussions"
-                            MainTab.PROFILE -> "Profile"
-                        },
+                text = when (selectedTab) {
+                    MainTab.JOB_APPLICATIONS -> "Job Applications"
+                    MainTab.DISCUSSIONS -> "Discussions"
+                    MainTab.PROFILE -> "Profile"
+                },
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color = colorResource(R.color.text_primary)
                         )
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorResource(R.color.surface),
-                    titleContentColor = colorResource(R.color.text_primary)
-                )
-            )
-        },
-        bottomBar = {
-            NavigationBar(
-                containerColor = colorResource(R.color.surface),
-                contentColor = colorResource(R.color.text_primary)
-            ) {
-                MainTab.values().forEach { tab ->
-                    NavigationBarItem(
-                        icon = {
-                            Icon(
-                                imageVector = tab.icon,
-                                contentDescription = tab.title
-                            )
-                        },
-                        label = {
-                            Text(
-                                text = tab.title,
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                        },
-                        selected = selectedTab == tab,
-                        onClick = { selectedTab = tab }
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = colorResource(R.color.surface),
+            titleContentColor = colorResource(R.color.text_primary)
+        )
+    )
+}
+
+@Composable
+private fun MainAppBottomBar(
+    selectedTab: MainTab,
+    onTabSelected: (MainTab) -> Unit
+) {
+    NavigationBar(
+        containerColor = colorResource(R.color.surface),
+        contentColor = colorResource(R.color.text_primary)
+    ) {
+        MainTab.values().forEach { tab ->
+            NavigationBarItem(
+                icon = {
+                        Icon(
+                        imageVector = tab.icon,
+                        contentDescription = tab.title
                     )
-                }
-            }
+                },
+                label = {
+                    Text(
+                        text = tab.title,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                },
+                selected = selectedTab == tab,
+                onClick = { onTabSelected(tab) }
+            )
         }
+    }
+}
+
+@Composable
+private fun MainAppContent(
+    selectedTab: MainTab,
+    discussionViewModel: com.cpen321.usermanagement.ui.viewmodels.DiscussionViewModel,
+    authViewModel: AuthViewModel,
+    profileViewModel: com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel,
+    snackBarHostState: SnackbarHostState,
+    scope: CoroutineScope,
+    navigationStateManager: NavigationStateManager
+) {
+    when (selectedTab) {
+        MainTab.JOB_APPLICATIONS -> Navigation()
+        MainTab.DISCUSSIONS -> {
+            DiscussionScreenContent(
+                discussionViewModel = discussionViewModel,
+                onDiscussionClick = { discussionId ->
+                    scope.launch {
+                        snackBarHostState.showSnackbar(
+                            "Tap to view discussion details",
+                            duration = SnackbarDuration.Short
+                        )
+                    }
+                }
+            )
+        }
+        MainTab.PROFILE -> {
+            ProfileScreenContent(
+                authViewModel = authViewModel,
+                profileViewModel = profileViewModel,
+                onSignOut = { navigationStateManager.handleAccountSignOut() },
+                onAccountDeleted = { navigationStateManager.handleAccountDeletion() }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainAppScreen(
+    authViewModel: AuthViewModel = hiltViewModel(),
+    navigationStateManager: NavigationStateManager
+) {
+    val scope = rememberCoroutineScope()
+    var selectedTab by remember { mutableStateOf(MainTab.JOB_APPLICATIONS) }
+    val authState by authViewModel.uiState.collectAsState()
+    val snackBarHostState = remember { SnackbarHostState() }
+    val profileViewModel: com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel = hiltViewModel()
+    val discussionViewModel: com.cpen321.usermanagement.ui.viewmodels.DiscussionViewModel = hiltViewModel()
+
+    MainAppScreenEffects(
+        authState = authState,
+        snackBarHostState = snackBarHostState,
+        authViewModel = authViewModel,
+        navigationStateManager = navigationStateManager
+    )
+
+    Scaffold(
+        topBar = { MainAppTopBar(selectedTab = selectedTab) },
+        bottomBar = { MainAppBottomBar(selectedTab = selectedTab, onTabSelected = { selectedTab = it }) }
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            when (selectedTab) {
-                MainTab.JOB_APPLICATIONS -> {
-            Navigation()
-                }
-                MainTab.DISCUSSIONS -> {
-                    // Show discussions content inline
-                    DiscussionScreenContent(
-                        discussionViewModel = discussionViewModel,
-                        onDiscussionClick = { discussionId ->
-                            scope.launch {
-                                snackBarHostState.showSnackbar(
-                                    "Tap to view discussion details",
-                                    duration = SnackbarDuration.Short
-                                )
-                            }
-                        }
-                    )
-                }
-                MainTab.PROFILE -> {
-                    // Show profile content inline
-                    ProfileScreenContent(
-                        authViewModel = authViewModel,
-                        profileViewModel = profileViewModel,
-                        onSignOut = { navigationStateManager.handleAccountSignOut() },
-                        onAccountDeleted = { navigationStateManager.handleAccountDeletion() }
-                    )
-                }
-            }
+            MainAppContent(
+                selectedTab = selectedTab,
+                discussionViewModel = discussionViewModel,
+                authViewModel = authViewModel,
+                profileViewModel = profileViewModel,
+                snackBarHostState = snackBarHostState,
+                scope = scope,
+                navigationStateManager = navigationStateManager
+            )
         }
-        
         SnackbarHost(
             hostState = snackBarHostState,
             modifier = Modifier.padding(16.dp)

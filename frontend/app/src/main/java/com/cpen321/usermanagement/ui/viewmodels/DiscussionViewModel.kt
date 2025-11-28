@@ -20,8 +20,8 @@ import io.socket.client.Socket
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import org.json.JSONException
 import org.json.JSONObject
-
 import javax.inject.Inject
 
 data class DiscussionUiState(
@@ -86,7 +86,9 @@ class DiscussionViewModel @Inject constructor(
                             _messages.value = _messages.value + message
                         }
                     }
-                } catch (e: Exception) {
+                } catch (e: org.json.JSONException) {
+                    Log.e("SocketIO", "❌ Error parsing message: ${e.message}")
+                } catch (e: ClassCastException) {
                     Log.e("SocketIO", "❌ Error parsing message: ${e.message}")
                 }
             }

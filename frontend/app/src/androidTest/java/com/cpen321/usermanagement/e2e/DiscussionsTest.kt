@@ -107,14 +107,6 @@ class DiscussionsTest : BaseComposeTest() {
         navigateFromMainScreenToDiscussionsScreen()
     }
 
-    /**
-     * Use Case: Browse existing discussions
-     * Main success scenario:
-     * 1. User navigates to discussions section (already done in setup)
-     * 2. System displays list of discussions
-     * 3. User can see discussion topics and metadata
-     * 4. User clicks on multiple discussions to browse
-     */
     private fun verifyDiscussionsListDisplayed() {
         android.util.Log.d("DiscussionsTest", "Step 2-3: Checking for discussions list...")
         val discussionsFound = check(maxRetries = 6) {

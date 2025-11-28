@@ -93,42 +93,7 @@ class LiveDiscussionsTest : BaseComposeTest() {
         navigateFromMainScreenToDiscussionsScreen()
     }
 
-    /**
-     * Live Update Test: New Discussion Creation
-     *
-     * Use Case: User B creates a discussion, User A sees it appear in real-time
-     *
-     * AUTOMATED (User A):
-     * 1. User A is on discussions list screen
-     * 2. User A waits for User B to create a discussion
-     * 3. User A's screen automatically updates with the new discussion
-     * 4. User A verifies the new discussion appears
-     *
-     * MANUAL (User B):
-     * 1. Navigate to Community Discussions screen
-     * 2. Click "Create Discussion" button
-     * 3. Enter topic: "Live Test Discussion [TIMESTAMP]" will be printed on the log cat of the emulator/device running the test. Paste from there.
-     * 4. Enter description: "Testing real-time updates"
-     * 5. Click "Create Discussion"
-     * 6. Confirm discussion was created successfully
-     */
-    @Test
-    fun liveUpdate_CreateDiscussion_AppearsToOtherUsers() {
-        android.util.Log.d("LiveDiscussionsTest", "=== LIVE UPDATE TEST: Create Discussion ===")
-
-        // Generate unique discussion topic for this test run
-        val timestamp = System.currentTimeMillis()
-        val expectedTopic = "Live Test Discussion $timestamp"
-
-        // User A: Verify we're on discussions list
-        android.util.Log.d("LiveDiscussionsTest", "User A: Waiting on discussions list...")
-        assert(checkText("Community Discussions", maxRetries = 6)) {
-            "Failed: User A not on Community Discussions screen"
-        }
-        composeTestRule.waitForIdle()
-        Thread.sleep(2000)
-
-        // Print instructions for manual tester (User B)
+    private fun printCreateDiscussionInstructions(expectedTopic: String) {
         android.util.Log.e("LiveDiscussionsTest", "")
         android.util.Log.e("LiveDiscussionsTest", "═══════════════════════════════════════════════════════════════")
         android.util.Log.e("LiveDiscussionsTest", "🔔 MANUAL TESTER (User B) - ACTION REQUIRED")
@@ -146,19 +111,15 @@ class LiveDiscussionsTest : BaseComposeTest() {
         android.util.Log.e("LiveDiscussionsTest", "⏱️  User A will wait up to 60 seconds for the discussion to appear")
         android.util.Log.e("LiveDiscussionsTest", "═══════════════════════════════════════════════════════════════")
         android.util.Log.e("LiveDiscussionsTest", "")
+    }
 
-        // User A: Wait for the new discussion to appear (with longer timeout for live updates)
+    private fun waitForDiscussionToAppear(expectedTopic: String): Boolean {
         android.util.Log.d("LiveDiscussionsTest", "User A: Waiting for new discussion to appear...")
-
-        val discussionAppeared = check(maxRetries = 60, retryDelayMs = 2000) {  // 60 seconds total
+        return check(maxRetries = 60, retryDelayMs = 2000) {
             try {
-                // Refresh the list by scrolling or checking for updates
                 composeTestRule.waitForIdle()
-
-                // Check if the new discussion appears
                 val nodes = composeTestRule.onAllNodes(hasText(expectedTopic, substring = true))
                     .fetchSemanticsNodes(false)
-
                 if (nodes.isNotEmpty()) {
                     android.util.Log.d("LiveDiscussionsTest", "✓ Discussion found in list!")
                     true
@@ -171,7 +132,21 @@ class LiveDiscussionsTest : BaseComposeTest() {
                 false
             }
         }
+    }
 
+    @Test
+    fun liveUpdate_CreateDiscussion_AppearsToOtherUsers() {
+        android.util.Log.d("LiveDiscussionsTest", "=== LIVE UPDATE TEST: Create Discussion ===")
+        val timestamp = System.currentTimeMillis()
+        val expectedTopic = "Live Test Discussion $timestamp"
+        android.util.Log.d("LiveDiscussionsTest", "User A: Waiting on discussions list...")
+        assert(checkText("Community Discussions", maxRetries = 6)) {
+            "Failed: User A not on Community Discussions screen"
+        }
+        composeTestRule.waitForIdle()
+        Thread.sleep(2000)
+        printCreateDiscussionInstructions(expectedTopic)
+        val discussionAppeared = waitForDiscussionToAppear(expectedTopic)
         assert(discussionAppeared) {
             "Failed: Live update did not occur - Discussion '$expectedTopic' did not appear on User A's screen within 60 seconds. " +
                     "Verify: (1) User B successfully created the discussion, (2) Backend is properly sending live updates, " +
@@ -194,43 +169,12 @@ class LiveDiscussionsTest : BaseComposeTest() {
     }
 
 
-    /**
-     * Live Update Test: Multiple Rapid Messages
-     *
-     * Use Case: User B posts multiple messages rapidly, User A sees all appear in real-time
-     *
-     * AUTOMATED (User A):
-     * 1. User A opens a discussion
-     * 2. User A waits for User B to post 3 messages rapidly
-     * 3. User A verifies all 3 messages appear in order
-     *
-     * MANUAL (User B):
-     * 1. Open the FIRST discussion in the list
-     * 2. Post 3 messages rapidly (one after another):
-     *    - "Rapid message 1 [TIMESTAMP]"
-     *    - "Rapid message 2 [TIMESTAMP]"
-     *    - "Rapid message 3 [TIMESTAMP]"
-     * 3. Confirm all 3 messages were posted successfully
-     */
-    @Test
-    fun liveUpdate_RapidMessages_AllAppearToOtherUsers() {
-        android.util.Log.d("LiveDiscussionsTest", "=== LIVE UPDATE TEST: Rapid Multiple Messages ===")
-
-        val timestamp = System.currentTimeMillis()
-        val discussionTopic = "Rapid Test Discussion $timestamp"
-        val message1 = "Rapid message 1 $timestamp"
-        val message2 = "Rapid message 2 $timestamp"
-        val message3 = "Rapid message 3 $timestamp"
-
-        // User A: Wait on discussions list for User B to create a new discussion
-        android.util.Log.d("LiveDiscussionsTest", "User A: Waiting on discussions list...")
-        assert(checkText("Community Discussions", maxRetries = 6)) {
-            "Failed: User A not on Community Discussions screen"
-        }
-        composeTestRule.waitForIdle()
-        Thread.sleep(2000)
-
-        // Print instructions for User B to create discussion AND post messages
+    private fun printRapidMessagesInstructions(
+        discussionTopic: String,
+        message1: String,
+        message2: String,
+        message3: String
+    ) {
         android.util.Log.e("LiveDiscussionsTest", "")
         android.util.Log.e("LiveDiscussionsTest", "╔═════════════════════════════════════════════════════════════════╗")
         android.util.Log.e("LiveDiscussionsTest", "║                                                                 ║")
@@ -276,8 +220,9 @@ class LiveDiscussionsTest : BaseComposeTest() {
         android.util.Log.e("LiveDiscussionsTest", "")
         android.util.Log.e("LiveDiscussionsTest", "═══════════════════════════════════════════════════════════════════")
         android.util.Log.e("LiveDiscussionsTest", "")
+    }
 
-        // User A: First wait for the discussion to be created and appear in list
+    private fun waitForDiscussionAndOpen(discussionTopic: String) {
         android.util.Log.d("LiveDiscussionsTest", "User A: Waiting for discussion '$discussionTopic' to appear in list...")
         val discussionAppeared = check(maxRetries = 40, retryDelayMs = 2000) {
             try {
@@ -288,65 +233,59 @@ class LiveDiscussionsTest : BaseComposeTest() {
                 false
             }
         }
-
         assert(discussionAppeared) {
             "Failed: Discussion '$discussionTopic' did not appear in list. User B may not have created it yet."
         }
         android.util.Log.e("LiveDiscussionsTest", "✅ Discussion appeared in list!")
-
-        // User A: Click on the newly created discussion
         android.util.Log.d("LiveDiscussionsTest", "User A: Opening the new discussion...")
         val clicked = checkTextAndClick(discussionTopic, substring = true, maxRetries = 3)
         assert(clicked) { "Failed: Could not click on the new discussion" }
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
+    }
 
-        // User A: Now wait for the 3 rapid messages
+    private fun waitForMessage(message: String, messageNumber: Int, maxRetries: Int = 20): Boolean {
+        android.util.Log.d("LiveDiscussionsTest", "User A: Waiting for message $messageNumber...")
+        val appeared = check(maxRetries = maxRetries, retryDelayMs = 2000) {
+            try {
+                composeTestRule.waitForIdle()
+                composeTestRule.onAllNodes(hasText(message, substring = true))
+                    .fetchSemanticsNodes(false).isNotEmpty()
+            } catch (e: Exception) {
+                false
+            }
+        }
+        if (appeared) {
+            android.util.Log.e("LiveDiscussionsTest", "✅ Message $messageNumber appeared!")
+        }
+        return appeared
+    }
+
+    @Test
+    fun liveUpdate_RapidMessages_AllAppearToOtherUsers() {
+        android.util.Log.d("LiveDiscussionsTest", "=== LIVE UPDATE TEST: Rapid Multiple Messages ===")
+        val timestamp = System.currentTimeMillis()
+        val discussionTopic = "Rapid Test Discussion $timestamp"
+        val message1 = "Rapid message 1 $timestamp"
+        val message2 = "Rapid message 2 $timestamp"
+        val message3 = "Rapid message 3 $timestamp"
+        android.util.Log.d("LiveDiscussionsTest", "User A: Waiting on discussions list...")
+        assert(checkText("Community Discussions", maxRetries = 6)) {
+            "Failed: User A not on Community Discussions screen"
+        }
+        composeTestRule.waitForIdle()
+        Thread.sleep(2000)
+        printRapidMessagesInstructions(discussionTopic, message1, message2, message3)
+        waitForDiscussionAndOpen(discussionTopic)
         android.util.Log.d("LiveDiscussionsTest", "User A: Now in discussion, waiting for message 1...")
-        val msg1Appeared = check(maxRetries = 30, retryDelayMs = 2000) {
-            try {
-                composeTestRule.waitForIdle()
-                composeTestRule.onAllNodes(hasText(message1, substring = true))
-                    .fetchSemanticsNodes(false).isNotEmpty()
-            } catch (e: Exception) {
-                false
-            }
-        }
-        assert(msg1Appeared) { "Failed: Message 1 did not appear" }
-        android.util.Log.e("LiveDiscussionsTest", "✅ Message 1 appeared!")
-
-        android.util.Log.d("LiveDiscussionsTest", "User A: Waiting for message 2...")
-        val msg2Appeared = check(maxRetries = 20, retryDelayMs = 2000) {
-            try {
-                composeTestRule.waitForIdle()
-                composeTestRule.onAllNodes(hasText(message2, substring = true))
-                    .fetchSemanticsNodes(false).isNotEmpty()
-            } catch (e: Exception) {
-                false
-            }
-        }
-        assert(msg2Appeared) { "Failed: Message 2 did not appear" }
-        android.util.Log.e("LiveDiscussionsTest", "✅ Message 2 appeared!")
-
-        android.util.Log.d("LiveDiscussionsTest", "User A: Waiting for message 3...")
-        val msg3Appeared = check(maxRetries = 20, retryDelayMs = 2000) {
-            try {
-                composeTestRule.waitForIdle()
-                composeTestRule.onAllNodes(hasText(message3, substring = true))
-                    .fetchSemanticsNodes(false).isNotEmpty()
-            } catch (e: Exception) {
-                false
-            }
-        }
-        assert(msg3Appeared) { "Failed: Message 3 did not appear" }
-        android.util.Log.e("LiveDiscussionsTest", "✅ Message 3 appeared!")
-
+        assert(waitForMessage(message1, 1, 30)) { "Failed: Message 1 did not appear" }
+        assert(waitForMessage(message2, 2)) { "Failed: Message 2 did not appear" }
+        assert(waitForMessage(message3, 3)) { "Failed: Message 3 did not appear" }
         android.util.Log.e("LiveDiscussionsTest", "")
         android.util.Log.e("LiveDiscussionsTest", "╔═══════════════════════════════════════════════════════════╗")
         android.util.Log.e("LiveDiscussionsTest", "║  ✅ SUCCESS! All 3 messages appeared in real-time!       ║")
         android.util.Log.e("LiveDiscussionsTest", "╚═══════════════════════════════════════════════════════════╝")
         android.util.Log.e("LiveDiscussionsTest", "")
-
         android.util.Log.d("LiveDiscussionsTest", "✓ LIVE UPDATE TEST PASSED: Rapid messages synced successfully")
     }
 

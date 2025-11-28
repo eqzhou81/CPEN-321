@@ -10,10 +10,13 @@ import com.cpen321.usermanagement.data.remote.api.DiscussionListResponse
 import com.cpen321.usermanagement.data.remote.api.PostMessageRequest
 import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.data.remote.dto.ApiResponse
+import org.json.JSONException
 import org.json.JSONObject
+import retrofit2.HttpException
+import retrofit2.Response
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
-import retrofit2.Response
 
 @Singleton
 data class DiscussionRepository @Inject constructor(
@@ -34,7 +37,10 @@ data class DiscussionRepository @Inject constructor(
             val response = discussionApi.getAllDiscussions(search, sortBy, page, limit)
             Log.d(TAG, "getAllDiscussions response code: ${response.code()}")
             handleResponse(response, "Failed to fetch discussions")
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Log.e(TAG, "Error fetching discussions", e)
+            Result.failure(e)
+        } catch (e: HttpException) {
             Log.e(TAG, "Error fetching discussions", e)
             Result.failure(e)
         }
@@ -44,7 +50,10 @@ data class DiscussionRepository @Inject constructor(
         return try {
             val response = discussionApi.getDiscussionById(id)
             handleResponse(response, "Failed to fetch discussion details")
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Log.e(TAG, "Error fetching discussion details", e)
+            Result.failure(e)
+        } catch (e: HttpException) {
             Log.e(TAG, "Error fetching discussion details", e)
             Result.failure(e)
         }
@@ -55,7 +64,7 @@ data class DiscussionRepository @Inject constructor(
             if (errorBody.isNullOrBlank()) return "Unknown error"
             val json = JSONObject(errorBody)
             json.optString("message", "Unknown error")
-        } catch (e: Exception) {
+        } catch (e: JSONException) {
             Log.e(TAG, "Failed to parse error body", e)
             "Unknown error"
         }
@@ -77,7 +86,10 @@ data class DiscussionRepository @Inject constructor(
                 Log.e(TAG, "❌ Failed to create discussion: $errorMsg")
                 Result.failure(Exception(errorMsg))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Log.e(TAG, "❌ Exception in createDiscussion", e)
+            Result.failure(e)
+        } catch (e: HttpException) {
             Log.e(TAG, "❌ Exception in createDiscussion", e)
             Result.failure(e)
         }
@@ -87,7 +99,10 @@ data class DiscussionRepository @Inject constructor(
         return try {
             val response = discussionApi.postMessage(discussionId, PostMessageRequest(content))
             handleRawResponse(response, "Failed to post message")
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Log.e(TAG, "Error posting message", e)
+            Result.failure(e)
+        } catch (e: HttpException) {
             Log.e(TAG, "Error posting message", e)
             Result.failure(e)
         }

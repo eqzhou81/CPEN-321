@@ -2,6 +2,8 @@ package com.cpen321.usermanagement.data.repository
 
 import com.cpen321.usermanagement.data.remote.api.JobApiService
 import com.cpen321.usermanagement.data.remote.dto.*
+import retrofit2.HttpException
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,7 +26,9 @@ class JobRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to create job application"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
             Result.failure(e)
         }
     }
@@ -37,7 +41,9 @@ class JobRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to fetch job applications"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
             Result.failure(e)
         }
     }
@@ -66,7 +72,9 @@ class JobRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to update job application"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
             Result.failure(e)
         }
     }
@@ -79,7 +87,9 @@ class JobRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to delete job application"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
             Result.failure(e)
         }
     }
@@ -92,7 +102,9 @@ class JobRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to search job applications"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
             Result.failure(e)
         }
     }
@@ -105,7 +117,9 @@ class JobRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to fetch job applications by company"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
             Result.failure(e)
         }
     }
@@ -118,7 +132,9 @@ class JobRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to fetch job statistics"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
             Result.failure(e)
         }
     }
@@ -133,7 +149,9 @@ class JobRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to scrape job details"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
             Result.failure(e)
         }
     }
@@ -151,7 +169,9 @@ class JobRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to search similar jobs"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
             Result.failure(e)
         }
     }

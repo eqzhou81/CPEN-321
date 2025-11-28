@@ -24,51 +24,19 @@ import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.data.remote.dto.SimilarJob
 import com.cpen321.usermanagement.ui.viewmodels.JobViewModel
 
-/**
- * Similar Jobs Screen
- * Displays similar job opportunities based on selected job application
- * Follows Lovable design system
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SimilarJobsScreen(
-    jobId: String,
+private fun SimilarJobsHeader(
+    selectedJob: JobApplication?,
     onNavigateBack: () -> Unit,
-    onOpenJobLink: (String) -> Unit,
-    viewModel: JobViewModel = hiltViewModel()
+    onRefresh: () -> Unit
 ) {
-    val similarJobs by viewModel.similarJobs.collectAsStateWithLifecycle()
-    val isLoadingSimilarJobs by viewModel.isLoadingSimilarJobs.collectAsStateWithLifecycle()
-    val error by viewModel.error.collectAsStateWithLifecycle()
-    val selectedJob by viewModel.selectedJob.collectAsStateWithLifecycle()
-    
-    var radius by remember { mutableStateOf(25) }
-    var includeRemote by remember { mutableStateOf(true) }
-    
-    // Load similar jobs when screen is displayed
-    LaunchedEffect(jobId) {
-        viewModel.searchSimilarJobs(
-            jobId = jobId,
-            radius = radius,
-            includeRemote = includeRemote
-        )
-    }
-    
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(colorResource(R.color.background))
-            .padding(16.dp)
-    ) {
-        // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onNavigateBack) {
                     Icon(
                         Icons.Default.ArrowBack,
@@ -94,16 +62,7 @@ fun SimilarJobsScreen(
                     }
                 }
             }
-            
-            IconButton(
-                onClick = {
-                    viewModel.searchSimilarJobs(
-                        jobId = jobId,
-                        radius = radius,
-                        includeRemote = includeRemote
-                    )
-                }
-            ) {
+        IconButton(onClick = onRefresh) {
                 Icon(
                     Icons.Default.Refresh,
                     contentDescription = "Refresh",
@@ -111,28 +70,10 @@ fun SimilarJobsScreen(
                 )
             }
         }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Search Filters
-        SearchFiltersSection(
-            radius = radius,
-            onRadiusChange = { radius = it },
-            includeRemote = includeRemote,
-            onIncludeRemoteChange = { includeRemote = it },
-            onApplyFilters = {
-                viewModel.searchSimilarJobs(
-                    jobId = jobId,
-                    radius = radius,
-                    includeRemote = includeRemote
-                )
-            }
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Error Message
-        error?.let { errorMessage ->
+}
+
+@Composable
+private fun SimilarJobsErrorCard(errorMessage: String, onDismiss: () -> Unit) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -155,26 +96,21 @@ fun SimilarJobsScreen(
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(modifier = Modifier.weight(1f))
-                    TextButton(onClick = { viewModel.clearError() }) {
+            TextButton(onClick = onDismiss) {
                         Text("Dismiss")
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
         }
         
-        // Loading State
-        if (isLoadingSimilarJobs) {
+@Composable
+private fun SimilarJobsLoadingState() {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CircularProgressIndicator(
-                        color = colorResource(R.color.primary)
-                    )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CircularProgressIndicator(color = colorResource(R.color.primary))
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = "Searching for similar jobs...",
@@ -185,20 +121,64 @@ fun SimilarJobsScreen(
                 }
             }
         }
-        // Empty State
-        else if (similarJobs.isEmpty()) {
-            EmptySimilarJobsState()
+
+@Composable
+fun SimilarJobsScreen(
+    jobId: String,
+    onNavigateBack: () -> Unit,
+    onOpenJobLink: (String) -> Unit,
+    viewModel: JobViewModel = hiltViewModel()
+) {
+    val similarJobs by viewModel.similarJobs.collectAsStateWithLifecycle()
+    val isLoadingSimilarJobs by viewModel.isLoadingSimilarJobs.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    val selectedJob by viewModel.selectedJob.collectAsStateWithLifecycle()
+    var radius by remember { mutableStateOf(25) }
+    var includeRemote by remember { mutableStateOf(true) }
+    
+    LaunchedEffect(jobId) {
+        viewModel.searchSimilarJobs(jobId = jobId, radius = radius, includeRemote = includeRemote)
+    }
+    
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(colorResource(R.color.background))
+            .padding(16.dp)
+    ) {
+        SimilarJobsHeader(
+            selectedJob = selectedJob,
+            onNavigateBack = onNavigateBack,
+            onRefresh = {
+                viewModel.searchSimilarJobs(jobId = jobId, radius = radius, includeRemote = includeRemote)
+            }
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        SearchFiltersSection(
+            radius = radius,
+            onRadiusChange = { radius = it },
+            includeRemote = includeRemote,
+            onIncludeRemoteChange = { includeRemote = it },
+            onApplyFilters = {
+                viewModel.searchSimilarJobs(jobId = jobId, radius = radius, includeRemote = includeRemote)
+            }
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        error?.let { errorMessage ->
+            SimilarJobsErrorCard(errorMessage = errorMessage, onDismiss = { viewModel.clearError() })
+            Spacer(modifier = Modifier.height(16.dp))
         }
-        // Similar Jobs List
-        else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+        when {
+            isLoadingSimilarJobs -> SimilarJobsLoadingState()
+            similarJobs.isEmpty() -> EmptySimilarJobsState()
+            else -> {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(similarJobs) { job ->
                     SimilarJobCard(
                         job = job,
                         onOpenLink = { onOpenJobLink(job.url) }
                     )
+                    }
                 }
             }
         }
@@ -210,23 +190,23 @@ private fun RadiusFilterSection(
     radius: Int,
     onRadiusChange: (Int) -> Unit
 ) {
-    Text(
-        text = "Search Radius: ${radius}km",
-        style = MaterialTheme.typography.bodyMedium.copy(
-            color = colorResource(R.color.text_secondary)
-        )
-    )
-    Slider(
-        value = radius.toFloat(),
-        onValueChange = { onRadiusChange(it.toInt()) },
-        valueRange = 5f..100f,
+            Text(
+                text = "Search Radius: ${radius}km",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = colorResource(R.color.text_secondary)
+                )
+            )
+            Slider(
+                value = radius.toFloat(),
+                onValueChange = { onRadiusChange(it.toInt()) },
+                valueRange = 5f..100f,
         steps = 18,
-        colors = SliderDefaults.colors(
-            thumbColor = colorResource(R.color.primary),
-            activeTrackColor = colorResource(R.color.primary),
-            inactiveTrackColor = colorResource(R.color.border)
-        )
-    )
+                colors = SliderDefaults.colors(
+                    thumbColor = colorResource(R.color.primary),
+                    activeTrackColor = colorResource(R.color.primary),
+                    inactiveTrackColor = colorResource(R.color.border)
+                )
+            )
 }
 
 @Composable
@@ -234,27 +214,27 @@ private fun RemoteJobsFilterSection(
     includeRemote: Boolean,
     onIncludeRemoteChange: (Boolean) -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "Include Remote Jobs",
-            style = MaterialTheme.typography.bodyMedium.copy(
-                color = colorResource(R.color.text_secondary)
-            )
-        )
-        Switch(
-            checked = includeRemote,
-            onCheckedChange = onIncludeRemoteChange,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = colorResource(R.color.primary),
-                checkedTrackColor = colorResource(R.color.primary).copy(alpha = 0.5f),
-                uncheckedThumbColor = colorResource(R.color.text_tertiary),
-                uncheckedTrackColor = colorResource(R.color.border)
-            )
-        )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Include Remote Jobs",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = colorResource(R.color.text_secondary)
+                    )
+                )
+                Switch(
+                    checked = includeRemote,
+                    onCheckedChange = onIncludeRemoteChange,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = colorResource(R.color.primary),
+                        checkedTrackColor = colorResource(R.color.primary).copy(alpha = 0.5f),
+                        uncheckedThumbColor = colorResource(R.color.text_tertiary),
+                        uncheckedTrackColor = colorResource(R.color.border)
+                    )
+                )
     }
 }
 
@@ -331,29 +311,16 @@ private fun EmptySimilarJobsState() {
 }
 
 @Composable
-private fun SimilarJobCard(
+private fun SimilarJobCardHeader(
     job: SimilarJob,
     onOpenLink: () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = colorResource(R.color.surface)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            // Header
-            Row(
+    Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
+        Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = job.title,
                         style = MaterialTheme.typography.titleMedium.copy(
@@ -372,8 +339,6 @@ private fun SimilarJobCard(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                
-                Row {
                     IconButton(onClick = onOpenLink) {
                         Icon(
                             Icons.Default.OpenInNew,
@@ -384,29 +349,13 @@ private fun SimilarJobCard(
                 }
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // Description
-            Text(
-                text = job.description,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    color = colorResource(R.color.text_secondary)
-                ),
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // Metadata
+@Composable
+private fun SimilarJobCardMetadata(job: SimilarJob) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Location
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Default.LocationOn,
                         contentDescription = null,
@@ -423,8 +372,6 @@ private fun SimilarJobCard(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                
-                // Distance
                 job.distance?.let { distance ->
                     Text(
                         text = "${distance.toInt()}km away",
@@ -433,12 +380,8 @@ private fun SimilarJobCard(
                         )
                     )
                 }
-                
-                // Salary
                 job.salary?.let { salary ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Default.AttachMoney,
                             contentDescription = null,
@@ -454,17 +397,14 @@ private fun SimilarJobCard(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                    }
-                }
             }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // Badges
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                // Job Type
+        }
+    }
+}
+
+@Composable
+private fun SimilarJobCardBadges(job: SimilarJob) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 job.jobType?.let { jobType ->
                     Badge(
                         containerColor = getJobTypeColor(jobType).copy(alpha = 0.2f),
@@ -476,8 +416,6 @@ private fun SimilarJobCard(
                         )
                     }
                 }
-                
-                // Experience Level
                 job.experienceLevel?.let { level ->
                     Badge(
                         containerColor = colorResource(R.color.primary).copy(alpha = 0.2f),
@@ -489,8 +427,6 @@ private fun SimilarJobCard(
                         )
                     }
                 }
-                
-                // Remote Badge
                 if (job.isRemote == true) {
                     Badge(
                         containerColor = colorResource(R.color.job_type_remote).copy(alpha = 0.2f),
@@ -502,8 +438,6 @@ private fun SimilarJobCard(
                         )
                     }
                 }
-                
-                // Source Badge
                 Badge(
                     containerColor = colorResource(R.color.secondary).copy(alpha = 0.2f),
                     contentColor = colorResource(R.color.secondary_foreground)
@@ -514,6 +448,33 @@ private fun SimilarJobCard(
                     )
                 }
             }
+}
+
+@Composable
+private fun SimilarJobCard(
+    job: SimilarJob,
+    onOpenLink: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.surface)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            SimilarJobCardHeader(job = job, onOpenLink = onOpenLink)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = job.description,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = colorResource(R.color.text_secondary)
+                ),
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            SimilarJobCardMetadata(job = job)
+            Spacer(modifier = Modifier.height(8.dp))
+            SimilarJobCardBadges(job = job)
         }
     }
 }

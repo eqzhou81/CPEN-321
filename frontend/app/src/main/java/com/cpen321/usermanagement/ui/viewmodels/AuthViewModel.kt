@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import java.io.IOException
 import javax.inject.Inject
 
 data class AuthUiState(
@@ -67,7 +69,10 @@ class AuthViewModel @Inject constructor(
                 val user = if (isAuthenticated) {
                     try {
                         authRepository.getCurrentUser()
-                    } catch (e: Exception) {
+                    } catch (e: IOException) {
+                        Log.e(TAG, "Error getting current user", e)
+                        null
+                    } catch (e: retrofit2.HttpException) {
                         Log.e(TAG, "Error getting current user", e)
                         null
                     }

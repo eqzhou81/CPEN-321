@@ -140,10 +140,6 @@ class QuestionGenerationMockTest : BaseComposeTest() {
         }
     }
     
-    /**
-     * Success scenario with mocked successful response
-     */
-    @Test
     private fun enqueueSuccessResponse() {
         val successResponse = """
         {

@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import java.io.IOException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -63,8 +65,10 @@ class MockInterviewViewModel @Inject constructor(
                         response.body()?.message ?: "Failed to load session"
                     )
                 }
-            } catch (e: Exception) {
+            } catch (e: IOException) {
                 _uiState.value = UiState.Error("Network error: ${e.message}")
+            } catch (e: retrofit2.HttpException) {
+                _uiState.value = UiState.Error("Server error: ${e.message}")
             }
         }
     }
