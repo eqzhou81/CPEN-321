@@ -56,7 +56,7 @@ const questionSchema = new Schema<IQuestion>(
         validator: function (url: string) {
           if (!url) return true;
           try {
-            const _ = new URL(url);
+            void new URL(url);
             return true;
           } catch {
             return false;
