@@ -19,6 +19,12 @@ sealed class NavigationEvent {
     object NoNavigation : NavigationEvent()
 
     object NavigateToDiscussions : NavigationEvent()
+    
+    data class NavigateToDiscussionDetails(
+        val discussionId: String,
+        val currentUserId: String,
+        val currentUserName: String
+    ) : NavigationEvent()
 
 }
 
@@ -183,6 +189,13 @@ class NavigationStateManager @Inject constructor() {
         _navigationEvent.value = NavigationEvent.NavigateToDiscussions
         _navigationState.value = _navigationState.value.copy(currentRoute = GlobalNavRoutes.DISCUSSIONS)
     }
-
+    
+    fun navigateToDiscussionDetails(discussionId: String, currentUserId: String, currentUserName: String) {
+        _navigationEvent.value = NavigationEvent.NavigateToDiscussionDetails(
+            discussionId = discussionId,
+            currentUserId = currentUserId,
+            currentUserName = currentUserName
+        )
+    }
 
 }

@@ -127,14 +127,45 @@ private fun MainAppContent(
     when (selectedTab) {
         MainTab.JOB_APPLICATIONS -> Navigation()
         MainTab.DISCUSSIONS -> {
+            val authState by authViewModel.uiState.collectAsState()
+            val currentUser = authState.user
             DiscussionScreenContent(
                 discussionViewModel = discussionViewModel,
                 onDiscussionClick = { discussionId ->
-                    scope.launch {
-                        snackBarHostState.showSnackbar(
-                            "Tap to view discussion details",
-                            duration = SnackbarDuration.Short
-                        )
+                    try {
+                        if (discussionId.isNotBlank()) {
+                            val userId = currentUser?.id ?: ""
+                            val userName = currentUser?.name ?: ""
+                            if (userId.isNotBlank()) {
+                                navigationStateManager.navigateToDiscussionDetails(
+                                    discussionId = discussionId,
+                                    currentUserId = userId,
+                                    currentUserName = userName
+                                )
+                            } else {
+                                scope.launch {
+                                    snackBarHostState.showSnackbar(
+                                        "User not authenticated",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                            }
+                        } else {
+                            scope.launch {
+                                snackBarHostState.showSnackbar(
+                                    "Invalid discussion ID",
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("MainAppScreen", "Error handling discussion click: ${e.message}", e)
+                        scope.launch {
+                            snackBarHostState.showSnackbar(
+                                "Error: ${e.message ?: "Failed to open discussion"}",
+                                duration = SnackbarDuration.Long
+                            )
+                        }
                     }
                 }
             )
@@ -385,7 +416,18 @@ private fun DiscussionItemCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick(discussion.id) },
+            .clickable(
+                enabled = discussion.id.isNotBlank(),
+                onClick = {
+                    try {
+                        if (discussion.id.isNotBlank()) {
+                            onClick(discussion.id)
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("DiscussionItemCard", "Error clicking discussion: ${e.message}", e)
+                    }
+                }
+            ),
         colors = CardDefaults.cardColors(
             containerColor = colorResource(R.color.surface)
         ),

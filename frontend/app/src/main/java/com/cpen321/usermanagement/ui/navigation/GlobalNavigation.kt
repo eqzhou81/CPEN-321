@@ -109,6 +109,12 @@ private fun handleNavigationEvent(
             navController.navigate(GlobalNavRoutes.DISCUSSIONS)
         }
 
+        is NavigationEvent.NavigateToDiscussionDetails -> {
+            Log.d("AppNavigation", "Navigating to Discussion Details: ${navigationEvent.discussionId}")
+            val route = "${GlobalNavRoutes.DiSCUSSION_DETAILS}/${navigationEvent.discussionId}/${navigationEvent.currentUserId}/${Uri.encode(navigationEvent.currentUserName)}"
+            navController.navigate(route)
+        }
+
         is NavigationEvent.NavigateBack -> {
             navController.popBackStack()
         }

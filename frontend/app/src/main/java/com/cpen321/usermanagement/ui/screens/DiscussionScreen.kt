@@ -320,7 +320,18 @@ fun DiscussionItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick(discussion.id) },
+            .clickable(
+                enabled = discussion.id.isNotBlank(),
+                onClick = {
+                    try {
+                        if (discussion.id.isNotBlank()) {
+                            onClick(discussion.id)
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("DiscussionItem", "Error clicking discussion: ${e.message}", e)
+                    }
+                }
+            ),
         colors = CardDefaults.cardColors(
             containerColor = colorResource(R.color.surface)
         ),
