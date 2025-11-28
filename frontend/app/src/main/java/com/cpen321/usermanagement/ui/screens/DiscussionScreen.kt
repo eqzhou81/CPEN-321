@@ -268,68 +268,87 @@ fun DiscussionItem(
             modifier = Modifier.padding(spacing.medium),
             verticalArrangement = Arrangement.spacedBy(spacing.small)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Chat,
-                        contentDescription = null,
-                        tint = colorResource(R.color.primary),
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(spacing.small))
-                    Text(
-                        text = discussion.topic,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = colorResource(R.color.text_primary)
-                        ),
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
+            DiscussionItemHeaderContent(discussion = discussion, spacing = spacing)
+            DiscussionItemDescriptionContent(discussion = discussion)
+            DiscussionItemFooterContent(discussion = discussion, spacing = spacing)
+        }
+    }
+}
 
-            if (discussion.description?.isNotBlank() == true) {
-                Text(
-                    text = discussion.description ?: "",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = colorResource(R.color.text_secondary)
-                    ),
-                    maxLines = 2
-                )
-            }
+@Composable
+private fun DiscussionItemHeaderContent(
+    discussion: DiscussionListResponse,
+    spacing: com.cpen321.usermanagement.ui.theme.Spacing
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Default.Chat,
+                contentDescription = null,
+                tint = colorResource(R.color.primary),
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(spacing.small))
+            Text(
+                text = discussion.topic,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = colorResource(R.color.text_primary)
+                ),
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "By ${discussion.creatorName}",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = colorResource(R.color.text_secondary)
-                    )
+@Composable
+private fun DiscussionItemDescriptionContent(discussion: DiscussionListResponse) {
+    if (discussion.description?.isNotBlank() == true) {
+        Text(
+            text = discussion.description ?: "",
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = colorResource(R.color.text_secondary)
+            ),
+            maxLines = 2
+        )
+    }
+}
+
+@Composable
+private fun DiscussionItemFooterContent(
+    discussion: DiscussionListResponse,
+    spacing: com.cpen321.usermanagement.ui.theme.Spacing
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "By ${discussion.creatorName}",
+            style = MaterialTheme.typography.labelSmall.copy(
+                color = colorResource(R.color.text_secondary)
+            )
+        )
+        Surface(
+            color = colorResource(R.color.primary).copy(alpha = 0.1f),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+        ) {
+            Text(
+                text = "${discussion.messageCount} messages",
+                modifier = Modifier.padding(
+                    horizontal = spacing.small,
+                    vertical = spacing.extraSmall
+                ),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    color = colorResource(R.color.primary),
+                    fontWeight = FontWeight.Medium
                 )
-                Surface(
-                    color = colorResource(R.color.primary).copy(alpha = 0.1f),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = "${discussion.messageCount} messages",
-                        modifier = Modifier.padding(
-                            horizontal = spacing.small,
-                            vertical = spacing.extraSmall
-                        ),
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = colorResource(R.color.primary),
-                            fontWeight = FontWeight.Medium
-                        )
-                    )
-                }
-            }
+            )
         }
     }
 }
