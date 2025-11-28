@@ -129,7 +129,9 @@ class MockInterviewViewModel @Inject constructor(
                             isSubmitting = false
                         )
                     }
-                } catch (e: Exception) {
+                } catch (e: IOException) {
+                    _uiState.value = currentState.copy(isSubmitting = false)
+                } catch (e: HttpException) {
                     _uiState.value = currentState.copy(isSubmitting = false)
                 }
             }

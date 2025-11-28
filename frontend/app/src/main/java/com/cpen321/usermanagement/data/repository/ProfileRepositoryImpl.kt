@@ -8,6 +8,7 @@ import com.cpen321.usermanagement.data.remote.api.UserInterface
 import com.cpen321.usermanagement.data.remote.dto.User
 import com.cpen321.usermanagement.utils.JsonUtils.parseErrorMessage
 import dagger.hilt.android.qualifiers.ApplicationContext
+import org.json.JSONException
 import retrofit2.HttpException
 import java.io.IOException
 import javax.inject.Inject
@@ -55,8 +56,8 @@ class ProfileRepositoryImpl @Inject constructor(
         } catch (e: IllegalStateException) {
             Log.e("ProfileRepository", "Unexpected error while getting profile", e)
             Result.failure(e)
-        } catch (e: NullPointerException) {
-            Log.e("ProfileRepository", "Unexpected error while getting profile", e)
+        } catch (e: JSONException) {
+            Log.e("ProfileRepository", "JSON parsing error while getting profile", e)
             Result.failure(e)
         }
     }

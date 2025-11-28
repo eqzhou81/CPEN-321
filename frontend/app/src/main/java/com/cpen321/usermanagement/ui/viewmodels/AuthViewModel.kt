@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.json.JSONException
 import retrofit2.HttpException
 import java.io.IOException
 import javax.inject.Inject
@@ -94,8 +95,11 @@ class AuthViewModel @Inject constructor(
                 handleAuthError("No internet connection. Please check your network.", e)
             } catch (e: java.io.IOException) {
                 handleAuthError("Connection error. Please try again.", e)
-            } catch (e: Exception) {
-                Log.e(TAG, "Unexpected error in checkAuthenticationStatus", e)
+            } catch (e: JSONException) {
+                Log.e(TAG, "JSON parsing error in checkAuthenticationStatus", e)
+                handleAuthError("An unexpected error occurred. Please try again.", e)
+            } catch (e: IllegalStateException) {
+                Log.e(TAG, "Illegal state error in checkAuthenticationStatus", e)
                 handleAuthError("An unexpected error occurred. Please try again.", e)
             }
         }

@@ -55,8 +55,6 @@ private fun DiscussionDetailEffects(
                 listState.animateScrollToItem(allMessages.lastIndex)
             } catch (e: IllegalStateException) {
                 // Silently handle scroll errors to prevent ANR
-            } catch (e: IndexOutOfBoundsException) {
-                // Silently handle index errors to prevent ANR
             }
         }
     }
@@ -361,7 +359,9 @@ private fun formatMessageTime(createdAt: String): String {
         try {
             // Simple formatting - just show time if available
             createdAt.takeLast(8).take(5) // Extract HH:MM from timestamp
-        } catch (e: Exception) {
+        } catch (e: StringIndexOutOfBoundsException) {
+            ""
+        } catch (e: IllegalArgumentException) {
             ""
         }
     } else {

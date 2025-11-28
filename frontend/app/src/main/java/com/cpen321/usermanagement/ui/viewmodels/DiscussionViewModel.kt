@@ -16,6 +16,7 @@ import com.cpen321.usermanagement.data.repository.DiscussionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.socket.client.IO
 import io.socket.client.Socket
+import org.json.JSONException
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -118,7 +119,9 @@ class DiscussionViewModel @Inject constructor(
                             Log.d("SocketIO", "🆕 New discussion received: ${discussion.topic}")
                         }
                     }
-                } catch (e: Exception) {
+                } catch (e: JSONException) {
+                    Log.e("SocketIO", "❌ Error parsing newDiscussion: ${e.message}")
+                } catch (e: ClassCastException) {
                     Log.e("SocketIO", "❌ Error parsing newDiscussion: ${e.message}")
                 }
             }

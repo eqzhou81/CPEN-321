@@ -556,7 +556,5 @@ private fun formatDate(dateString: String): String {
         "Unknown date"
     } catch (e: IllegalArgumentException) {
         "Unknown date"
-    } catch (e: NullPointerException) {
-        "Unknown date"
     }
 }
