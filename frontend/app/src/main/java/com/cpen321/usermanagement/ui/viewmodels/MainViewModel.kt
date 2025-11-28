@@ -7,7 +7,10 @@ import com.cpen321.usermanagement.data.remote.dto.SessionModels.CreateSessionReq
 import com.cpen321.usermanagement.data.repository.SessionRepository
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import com.google.gson.JsonSyntaxException
 import dagger.hilt.android.lifecycle.HiltViewModel
+import retrofit2.HttpException
+import java.io.IOException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -83,7 +86,13 @@ class MainViewModel @Inject constructor(
                             _sessionCreated.value = sessionId
                             _uiState.value = _uiState.value.copy(isCreatingSession = false)
                             Log.d("MainViewModel", "Successfully parsed session ID: $sessionId")
-                        } catch (e: Exception) {
+                        } catch (e: IllegalStateException) {
+                            Log.e("MainViewModel", "Failed to parse existing session ID: ${e.message}")
+                            _uiState.value = _uiState.value.copy(
+                                isCreatingSession = false,
+                                errorMessage = "An active session exists but could not be retrieved"
+                            )
+                        } catch (e: JsonSyntaxException) {
                             Log.e("MainViewModel", "Failed to parse existing session ID: ${e.message}")
                             _uiState.value = _uiState.value.copy(
                                 isCreatingSession = false,
@@ -97,7 +106,12 @@ class MainViewModel @Inject constructor(
                         errorMessage = response.body()?.message ?: "Failed to create session"
                     )
                 }
-            } catch (e: Exception) {
+            } catch (e: IOException) {
+                _uiState.value = _uiState.value.copy(
+                    isCreatingSession = false,
+                    errorMessage = "Network error: ${e.message}"
+                )
+            } catch (e: HttpException) {
                 _uiState.value = _uiState.value.copy(
                     isCreatingSession = false,
                     errorMessage = "Network error: ${e.message}"
@@ -147,7 +161,13 @@ class MainViewModel @Inject constructor(
                             _sessionCreated.value = sessionId
                             _uiState.value = _uiState.value.copy(isCreatingSession = false)
                             Log.d("MainViewModel", "Successfully parsed session ID: $sessionId")
-                        } catch (e: Exception) {
+                        } catch (e: IllegalStateException) {
+                            Log.e("MainViewModel", "Failed to parse existing session ID: ${e.message}")
+                            _uiState.value = _uiState.value.copy(
+                                isCreatingSession = false,
+                                errorMessage = "An active session exists but could not be retrieved"
+                            )
+                        } catch (e: JsonSyntaxException) {
                             Log.e("MainViewModel", "Failed to parse existing session ID: ${e.message}")
                             _uiState.value = _uiState.value.copy(
                                 isCreatingSession = false,
@@ -161,7 +181,12 @@ class MainViewModel @Inject constructor(
                         errorMessage = response.body()?.message ?: "Failed to create session"
                     )
                 }
-            } catch (e: Exception) {
+            } catch (e: IOException) {
+                _uiState.value = _uiState.value.copy(
+                    isCreatingSession = false,
+                    errorMessage = "Network error: ${e.message}"
+                )
+            } catch (e: HttpException) {
                 _uiState.value = _uiState.value.copy(
                     isCreatingSession = false,
                     errorMessage = "Network error: ${e.message}"

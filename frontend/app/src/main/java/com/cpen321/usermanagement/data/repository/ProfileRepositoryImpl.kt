@@ -52,7 +52,10 @@ class ProfileRepositoryImpl @Inject constructor(
         } catch (e: retrofit2.HttpException) {
             Log.e("ProfileRepository", "HTTP error while getting profile: ${e.code()}", e)
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: IllegalStateException) {
+            Log.e("ProfileRepository", "Unexpected error while getting profile", e)
+            Result.failure(e)
+        } catch (e: NullPointerException) {
             Log.e("ProfileRepository", "Unexpected error while getting profile", e)
             Result.failure(e)
         }
