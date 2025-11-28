@@ -21,7 +21,107 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.ui.viewmodels.DiscussionViewModel
+import com.cpen321.usermanagement.ui.viewmodels.DiscussionUiState
 import com.cpen321.usermanagement.data.remote.api.DiscussionListResponse
+
+@Composable
+private fun DiscussionScreenEffects(
+    discussionViewModel: DiscussionViewModel,
+    snackbarHostState: SnackbarHostState,
+    uiState: DiscussionUiState
+) {
+    LaunchedEffect(Unit) {
+        discussionViewModel.connectToSocket()
+        discussionViewModel.loadDiscussions()
+    }
+    LaunchedEffect(uiState.error, uiState.successMessage) {
+        uiState.error?.let {
+            snackbarHostState.showSnackbar(it)
+            discussionViewModel.clearError()
+        }
+        uiState.successMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            discussionViewModel.clearSuccessMessage()
+        }
+    }
+}
+
+@Composable
+private fun DiscussionScreenContent(
+    allDiscussions: List<DiscussionListResponse>,
+    isLoading: Boolean,
+    onDiscussionClick: (String) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        when {
+            isLoading && allDiscussions.isEmpty() ->
+                CircularProgressIndicator(Modifier.align(Alignment.Center))
+            else -> LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                contentPadding = PaddingValues(bottom = 80.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(allDiscussions) { discussion ->
+                    DiscussionItem(discussion, onDiscussionClick)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CreateDiscussionDialog(
+    showDialog: Boolean,
+    topic: String,
+    description: String,
+    onTopicChange: (String) -> Unit,
+    onDescriptionChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onCreate: () -> Unit
+) {
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("Create Discussion") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = topic,
+                        onValueChange = onTopicChange,
+                        modifier = Modifier.testTag("discussion_topic_input"),
+                        label = { Text("Topic") },
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = onDescriptionChange,
+                        modifier = Modifier.testTag("discussion_description_input"),
+                        label = { Text("Description (optional)") }
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = onCreate,
+                    modifier = Modifier.testTag("create_discussion_button")
+                ) {
+                    Text("Create")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,29 +135,14 @@ fun DiscussionScreen(
     var topic by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
-
-    // ✅ 1️⃣ Connect to socket + load discussions once when entering the screen
-    LaunchedEffect(Unit) {
-        discussionViewModel.connectToSocket()   // establish socket connection globally
-        discussionViewModel.loadDiscussions()   // initial fetch
-    }
-
-    // ✅ 2️⃣ Handle backend or socket error/success messages using snackbars
-    LaunchedEffect(uiState.error, uiState.successMessage) {
-        uiState.error?.let {
-            snackbarHostState.showSnackbar(it)
-            discussionViewModel.clearError()
-        }
-        uiState.successMessage?.let {
-            snackbarHostState.showSnackbar(it)
-            discussionViewModel.clearSuccessMessage()
-        }
-    }
-
     val allDiscussions = uiState.discussions
 
+    DiscussionScreenEffects(
+        discussionViewModel = discussionViewModel,
+        snackbarHostState = snackbarHostState,
+        uiState = uiState
+    )
 
-    // ✅ 4️⃣ Scaffold with snackbar host
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
@@ -79,74 +164,27 @@ fun DiscussionScreen(
             }
         }
     ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(MaterialTheme.colorScheme.background)
-        ) {
-            when {
-                uiState.isLoading && allDiscussions.isEmpty() ->
-                    CircularProgressIndicator(Modifier.align(Alignment.Center))
-
-                else -> LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // ✅ Now it displays live updates — socket pushes new discussions here
-                    items(allDiscussions) { discussion ->
-                        DiscussionItem(discussion, onDiscussionClick)
-                    }
-                }
-            }
-        }
-
-        // ✅ 5️⃣ New Discussion dialog
-        if (showDialog) {
-            AlertDialog(
-                onDismissRequest = { showDialog = false },
-                title = { Text("Create Discussion") },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = topic,
-                            onValueChange = { topic = it },
-                            modifier = Modifier.testTag("discussion_topic_input"),
-                            label = { Text("Topic") },
-                            singleLine = true
-                        )
-                        OutlinedTextField(
-                            value = description,
-                            onValueChange = { description = it },
-                            modifier = Modifier.testTag("discussion_description_input"),
-                            label = { Text("Description (optional)") }
-                        )
-                    }
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            discussionViewModel.createDiscussion(topic, description)
-                            topic = ""
-                            description = ""
-                            showDialog = false
-                        },
-                        modifier = Modifier.testTag("create_discussion_button")
-                    ) {
-                        Text("Create")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDialog = false }) {
-                        Text("Cancel")
-                    }
-                }
-            )
-        }
+        DiscussionScreenContent(
+            allDiscussions = allDiscussions,
+            isLoading = uiState.isLoading,
+            onDiscussionClick = onDiscussionClick
+        )
     }
+
+    CreateDiscussionDialog(
+        showDialog = showDialog,
+        topic = topic,
+        description = description,
+        onTopicChange = { topic = it },
+        onDescriptionChange = { description = it },
+        onDismiss = { showDialog = false },
+        onCreate = {
+            discussionViewModel.createDiscussion(topic, description)
+            topic = ""
+            description = ""
+            showDialog = false
+        }
+    )
 }
 
 @Composable

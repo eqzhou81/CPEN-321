@@ -556,6 +556,134 @@ private fun EnhancedAnswerInputCard(
 }
 
 @Composable
+private fun FeedbackCardHeader() {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(
+            Icons.Default.AutoAwesome,
+            contentDescription = null,
+            tint = colorResource(R.color.primary),
+            modifier = Modifier.size(28.dp)
+        )
+        Text(
+            "AI Feedback",
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontWeight = FontWeight.Bold
+            ),
+            color = colorResource(R.color.text_primary)
+        )
+    }
+}
+
+@Composable
+private fun StrengthsSection(strengths: List<String>) {
+    if (strengths.isNotEmpty()) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = colorResource(R.color.success).copy(alpha = 0.1f),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = colorResource(R.color.success),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        "Strengths",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = colorResource(R.color.success)
+                    )
+                }
+                strengths.forEach { strength ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            "•",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colorResource(R.color.success)
+                        )
+                        Text(
+                            strength,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colorResource(R.color.text_primary),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ImprovementsSection(improvements: List<String>) {
+    if (improvements.isNotEmpty()) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = colorResource(R.color.warning).copy(alpha = 0.1f),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Lightbulb,
+                        contentDescription = null,
+                        tint = colorResource(R.color.warning),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        "Areas for Improvement",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = colorResource(R.color.warning)
+                    )
+                }
+                improvements.forEach { improvement ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            "•",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colorResource(R.color.warning)
+                        )
+                        Text(
+                            improvement,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colorResource(R.color.text_primary),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun EnhancedFeedbackCard(feedback: com.cpen321.usermanagement.data.remote.dto.SessionModels.SessionFeedback) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -567,129 +695,10 @@ private fun EnhancedFeedbackCard(feedback: com.cpen321.usermanagement.data.remot
             modifier = Modifier.padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Header
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Icon(
-                    Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    tint = colorResource(R.color.primary),
-                    modifier = Modifier.size(28.dp)
-                )
-                Text(
-                    "AI Feedback",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                        color = colorResource(R.color.text_primary)
-                )
-            }
-            
+            FeedbackCardHeader()
             HorizontalDivider(color = colorResource(R.color.text_secondary).copy(alpha = 0.2f))
-            
-            // Strengths Section
-            if (feedback.strengths.isNotEmpty()) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = colorResource(R.color.success).copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = colorResource(R.color.success),
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Text(
-                                "Strengths",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                    color = colorResource(R.color.success)
-                            )
-                        }
-                        feedback.strengths.forEach { strength ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                            Text(
-                                    "•",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = colorResource(R.color.success)
-                                )
-                                Text(
-                                    strength,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = colorResource(R.color.text_primary),
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-            
-            // Areas for Improvement Section
-            if (feedback.improvements.isNotEmpty()) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = colorResource(R.color.warning).copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Lightbulb,
-                                contentDescription = null,
-                                tint = colorResource(R.color.warning),
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Text(
-                                "Areas for Improvement",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                    color = colorResource(R.color.warning)
-                            )
-                        }
-                        feedback.improvements.forEach { improvement ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                            Text(
-                                    "•",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = colorResource(R.color.warning)
-                                )
-                                Text(
-                                    improvement,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = colorResource(R.color.text_primary),
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
+            StrengthsSection(strengths = feedback.strengths)
+            ImprovementsSection(improvements = feedback.improvements)
         }
     }
 }
