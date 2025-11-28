@@ -195,16 +195,18 @@ private fun AppNavHost(
         composable(
             route = "${GlobalNavRoutes.DiSCUSSION_DETAILS}/{discussionId}/{currentUserId}/{currentUserName}"
         ) { backStackEntry ->
-            val discussionId = backStackEntry.arguments?.getString("discussionId") ?: return@composable
+            val discussionId = backStackEntry.arguments?.getString("discussionId")
             val currentUserId = backStackEntry.arguments?.getString("currentUserId") ?: ""
             val currentUserName = backStackEntry.arguments?.getString("currentUserName") ?: ""
 
-            DiscussionDetailScreen(
-                discussionId = discussionId,
-                currentUserId = currentUserId,
-                currentUserName = currentUserName,
-                onBack = { navController.popBackStack() }
-            )
+            discussionId?.let { id ->
+                DiscussionDetailScreen(
+                    discussionId = id,
+                    currentUserId = currentUserId,
+                    currentUserName = currentUserName,
+                    onBack = { navController.popBackStack() }
+                )
+            }
         }
 
     }
