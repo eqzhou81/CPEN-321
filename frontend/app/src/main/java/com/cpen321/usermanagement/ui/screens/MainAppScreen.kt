@@ -33,10 +33,6 @@ import com.cpen321.usermanagement.ui.navigation.NavigationStateManager
 import com.cpen321.usermanagement.ui.viewmodels.AuthViewModel
 import com.cpen321.usermanagement.ui.viewmodels.AuthUiState
 
-/**
- * Main App Screen with bottom navigation bar
- * Includes tabs for Job Applications, Discussions, and Profile
- */
 @Composable
 private fun MainAppScreenEffects(
     authState: AuthUiState,
@@ -63,20 +59,20 @@ private fun MainAppScreenEffects(
 
 @Composable
 private fun MainAppTopBar(selectedTab: MainTab) {
-    TopAppBar(
-        title = {
-            Text(
+            TopAppBar(
+                title = {
+                    Text(
                 text = when (selectedTab) {
                     MainTab.JOB_APPLICATIONS -> "Job Applications"
                     MainTab.DISCUSSIONS -> "Discussions"
                     MainTab.PROFILE -> "Profile"
                 },
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = colorResource(R.color.text_primary)
-                )
-            )
-        },
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = colorResource(R.color.text_primary)
+                        )
+                    )
+                },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = colorResource(R.color.surface),
             titleContentColor = colorResource(R.color.text_primary)
@@ -96,7 +92,7 @@ private fun MainAppBottomBar(
         MainTab.values().forEach { tab ->
             NavigationBarItem(
                 icon = {
-                    Icon(
+                        Icon(
                         imageVector = tab.icon,
                         contentDescription = tab.title
                     )

@@ -93,25 +93,6 @@ class LiveDiscussionsTest : BaseComposeTest() {
         navigateFromMainScreenToDiscussionsScreen()
     }
 
-    /**
-     * Live Update Test: New Discussion Creation
-     *
-     * Use Case: User B creates a discussion, User A sees it appear in real-time
-     *
-     * AUTOMATED (User A):
-     * 1. User A is on discussions list screen
-     * 2. User A waits for User B to create a discussion
-     * 3. User A's screen automatically updates with the new discussion
-     * 4. User A verifies the new discussion appears
-     *
-     * MANUAL (User B):
-     * 1. Navigate to Community Discussions screen
-     * 2. Click "Create Discussion" button
-     * 3. Enter topic: "Live Test Discussion [TIMESTAMP]" will be printed on the log cat of the emulator/device running the test. Paste from there.
-     * 4. Enter description: "Testing real-time updates"
-     * 5. Click "Create Discussion"
-     * 6. Confirm discussion was created successfully
-     */
     private fun printCreateDiscussionInstructions(expectedTopic: String) {
         android.util.Log.e("LiveDiscussionsTest", "")
         android.util.Log.e("LiveDiscussionsTest", "═══════════════════════════════════════════════════════════════")
@@ -188,24 +169,6 @@ class LiveDiscussionsTest : BaseComposeTest() {
     }
 
 
-    /**
-     * Live Update Test: Multiple Rapid Messages
-     *
-     * Use Case: User B posts multiple messages rapidly, User A sees all appear in real-time
-     *
-     * AUTOMATED (User A):
-     * 1. User A opens a discussion
-     * 2. User A waits for User B to post 3 messages rapidly
-     * 3. User A verifies all 3 messages appear in order
-     *
-     * MANUAL (User B):
-     * 1. Open the FIRST discussion in the list
-     * 2. Post 3 messages rapidly (one after another):
-     *    - "Rapid message 1 [TIMESTAMP]"
-     *    - "Rapid message 2 [TIMESTAMP]"
-     *    - "Rapid message 3 [TIMESTAMP]"
-     * 3. Confirm all 3 messages were posted successfully
-     */
     private fun printRapidMessagesInstructions(
         discussionTopic: String,
         message1: String,

@@ -138,20 +138,6 @@ class JobManagementTest : BaseComposeTest() {
         }
     }
     
-    /**
-     * Use Case 2: Paste job posting link
-     * The user saves a URL; the system fetches and normalizes the job posting.
-     * 
-     * Main Success Scenario:
-     * 1. User navigates to job dashboard
-     * 2. User clicks "Add Job" button
-     * 3. User selects "Paste Link" mode
-     * 4. User enters job posting URL
-     * 5. User clicks "Add to Portfolio" button
-     * 6. System fetches and normalizes the job posting
-     * 7. System saves the normalized job posting
-     * 8. Job appears in list
-     */
     private fun navigateToJobDashboard() {
         android.util.Log.d("JobManagementTest", "Step 1: Checking for 'My Job Applications' screen...")
         assert(checkText("My Job Applications", maxRetries = 6)) {
