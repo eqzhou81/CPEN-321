@@ -34,6 +34,7 @@ import com.cpen321.usermanagement.ui.navigation.Navigation
 import com.cpen321.usermanagement.ui.navigation.NavigationStateManager
 import com.cpen321.usermanagement.ui.viewmodels.AuthViewModel
 import com.cpen321.usermanagement.ui.viewmodels.AuthUiState
+import com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel
 
 @Composable
 private fun MainAppScreenEffects(
@@ -484,7 +485,7 @@ private fun DiscussionItemFooter(
 @Composable
 private fun ProfileScreenContent(
     authViewModel: AuthViewModel,
-    profileViewModel: com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel,
+    profileViewModel: ProfileViewModel,
     onSignOut: () -> Unit,
     onAccountDeleted: () -> Unit
 ) {
