@@ -215,7 +215,10 @@ class AuthRepositoryImpl @Inject constructor(
             null
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
-        } catch (e: Throwable) {
+        } catch (e: IOException) {
+            Log.e("AuthRepository", "Unexpected error while getting current user", e)
+            null
+        } catch (e: retrofit2.HttpException) {
             Log.e("AuthRepository", "Unexpected error while getting current user", e)
             null
         }

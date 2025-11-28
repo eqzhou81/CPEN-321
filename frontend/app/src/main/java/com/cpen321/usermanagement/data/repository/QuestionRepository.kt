@@ -34,7 +34,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to generate questions"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }
@@ -49,7 +51,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to generate questions from description"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }
@@ -65,7 +69,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to fetch questions"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }
@@ -78,7 +84,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to fetch question progress"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }
@@ -93,7 +101,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to fetch question"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }
@@ -111,7 +121,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to submit answer"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }
@@ -124,7 +136,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to toggle question completion"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }
@@ -137,7 +151,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to delete question"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }
@@ -152,7 +168,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to fetch question categories"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }
@@ -165,7 +183,9 @@ class QuestionRepository @Inject constructor(
             } else {
                 Result.failure(Exception(response.message() ?: "Failed to fetch question difficulties"))
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
     }
