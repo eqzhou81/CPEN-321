@@ -405,6 +405,71 @@ private fun EnhancedProgressCard(
 }
 
 @Composable
+private fun EnhancedQuestionCardHeader(
+    questionNumber: Int,
+    totalQuestions: Int
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                Icons.Default.QuestionAnswer,
+                contentDescription = null,
+                tint = colorResource(R.color.primary),
+                modifier = Modifier.size(24.dp)
+            )
+            Text(
+                "Question $questionNumber",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = colorResource(R.color.text_primary)
+            )
+        }
+        Surface(
+            color = colorResource(R.color.primary).copy(alpha = 0.1f),
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Text(
+                "$questionNumber/$totalQuestions",
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = colorResource(R.color.primary)
+            )
+        }
+    }
+}
+
+@Composable
+private fun EnhancedQuestionCardContent(questionText: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                colorResource(R.color.primary).copy(alpha = 0.05f),
+                RoundedCornerShape(12.dp)
+            )
+            .padding(20.dp)
+    ) {
+        Text(
+            questionText,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                lineHeight = 24.sp
+            ),
+            color = colorResource(R.color.text_primary)
+        )
+    }
+}
+
+@Composable
 private fun EnhancedQuestionCard(
     questionNumber: Int,
     totalQuestions: Int,
@@ -420,63 +485,9 @@ private fun EnhancedQuestionCard(
             modifier = Modifier.padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        Icons.Default.QuestionAnswer,
-                        contentDescription = null,
-                        tint = colorResource(R.color.primary),
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(
-                        "Question $questionNumber",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = colorResource(R.color.text_primary)
-                    )
-                }
-                Surface(
-                    color = colorResource(R.color.primary).copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        "$questionNumber/$totalQuestions",
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = colorResource(R.color.primary)
-                    )
-                }
-            }
-            
+            EnhancedQuestionCardHeader(questionNumber, totalQuestions)
             HorizontalDivider(color = colorResource(R.color.text_secondary).copy(alpha = 0.2f))
-            
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        colorResource(R.color.primary).copy(alpha = 0.05f),
-                        RoundedCornerShape(12.dp)
-                    )
-                    .padding(20.dp)
-            ) {
-                Text(
-                    questionText,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        lineHeight = 24.sp
-                    ),
-                    color = colorResource(R.color.text_primary)
-                )
-            }
+            EnhancedQuestionCardContent(questionText)
         }
     }
 }

@@ -225,82 +225,66 @@ class QuestionViewModel @Inject constructor(
         }
     }
     
+    private fun updateQuestionsWithStatus(
+        questions: QuestionsData,
+        questionId: String,
+        newStatus: String
+    ): QuestionsData {
+        val updatedBehavioral = questions.behavioralQuestions.map { q ->
+            if (q.id == questionId) q.copy(status = newStatus) else q
+        }
+        val updatedTechnical = questions.technicalQuestions.map { q ->
+            if (q.id == questionId) q.copy(status = newStatus) else q
+        }
+        return questions.copy(
+            behavioralQuestions = updatedBehavioral,
+            technicalQuestions = updatedTechnical
+        )
+    }
+
+    private fun handleUpdateSuccess() {
+        val currentQuestions = _questions.value
+        currentQuestions?.let { questions ->
+            val jobId = questions.jobApplication?.id
+            if (jobId != null) {
+                loadQuestionProgress(jobId)
+            }
+        }
+    }
+
+    private fun handleUpdateFailure(
+        questionId: String,
+        isCompleted: Boolean,
+        exception: Throwable
+    ) {
+        val currentQuestions = _questions.value
+        if (currentQuestions != null) {
+            val revertedStatus = if (isCompleted) "pending" else "completed"
+            _questions.value = updateQuestionsWithStatus(
+                currentQuestions,
+                questionId,
+                revertedStatus
+            )
+        }
+        _error.value = exception.message ?: "Failed to update question completion"
+    }
+
     fun updateQuestionCompletion(questionId: String, isCompleted: Boolean) {
         viewModelScope.launch {
             try {
-                // Update local state immediately for UI responsiveness
                 val currentQuestions = _questions.value
                 if (currentQuestions != null) {
-                    val updatedBehavioralQuestions = currentQuestions.behavioralQuestions.map { question ->
-                        if (question.id == questionId) {
-                            question.copy(
-                                status = if (isCompleted) "completed" else "pending"
-                            )
-                        } else {
-                            question
-                        }
-                    }
-                    
-                    val updatedTechnicalQuestions = currentQuestions.technicalQuestions.map { question ->
-                        if (question.id == questionId) {
-                            question.copy(
-                                status = if (isCompleted) "completed" else "pending"
-                            )
-                        } else {
-                            question
-                        }
-                    }
-                    
-                    _questions.value = currentQuestions.copy(
-                        behavioralQuestions = updatedBehavioralQuestions,
-                        technicalQuestions = updatedTechnicalQuestions
+                    val newStatus = if (isCompleted) "completed" else "pending"
+                    _questions.value = updateQuestionsWithStatus(
+                        currentQuestions,
+                        questionId,
+                        newStatus
                     )
                 }
-                
-                // Call API to persist the change
                 questionRepository.toggleQuestionCompleted(questionId).fold(
-                    onSuccess = {
-                        // Success - local state already updated
-                        // Reload progress to ensure accuracy
-                        val currentQuestions = _questions.value
-                        currentQuestions?.let { questions ->
-                            // Extract jobId from questions data
-                            val jobId = questions.jobApplication?.id
-                            if (jobId != null) {
-                                loadQuestionProgress(jobId)
-                            }
-                        }
-                    },
+                    onSuccess = { handleUpdateSuccess() },
                     onFailure = { exception ->
-                        // Revert local state on API failure
-                        val currentQuestions = _questions.value
-                        if (currentQuestions != null) {
-                            val revertedBehavioralQuestions = currentQuestions.behavioralQuestions.map { question ->
-                                if (question.id == questionId) {
-                                    question.copy(
-                                        status = if (isCompleted) "pending" else "completed"
-                                    )
-                                } else {
-                                    question
-                                }
-                            }
-                            
-                            val revertedTechnicalQuestions = currentQuestions.technicalQuestions.map { question ->
-                                if (question.id == questionId) {
-                                    question.copy(
-                                        status = if (isCompleted) "pending" else "completed"
-                                    )
-                                } else {
-                                    question
-                                }
-                            }
-                            
-                            _questions.value = currentQuestions.copy(
-                                behavioralQuestions = revertedBehavioralQuestions,
-                                technicalQuestions = revertedTechnicalQuestions
-                            )
-                        }
-                        _error.value = exception.message ?: "Failed to update question completion"
+                        handleUpdateFailure(questionId, isCompleted, exception)
                     }
                 )
             } catch (e: Exception) {

@@ -206,6 +206,59 @@ fun SimilarJobsScreen(
 }
 
 @Composable
+private fun RadiusFilterSection(
+    radius: Int,
+    onRadiusChange: (Int) -> Unit
+) {
+    Text(
+        text = "Search Radius: ${radius}km",
+        style = MaterialTheme.typography.bodyMedium.copy(
+            color = colorResource(R.color.text_secondary)
+        )
+    )
+    Slider(
+        value = radius.toFloat(),
+        onValueChange = { onRadiusChange(it.toInt()) },
+        valueRange = 5f..100f,
+        steps = 18,
+        colors = SliderDefaults.colors(
+            thumbColor = colorResource(R.color.primary),
+            activeTrackColor = colorResource(R.color.primary),
+            inactiveTrackColor = colorResource(R.color.border)
+        )
+    )
+}
+
+@Composable
+private fun RemoteJobsFilterSection(
+    includeRemote: Boolean,
+    onIncludeRemoteChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Include Remote Jobs",
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = colorResource(R.color.text_secondary)
+            )
+        )
+        Switch(
+            checked = includeRemote,
+            onCheckedChange = onIncludeRemoteChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = colorResource(R.color.primary),
+                checkedTrackColor = colorResource(R.color.primary).copy(alpha = 0.5f),
+                uncheckedThumbColor = colorResource(R.color.text_tertiary),
+                uncheckedTrackColor = colorResource(R.color.border)
+            )
+        )
+    }
+}
+
+@Composable
 private fun SearchFiltersSection(
     radius: Int,
     onRadiusChange: (Int) -> Unit,
@@ -219,9 +272,7 @@ private fun SearchFiltersSection(
             containerColor = colorResource(R.color.surface)
         )
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Search Filters",
                 style = MaterialTheme.typography.titleMedium.copy(
@@ -229,56 +280,14 @@ private fun SearchFiltersSection(
                     color = colorResource(R.color.text_primary)
                 )
             )
-            
             Spacer(modifier = Modifier.height(12.dp))
-            
-            // Radius Filter
-            Text(
-                text = "Search Radius: ${radius}km",
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = colorResource(R.color.text_secondary)
-                )
-            )
-            Slider(
-                value = radius.toFloat(),
-                onValueChange = { onRadiusChange(it.toInt()) },
-                valueRange = 5f..100f,
-                steps = 18, // 5km steps
-                colors = SliderDefaults.colors(
-                    thumbColor = colorResource(R.color.primary),
-                    activeTrackColor = colorResource(R.color.primary),
-                    inactiveTrackColor = colorResource(R.color.border)
-                )
-            )
-            
+            RadiusFilterSection(radius = radius, onRadiusChange = onRadiusChange)
             Spacer(modifier = Modifier.height(8.dp))
-            
-            // Remote Jobs Filter
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Include Remote Jobs",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = colorResource(R.color.text_secondary)
-                    )
-                )
-                Switch(
-                    checked = includeRemote,
-                    onCheckedChange = onIncludeRemoteChange,
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = colorResource(R.color.primary),
-                        checkedTrackColor = colorResource(R.color.primary).copy(alpha = 0.5f),
-                        uncheckedThumbColor = colorResource(R.color.text_tertiary),
-                        uncheckedTrackColor = colorResource(R.color.border)
-                    )
-                )
-            }
-            
+            RemoteJobsFilterSection(
+                includeRemote = includeRemote,
+                onIncludeRemoteChange = onIncludeRemoteChange
+            )
             Spacer(modifier = Modifier.height(12.dp))
-            
             Button(
                 onClick = onApplyFilters,
                 modifier = Modifier.fillMaxWidth(),
