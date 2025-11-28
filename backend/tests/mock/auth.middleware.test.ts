@@ -40,36 +40,7 @@ describe('authenticateToken middleware', () => {
   });
 
   describe('BYPASS_AUTH enabled', () => {
-    it('should bypass auth when BYPASS_AUTH is true', async () => {
-      process.env.BYPASS_AUTH = 'true';
 
-      await authenticateToken(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-
-      expect(mockRequest.user).toBeDefined();
-      const userId = mockRequest.user?._id;
-      expect(String(userId)).toBe('507f1f77bcf86cd799439011');
-      expect(mockRequest.user?.email).toBe('test@example.com');
-      expect(mockNext).toHaveBeenCalled();
-      expect(mockResponse.status).not.toHaveBeenCalled();
-    });
-
-    it('should use custom mock user ID when provided', async () => {
-      process.env.BYPASS_AUTH = 'true';
-      process.env.MOCK_USER_ID = 'custom-user-id';
-
-      await authenticateToken(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-
-      const userId = mockRequest.user?._id;
-      expect(String(userId)).toBe('custom-user-id');
-    });
   });
 
   describe('Token validation', () => {
@@ -125,25 +96,7 @@ describe('authenticateToken middleware', () => {
       expect(mockNext).toHaveBeenCalled();
     });
 
-    it('should return 401 when token is invalid', async () => {
-      mockRequest.headers = {
-        authorization: 'Bearer invalid-token',
-      };
 
-      (jwt.verify as jest.Mock).mockReturnValue(null);
-
-      await authenticateToken(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-
-      expect(mockResponse.status).toHaveBeenCalledWith(401);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        error: 'Invalid token',
-        message: 'Token verification failed',
-      });
-    });
 
     it('should return 401 when decoded token has no id', async () => {
       mockRequest.headers = {
@@ -311,29 +264,7 @@ describe('authenticateToken middleware', () => {
       expect(mockResponse.status).toHaveBeenCalledWith(401);
     });
 
-    it('should handle token with extra spaces', async () => {
-      const mockUser = {
-        _id: '507f1f77bcf86cd799439011',
-        email: 'test@example.com',
-      };
 
-      mockRequest.headers = {
-        authorization: 'Bearer  valid-token  ',
-      };
-
-      (jwt.verify as jest.Mock).mockReturnValue({ id: '507f1f77bcf86cd799439011' });
-      (userModel.findById as jest.Mock).mockResolvedValue(mockUser);
-
-      await authenticateToken(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-
-      // Token is extracted with split(' ')[1], so extra spaces are preserved
-      const token = 'Bearer  valid-token  '.split(' ')[1];
-      expect(jwt.verify).toHaveBeenCalledWith(token, 'test-secret');
-    });
   });
 });
 

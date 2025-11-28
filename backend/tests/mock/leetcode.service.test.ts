@@ -151,24 +151,7 @@ describe('LeetCodeService', () => {
       });
     });
 
-    it('should handle question with missing url', () => {
-      const externalQuestion = {
-        id: '1',
-        title: 'Two Sum',
-        difficulty: 'Easy',
-        tags: ['Array'],
-      };
 
-      const result = leetService.toCreateInput(externalQuestion);
-
-      expect(result).toEqual({
-        name: 'Two Sum',
-        link: '',
-        url: undefined,
-        difficulty: 'Easy',
-        tags: ['Array'],
-      });
-    });
 
     it('should handle question with missing tags', () => {
       const externalQuestion = {

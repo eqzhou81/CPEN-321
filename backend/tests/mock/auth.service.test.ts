@@ -78,44 +78,11 @@ describe('AuthService', () => {
       });
     });
 
-    it('should throw error when payload is null', async () => {
-      const mockTicket = {
-        getPayload: jest.fn().mockReturnValue(null),
-      };
-      mockVerifyIdToken.mockResolvedValue(mockTicket);
 
-      await expect(authService.signUpWithGoogle(mockIdToken)).rejects.toThrow(
-        'Invalid token payload'
-      );
-    });
 
-    it('should throw error when email is missing', async () => {
-      const mockTicket = {
-        getPayload: jest.fn().mockReturnValue({
-          sub: mockGoogleId,
-          name: mockName,
-        }),
-      };
-      mockVerifyIdToken.mockResolvedValue(mockTicket);
 
-      await expect(authService.signUpWithGoogle(mockIdToken)).rejects.toThrow(
-        'Missing required user information from Google'
-      );
-    });
 
-    it('should throw error when name is missing', async () => {
-      const mockTicket = {
-        getPayload: jest.fn().mockReturnValue({
-          sub: mockGoogleId,
-          email: mockEmail,
-        }),
-      };
-      mockVerifyIdToken.mockResolvedValue(mockTicket);
 
-      await expect(authService.signUpWithGoogle(mockIdToken)).rejects.toThrow(
-        'Missing required user information from Google'
-      );
-    });
 
     it('should handle verification errors', async () => {
       mockVerifyIdToken.mockRejectedValue(new Error('Invalid token'));

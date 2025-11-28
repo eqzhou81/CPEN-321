@@ -36,16 +36,16 @@ export class JobSearchService {
     },
     linkedin: {
       baseUrl: 'https://www.linkedin.com',
-      searchPath: '/jobs/search',
+      searchPath: '/jobs-guest/jobs/api/seeMoreJobPostings/search',
       selectors: {
-        jobCard: '.jobs-search-results__list-item, .job-search-card, [data-job-id]',
-        title: '.job-search-card__title a, .job-title a, h3 a',
-        company: '.job-search-card__subtitle-link, .job-search-card__company-name, .company-name',
-        location: '.job-search-card__location, .job-location, .location',
-        description: '.job-search-card__snippet, .job-description, .description',
-        url: '.job-search-card__title a, .job-title a, h3 a',
+        jobCard: 'li, .base-card, .base-search-card',
+        title: 'h3, .base-search-card__title, [class*="job-card"] h3',
+        company: 'h4, .base-search-card__subtitle, [class*="company"], a[class*="subtitle"]',
+        location: '.job-search-card__location, [class*="location"], span[class*="location"]',
+        description: '.base-search-card__snippet, .job-search-card__snippet, .description',
+        url: 'a[href*="/jobs/view"], a.base-card__full-link, a[class*="job-card"]',
         salary: '.job-search-card__salary, .salary, .compensation',
-        postedDate: 'time, .job-posted-date, .posted-date'
+        postedDate: 'time, .job-search-card__listdate, [class*="date"]'
       },
       pagination: {
         nextButton: 'button[aria-label="Next"], .next-button',
@@ -239,11 +239,10 @@ export class JobSearchService {
       
       // Define scraping sources with individual timeouts
       const scrapingSources = [
-        { name: 'GitHub Jobs', fn: () => this.scrapeFromGitHubJobs(searchKeywords) },
-        { name: 'RemoteOK', fn: () => this.scrapeFromRemoteOK(searchKeywords) },
+        { name: 'Indeed', fn: () => this.scrapeFromIndeed(searchKeywords) },
+        { name: 'LinkedIn', fn: () => this.scrapeFromLinkedIn(searchKeywords) },
         { name: 'Stack Overflow Jobs', fn: () => this.scrapeFromStackOverflowJobs(searchKeywords) },
-        { name: 'Company Career Pages', fn: () => this.scrapeFromCompanyCareerPages(searchKeywords) },
-        { name: 'Job RSS Feeds', fn: () => this.scrapeFromJobRSSFeeds(searchKeywords) }
+        { name: 'Company Career Pages', fn: () => this.scrapeFromCompanyCareerPages(searchKeywords) }
       ];
 
       // Execute scraping sources in parallel with individual timeouts
@@ -459,7 +458,8 @@ export class JobSearchService {
   }
 
   /**
-   * Scrape jobs from LinkedIn
+   * Scrape jobs from LinkedIn using their public jobs page
+   * Note: LinkedIn has strict anti-bot measures, so we use the public guest jobs page
    */
   private async scrapeFromLinkedIn(keywords: string[]): Promise<ISimilarJob[]> {
     const jobs: ISimilarJob[] = [];
@@ -468,17 +468,39 @@ export class JobSearchService {
       const searchQuery = keywords.slice(0, 2).join(' ');
       const browser = await puppeteer.launch({ 
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: [
+          '--no-sandbox', 
+          '--disable-setuid-sandbox',
+          '--disable-blink-features=AutomationControlled',
+          '--disable-dev-shm-usage'
+        ]
       });
       
       const page = await browser.newPage();
-      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+      
+      // Set realistic browser properties to avoid detection
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36');
+      await page.setViewport({ width: 1920, height: 1080 });
+      
+      // Set extra headers
+      await page.setExtraHTTPHeaders({
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
+      });
       
       try {
-        await page.goto(`https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(searchQuery)}`, {
-          waitUntil: 'networkidle2',
-          timeout: 15000
+        // Use LinkedIn's public jobs search (no login required)
+        const url = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${encodeURIComponent(searchQuery)}&location=&start=0`;
+        
+        logger.info(`LinkedIn scraping URL: ${url}`);
+        
+        await page.goto(url, {
+          waitUntil: 'domcontentloaded',
+          timeout: 20000
         });
+        
+        // Wait for content to load
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
         interface RawJobDataLinkedIn {
           title: string;
@@ -502,25 +524,32 @@ export class JobSearchService {
             source: string;
           }
           const jobs: RawJobData[] = [];
-          const jobCards = document.querySelectorAll('.jobs-search-results__list-item, .job-search-card, [data-job-id]');
           
-          for (const card of Array.from(jobCards).slice(0, 5)) {
-            const titleEl = card.querySelector('.job-search-card__title a, .job-title a, h3 a');
-            const companyEl = card.querySelector('.job-search-card__subtitle-link, .job-search-card__company-name, .company-name');
-            const locationEl = card.querySelector('.job-search-card__location, .job-location, .location');
-            const linkEl = card.querySelector('.job-search-card__title a, .job-title a, h3 a');
+          // Updated selectors for LinkedIn's current structure
+          const jobCards = document.querySelectorAll('li');
+          
+          for (const card of Array.from(jobCards).slice(0, 10)) {
+            const titleEl = card.querySelector('h3, .base-search-card__title, [class*="job-card"] h3');
+            const companyEl = card.querySelector('h4, .base-search-card__subtitle, [class*="company"], a[class*="subtitle"]');
+            const locationEl = card.querySelector('.job-search-card__location, [class*="location"], span[class*="location"]');
+            const linkEl = card.querySelector('a[href*="/jobs/view"], a.base-card__full-link, a[class*="job-card"]');
             
-            if (titleEl && companyEl) {
-              jobs.push({
-                title: titleEl.textContent?.trim() ?? '',
-                company: companyEl.textContent?.trim() ?? '',
-                location: locationEl?.textContent?.trim() ?? 'Not specified',
-                description: '',
-                url: (linkEl as HTMLAnchorElement).href,
-                salary: '',
-                postedDate: new Date(),
-                source: 'linkedin'
-              });
+            if (titleEl && companyEl && linkEl) {
+              const href = (linkEl as HTMLAnchorElement).href || '';
+              
+              // Only include if it's a valid LinkedIn job URL
+              if (href.includes('linkedin.com/jobs')) {
+                jobs.push({
+                  title: titleEl.textContent?.trim() ?? '',
+                  company: companyEl.textContent?.trim() ?? '',
+                  location: locationEl?.textContent?.trim() ?? 'Not specified',
+                  description: '',
+                  url: href,
+                  salary: '',
+                  postedDate: new Date(),
+                  source: 'linkedin'
+                });
+              }
             }
           }
           
@@ -534,10 +563,11 @@ export class JobSearchService {
           description: job.description,
           url: job.url,
           salary: job.salary || undefined,
-          source: job.source as ISimilarJob['source'],
+          source: 'linkedin' as const,
           postedDate: job.postedDate,
           score: 0
         })));
+        
         logger.info(`Scraped ${jobs.length} jobs from LinkedIn`);
         
       } catch (pageError) {
@@ -548,295 +578,6 @@ export class JobSearchService {
       
     } catch (error) {
       logger.warn('LinkedIn scraping failed:', error instanceof Error ? error.message : String(error));
-    }
-    
-    return jobs;
-  }
-
-  /**
-   * Scrape jobs from Glassdoor
-   */
-  private async scrapeFromGlassdoor(keywords: string[]): Promise<ISimilarJob[]> {
-    const jobs: ISimilarJob[] = [];
-    
-    try {
-      const searchQuery = keywords.slice(0, 2).join(' ');
-      const browser = await puppeteer.launch({ 
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
-      
-      const page = await browser.newPage();
-      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
-      
-      try {
-        await page.goto(`https://www.glassdoor.ca/Job/jobs.htm?sc.keyword=${encodeURIComponent(searchQuery)}`, {
-          waitUntil: 'networkidle2',
-          timeout: 15000
-        });
-        
-        interface RawJobDataGlassdoor {
-          title: string;
-          company: string;
-          location: string;
-          description: string;
-          url: string;
-          salary: string;
-          postedDate: Date;
-          source: string;
-        }
-        const jobData = (await page.evaluate(() => {
-          interface RawJobData {
-            title: string;
-            company: string;
-            location: string;
-            description: string;
-            url: string;
-            salary: string;
-            postedDate: Date;
-            source: string;
-          }
-          const jobs: RawJobData[] = [];
-          const jobCards = document.querySelectorAll('[data-test="job-listing"], .jobContainer, .jobListing');
-          
-          for (const card of Array.from(jobCards).slice(0, 5)) {
-            const titleEl = card.querySelector('[data-test="job-title"], .jobTitle, h3');
-            const companyEl = card.querySelector('[data-test="employer-name"], .employerName, .company');
-            const locationEl = card.querySelector('[data-test="job-location"], .location, .jobLocation');
-            const linkEl = card.querySelector('a');
-            
-            if (titleEl && companyEl) {
-              jobs.push({
-                title: titleEl.textContent?.trim() ?? '',
-                company: companyEl.textContent?.trim() ?? '',
-                location: locationEl?.textContent?.trim() ?? 'Not specified',
-                description: '',
-                url: linkEl?.href ?? '',
-                salary: '',
-                postedDate: new Date(),
-                source: 'glassdoor'
-              });
-            }
-          }
-          
-          return jobs;
-        })) as RawJobDataGlassdoor[];
-        
-        jobs.push(...jobData.map((job: RawJobDataGlassdoor): ISimilarJob => ({ 
-          title: job.title,
-          company: job.company,
-          location: job.location,
-          description: job.description,
-          url: job.url,
-          salary: job.salary || undefined,
-          source: job.source as ISimilarJob['source'],
-          postedDate: job.postedDate,
-          score: 0
-        })));
-        logger.info(`Scraped ${jobs.length} jobs from Glassdoor`);
-        
-      } catch (pageError) {
-        logger.warn('Glassdoor page scraping failed:', pageError instanceof Error ? pageError.message : String(pageError));
-      } finally {
-        await browser.close();
-      }
-      
-    } catch (error) {
-      logger.warn('Glassdoor scraping failed:', error instanceof Error ? error.message : String(error));
-    }
-    
-    return jobs;
-  }
-
-  /**
-   * Scrape jobs from GitHub Jobs API (unprotected, simple structure)
-   */
-  private async scrapeFromGitHubJobs(keywords: string[]): Promise<ISimilarJob[]> {
-    const jobs: ISimilarJob[] = [];
-    
-    try {
-      logger.info('Scraping from GitHub Jobs...');
-      const searchQuery = keywords.join(' ');
-      const url = `https://jobs.github.com/positions.json?search=${encodeURIComponent(searchQuery)}&page=0`;
-      
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; JobBot/1.0)',
-          'Accept': 'application/json'
-        },
-        signal: AbortSignal.timeout(10000) // 10 second timeout
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        
-        for (const job of data.slice(0, 10)) {
-          const jobData = job as { title?: string; company?: string; location?: string; description?: string; url?: string; salary?: string; created_at?: string };
-          jobs.push({
-            title: jobData.title ?? 'Unknown Title',
-            company: jobData.company ?? 'Unknown Company',
-            location: jobData.location ?? 'Remote',
-            description: jobData.description ?? '',
-            url: jobData.url ?? '',
-            salary: jobData.salary ?? '',
-            postedDate: jobData.created_at ? new Date(jobData.created_at) : undefined,
-            source: 'github_jobs' as const,
-            jobType: this.extractJobType(jobData.title ?? '', jobData.description ?? ''),
-            experienceLevel: this.extractExperienceLevel(jobData.title ?? '', jobData.description ?? '')
-          } as ISimilarJob);
-        }
-        
-        logger.info(`Found ${jobs.length} jobs from GitHub Jobs`);
-      }
-    } catch (error) {
-      logger.warn('GitHub Jobs scraping failed:', error instanceof Error ? error.message : String(error));
-    }
-    
-    return jobs;
-  }
-
-  /**
-   * Scrape jobs from RemoteOK (unprotected, simple structure)
-   */
-  private async scrapeFromRemoteOK(keywords: string[]): Promise<ISimilarJob[]> {
-    const jobs: ISimilarJob[] = [];
-    
-    try {
-      logger.info('Scraping from RemoteOK...');
-      const searchQuery = keywords.join(' ');
-      
-      // Try RemoteOK API first (simpler and faster)
-      const response = await fetch(`https://remoteok.io/api?tags=${encodeURIComponent(searchQuery)}`, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; JobBot/1.0)',
-          'Accept': 'application/json'
-        },
-        signal: AbortSignal.timeout(10000) // 10 second timeout
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        
-        for (const job of data.slice(1, 11)) { // Skip first element (metadata)
-          const jobObj = job as { position?: string; company?: string; description?: string; url?: string; salary?: string; date?: string; id?: string };
-          if (jobObj.position && jobObj.company) {
-            jobs.push({
-              title: jobObj.position,
-              company: jobObj.company,
-              location: 'Remote',
-              description: jobObj.description ?? '',
-              url: jobObj.url ?? `https://remoteok.io/remote-jobs/${jobObj.id ?? ''}`,
-              salary: jobObj.salary ?? '',
-              postedDate: jobObj.date ? new Date(jobObj.date) : undefined,
-              source: 'remoteok' as const,
-              isRemote: true,
-              jobType: this.extractJobType(jobObj.position ?? '', jobObj.description ?? ''),
-              experienceLevel: this.extractExperienceLevel(jobObj.position ?? '', jobObj.description ?? '')
-            } as ISimilarJob);
-          }
-        }
-        
-        logger.info(`Found ${jobs.length} jobs from RemoteOK`);
-      }
-    } catch (error) {
-      logger.warn('RemoteOK scraping failed:', error instanceof Error ? error.message : String(error));
-    }
-    
-    return jobs;
-  }
-
-  /**
-   * Scrape jobs from AngelList (startup jobs)
-   */
-  private async scrapeFromAngelList(keywords: string[]): Promise<ISimilarJob[]> {
-    const jobs: ISimilarJob[] = [];
-    
-    try {
-      // AngelList has been acquired by Wellfound, but we can try their API
-      const searchQuery = keywords.slice(0, 2).join(' ');
-      
-      // Try to scrape from Wellfound (formerly AngelList)
-      const browser = await puppeteer.launch({ 
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
-      
-      const page = await browser.newPage();
-      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
-      
-      try {
-        await page.goto(`https://wellfound.com/jobs?search=${encodeURIComponent(searchQuery)}`, {
-          waitUntil: 'networkidle2',
-          timeout: 10000
-        });
-        
-        interface RawJobDataWellfound {
-          title: string;
-          company: string;
-          location: string;
-          description: string;
-          url: string;
-          salary: string;
-          postedDate: string;
-          source: string;
-        }
-        const jobData = (await page.evaluate(() => {
-          interface RawJobData {
-            title: string;
-            company: string;
-            location: string;
-            description: string;
-            url: string;
-            salary: string;
-            postedDate: string;
-            source: string;
-          }
-          const jobs: RawJobData[] = [];
-          const jobCards = document.querySelectorAll('[data-test="JobCard"], .job-card, .job-listing');
-          
-          for (const card of Array.from(jobCards).slice(0, 5)) {
-            const titleEl = card.querySelector('h3, .job-title, [data-test="JobCard-title"]');
-            const companyEl = card.querySelector('.company-name, [data-test="JobCard-company"]');
-            const locationEl = card.querySelector('.location, [data-test="JobCard-location"]');
-            const linkEl = card.querySelector('a');
-            
-            if (titleEl && companyEl) {
-              jobs.push({
-                title: titleEl.textContent?.trim() ?? '',
-                company: companyEl.textContent?.trim() ?? '',
-                location: locationEl?.textContent?.trim() ?? 'Remote',
-                description: '',
-                url: linkEl ? (linkEl).href || '' : '',
-                salary: '',
-                postedDate: new Date().toISOString(),
-                source: 'wellfound'
-              });
-            }
-          }
-          
-          return jobs;
-        })) as RawJobDataWellfound[];
-        
-        jobs.push(...jobData.map((job: RawJobDataWellfound): ISimilarJob => ({ 
-          title: job.title,
-          company: job.company,
-          location: job.location,
-          description: job.description,
-          url: job.url,
-          salary: job.salary || undefined,
-          source: job.source as ISimilarJob['source'],
-          postedDate: typeof job.postedDate === 'string' ? new Date(job.postedDate) : undefined,
-          score: 0
-        })));
-        
-      } catch (pageError) {
-        logger.warn('Wellfound page scraping failed:', pageError instanceof Error ? pageError.message : String(pageError));
-      } finally {
-        await browser.close();
-      }
-      
-    } catch (error) {
-      logger.warn('AngelList scraping failed:', error instanceof Error ? error.message : String(error));
     }
     
     return jobs;
@@ -955,68 +696,7 @@ export class JobSearchService {
     return jobs;
   }
 
-  /**
-   * Scrape jobs from RSS feeds
-   */
-  private async scrapeFromJobRSSFeeds(keywords: string[]): Promise<ISimilarJob[]> {
-    const jobs: ISimilarJob[] = [];
-    
-    try {
-      // List of job RSS feeds
-      const rssFeeds = [
-        'https://jobs.github.com/positions.atom',
-        'https://remoteok.io/remote-jobs.rss',
-        'https://stackoverflow.com/jobs/feed'
-      ];
-      
-      for (const feedUrl of rssFeeds.slice(0, 2)) { // Limit to 2 feeds
-        try {
-          const response = await fetch(feedUrl);
-          if (response.ok) {
-            const xmlText = await response.text();
-            
-            // Simple XML parsing for job titles and companies
-            const titleMatches = xmlText.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/g) ?? [];
-            const linkMatches = xmlText.match(/<link>(.*?)<\/link>/g) ?? [];
 
-            const maxItems = Math.min(titleMatches.length, linkMatches.length, 5);
-            for (let i = 0; i < maxItems; i++) {
-              if (i < 0 || i >= titleMatches.length || i >= linkMatches.length) continue;
-
-              const titleMatch = titleMatches[i];
-              const linkMatch = linkMatches[i];
-              if (!titleMatch || !linkMatch) continue;
-
-              const title = titleMatch.replace(/<title><!\[CDATA\[(.*?)\]\]><\/title>/, '$1') || '';
-              const link = linkMatch.replace(/<link>(.*?)<\/link>/, '$1') || '';
-              
-              if (title && keywords.some(keyword => title.toLowerCase().includes(keyword.toLowerCase()))) {
-                jobs.push({
-                  title,
-                  company: 'Unknown Company',
-                  location: 'Remote',
-                  description: '',
-                  url: link,
-                  salary: '',
-                  postedDate: new Date(),
-                  source: 'rss_feed',
-                  score: 0
-                });
-              }
-            }
-          }
-        } catch (feedError) {
-          logger.warn(`Failed to parse RSS feed ${feedUrl}:`, feedError instanceof Error ? feedError.message : String(feedError));
-          continue;
-        }
-      }
-      
-    } catch (error) {
-      logger.warn('RSS feeds scraping failed:', error instanceof Error ? error.message : String(error));
-    }
-    
-    return jobs;
-  }
 
   /**
    * Get job by ID (helper method)
@@ -1347,9 +1027,13 @@ export class JobSearchService {
         url.searchParams.set('sc', '0kf%3Aattr%28DSQF7%29%3B'); // Remote filter
       }
     } else if (config.baseUrl.includes('linkedin.com')) {
+      // Use LinkedIn's public guest API
       url.searchParams.set('keywords', params.title);
+      url.searchParams.set('start', '0');
       if (params.location) {
         url.searchParams.set('location', params.location);
+      } else {
+        url.searchParams.set('location', ''); // Empty location for broader search
       }
       if (params.remote) {
         url.searchParams.set('f_WT', '2'); // Remote filter
