@@ -1,10 +1,7 @@
 import crypto from 'crypto';
-import { Request } from 'express';
 import fs from 'fs';
 import multer from 'multer';
 import path from 'path';
-
-// Use global Express.Multer.File type from multer augmentation
 
 const IMAGES_DIR = 'uploads/images';
 
@@ -16,17 +13,17 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, IMAGES_DIR);
   },
-  filename: (req, file, cb: (error: Error | null, filename: string) => void) => {
+  filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + crypto.randomBytes(4).toString('hex');
     const originalname: string = file.originalname ?? '';
     cb(null, `${uniqueSuffix}${path.extname(originalname)}`);
   },
 });
 
-const fileFilter = (
-  req: Request,
-  file: Express.Multer.File,
-  cb: multer.FileFilterCallback
+const fileFilter: multer.Options['fileFilter'] = (
+  req,
+  file,
+  cb
 ) => {
   if (file.mimetype.startsWith('image/')) {
     cb(null, true);
