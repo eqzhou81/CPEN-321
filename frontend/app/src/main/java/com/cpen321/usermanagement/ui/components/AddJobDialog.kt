@@ -25,6 +25,206 @@ import com.cpen321.usermanagement.data.remote.dto.CreateJobApplicationRequest
  * Follows Lovable design system
  */
 @Composable
+private fun AddJobDialogHeader() {
+    Text(
+        text = "Add Job Application",
+        style = MaterialTheme.typography.headlineSmall.copy(
+            fontWeight = FontWeight.Bold,
+            color = colorResource(R.color.text_primary)
+        )
+    )
+    Text(
+        text = "Paste a job posting text or link to add it to your portfolio",
+        style = MaterialTheme.typography.bodyMedium.copy(
+            color = colorResource(R.color.text_secondary)
+        ),
+        modifier = Modifier.padding(top = 4.dp)
+    )
+}
+
+@Composable
+private fun AddJobModeSelection(
+    pasteMode: PasteMode,
+    onModeChange: (PasteMode) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectableGroup()
+    ) {
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .selectable(
+                    selected = pasteMode == PasteMode.TEXT,
+                    onClick = { onModeChange(PasteMode.TEXT) }
+                )
+                .background(
+                    if (pasteMode == PasteMode.TEXT) colorResource(R.color.primary) else Color.Transparent,
+                    RoundedCornerShape(8.dp)
+                )
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Paste Text",
+                color = if (pasteMode == PasteMode.TEXT) colorResource(R.color.text_on_primary) else colorResource(R.color.text_secondary),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = if (pasteMode == PasteMode.TEXT) FontWeight.Medium else FontWeight.Normal
+                )
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .selectable(
+                    selected = pasteMode == PasteMode.LINK,
+                    onClick = { onModeChange(PasteMode.LINK) }
+                )
+                .background(
+                    if (pasteMode == PasteMode.LINK) colorResource(R.color.primary) else Color.Transparent,
+                    RoundedCornerShape(8.dp)
+                )
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Paste Link",
+                color = if (pasteMode == PasteMode.LINK) colorResource(R.color.text_on_primary) else colorResource(R.color.text_secondary),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = if (pasteMode == PasteMode.LINK) FontWeight.Medium else FontWeight.Normal
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun AddJobInputFields(
+    pasteMode: PasteMode,
+    jobText: String,
+    jobLink: String,
+    onJobTextChange: (String) -> Unit,
+    onJobLinkChange: (String) -> Unit
+) {
+    when (pasteMode) {
+        PasteMode.TEXT -> {
+            Text(
+                text = "Job Posting Text",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Medium,
+                    color = colorResource(R.color.text_primary)
+                )
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = jobText,
+                onValueChange = onJobTextChange,
+                placeholder = {
+                    Text(
+                        "Paste the job posting details here...",
+                        color = colorResource(R.color.text_tertiary)
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = colorResource(R.color.primary),
+                    unfocusedBorderColor = colorResource(R.color.border),
+                    focusedTextColor = colorResource(R.color.text_primary),
+                    unfocusedTextColor = colorResource(R.color.text_primary)
+                ),
+                maxLines = 8
+            )
+        }
+        PasteMode.LINK -> {
+            Text(
+                text = "Job Posting URL",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Medium,
+                    color = colorResource(R.color.text_primary)
+                )
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = jobLink,
+                onValueChange = onJobLinkChange,
+                placeholder = {
+                    Text(
+                        "https://...",
+                        color = colorResource(R.color.text_tertiary)
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = colorResource(R.color.primary),
+                    unfocusedBorderColor = colorResource(R.color.border),
+                    focusedTextColor = colorResource(R.color.text_primary),
+                    unfocusedTextColor = colorResource(R.color.text_primary)
+                ),
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Search,
+                        contentDescription = null,
+                        tint = colorResource(R.color.text_secondary)
+                    )
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun AddJobActionButtons(
+    pasteMode: PasteMode,
+    jobText: String,
+    jobLink: String,
+    isLoading: Boolean,
+    onDismiss: () -> Unit,
+    onSubmit: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        OutlinedButton(
+            onClick = onDismiss,
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = colorResource(R.color.text_secondary)
+            )
+        ) {
+            Text("Cancel")
+        }
+        Button(
+            onClick = onSubmit,
+            modifier = Modifier.weight(1f),
+            enabled = !isLoading && (
+                (pasteMode == PasteMode.TEXT && jobText.isNotBlank()) ||
+                (pasteMode == PasteMode.LINK && jobLink.isNotBlank())
+            ),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = colorResource(R.color.primary)
+            )
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    color = colorResource(R.color.text_on_primary),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text("Add to Portfolio")
+            }
+        }
+    }
+}
+
+@Composable
 fun AddJobDialog(
     onDismiss: () -> Unit,
     onAddJob: (CreateJobApplicationRequest) -> Unit,
@@ -41,218 +241,38 @@ fun AddJobDialog(
                 .fillMaxWidth()
                 .padding(16.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = colorResource(R.color.surface)
-            ),
+            colors = CardDefaults.cardColors(containerColor = colorResource(R.color.surface)),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(24.dp)
-            ) {
-                // Header
-                Text(
-                    text = "Add Job Application",
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = colorResource(R.color.text_primary)
-                    )
-                )
-                Text(
-                    text = "Paste a job posting text or link to add it to your portfolio",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = colorResource(R.color.text_secondary)
-                    ),
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-                
+            Column(modifier = Modifier.padding(24.dp)) {
+                AddJobDialogHeader()
                 Spacer(modifier = Modifier.height(24.dp))
-                
-                // Mode Selection
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .selectableGroup()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .selectable(
-                                selected = pasteMode == PasteMode.TEXT,
-                                onClick = { pasteMode = PasteMode.TEXT }
-                            )
-                            .background(
-                                if (pasteMode == PasteMode.TEXT) 
-                                    colorResource(R.color.primary) 
-                                else 
-                                    Color.Transparent,
-                                RoundedCornerShape(8.dp)
-                            )
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Paste Text",
-                            color = if (pasteMode == PasteMode.TEXT) 
-                                colorResource(R.color.text_on_primary) 
-                            else 
-                                colorResource(R.color.text_secondary),
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = if (pasteMode == PasteMode.TEXT) FontWeight.Medium else FontWeight.Normal
-                            )
-                        )
-                    }
-                    
-                    Spacer(modifier = Modifier.width(8.dp))
-                    
-                    Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .selectable(
-                                selected = pasteMode == PasteMode.LINK,
-                                onClick = { pasteMode = PasteMode.LINK }
-                            )
-                            .background(
-                                if (pasteMode == PasteMode.LINK) 
-                                    colorResource(R.color.primary) 
-                                else 
-                                    Color.Transparent,
-                                RoundedCornerShape(8.dp)
-                            )
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Paste Link",
-                            color = if (pasteMode == PasteMode.LINK) 
-                                colorResource(R.color.text_on_primary) 
-                            else 
-                                colorResource(R.color.text_secondary),
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = if (pasteMode == PasteMode.LINK) FontWeight.Medium else FontWeight.Normal
-                            )
-                        )
-                    }
-                }
-                
+                AddJobModeSelection(pasteMode = pasteMode, onModeChange = { pasteMode = it })
                 Spacer(modifier = Modifier.height(16.dp))
-                
-                // Input Fields
-                when (pasteMode) {
-                    PasteMode.TEXT -> {
-                        Text(
-                            text = "Job Posting Text",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Medium,
-                                color = colorResource(R.color.text_primary)
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = jobText,
-                            onValueChange = { jobText = it },
-                            placeholder = {
-                                Text(
-                                    "Paste the job posting details here...",
-                                    color = colorResource(R.color.text_tertiary)
-                                )
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = colorResource(R.color.primary),
-                                unfocusedBorderColor = colorResource(R.color.border),
-                                focusedTextColor = colorResource(R.color.text_primary),
-                                unfocusedTextColor = colorResource(R.color.text_primary)
-                            ),
-                            maxLines = 8
-                        )
-                    }
-                    PasteMode.LINK -> {
-                        Text(
-                            text = "Job Posting URL",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Medium,
-                                color = colorResource(R.color.text_primary)
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = jobLink,
-                            onValueChange = { jobLink = it },
-                            placeholder = {
-                                Text(
-                                    "https://...",
-                                    color = colorResource(R.color.text_tertiary)
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = colorResource(R.color.primary),
-                                unfocusedBorderColor = colorResource(R.color.border),
-                                focusedTextColor = colorResource(R.color.text_primary),
-                                unfocusedTextColor = colorResource(R.color.text_primary)
-                            ),
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Search,
-                                    contentDescription = null,
-                                    tint = colorResource(R.color.text_secondary)
-                                )
-                            }
-                        )
-                    }
-                }
-                
+                AddJobInputFields(
+                    pasteMode = pasteMode,
+                    jobText = jobText,
+                    jobLink = jobLink,
+                    onJobTextChange = { jobText = it },
+                    onJobLinkChange = { jobLink = it }
+                )
                 Spacer(modifier = Modifier.height(24.dp))
-                
-                // Action Buttons
-                Row(
-                        modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = colorResource(R.color.text_secondary)
-                        )
-                    ) {
-                        Text("Cancel")
-                    }
-                    
-            Button(
-                onClick = {
-                            isLoading = true
-                            if (pasteMode == PasteMode.TEXT && jobText.isNotBlank()) {
-                                val request = parseJobText(jobText)
-                                onAddJob(request)
-                            } else if (pasteMode == PasteMode.LINK && jobLink.isNotBlank()) {
-                                onScrapeJob(jobLink)
-                            }
-                        },
-                        modifier = Modifier.weight(1f),
-                        enabled = !isLoading && (
-                            (pasteMode == PasteMode.TEXT && jobText.isNotBlank()) ||
-                            (pasteMode == PasteMode.LINK && jobLink.isNotBlank())
-                        ),
-                colors = ButtonDefaults.buttonColors(
-                            containerColor = colorResource(R.color.primary)
-                        )
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                                color = colorResource(R.color.text_on_primary),
-                                strokeWidth = 2.dp
-                    )
-                } else {
-                            Text("Add to Portfolio")
+                AddJobActionButtons(
+                    pasteMode = pasteMode,
+                    jobText = jobText,
+                    jobLink = jobLink,
+                    isLoading = isLoading,
+                    onDismiss = onDismiss,
+                    onAddJob = {
+                        isLoading = true
+                        if (pasteMode == PasteMode.TEXT && jobText.isNotBlank()) {
+                            val request = parseJobText(jobText)
+                            onAddJob(request)
+                        } else if (pasteMode == PasteMode.LINK && jobLink.isNotBlank()) {
+                            onScrapeJob(jobLink)
                         }
                     }
-                }
+                )
             }
         }
     }

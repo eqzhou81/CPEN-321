@@ -344,6 +344,184 @@ private fun EmptyState(
 }
 
 @Composable
+private fun JobApplicationCardHeader(
+    job: JobApplication,
+    onViewDetails: () -> Unit,
+    onDeleteJob: () -> Unit,
+    onOpenJobLink: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = job.title,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = colorResource(R.color.text_primary)
+                ),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = job.company,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    color = colorResource(R.color.text_secondary)
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Row {
+            IconButton(onClick = onViewDetails) {
+                Icon(
+                    Icons.Default.Visibility,
+                    contentDescription = "View Details",
+                    tint = colorResource(R.color.text_secondary)
+                )
+            }
+            if (job.url != null) {
+                IconButton(onClick = { onOpenJobLink(job.url) }) {
+                    Icon(
+                        Icons.Default.OpenInNew,
+                        contentDescription = "Open Job Link",
+                        tint = colorResource(R.color.text_secondary)
+                    )
+                }
+            }
+            IconButton(onClick = onDeleteJob) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Delete Job",
+                    tint = colorResource(R.color.error)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun JobApplicationCardMetadata(job: JobApplication) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Default.DateRange,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = colorResource(R.color.text_tertiary)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = formatDate(job.createdAt),
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = colorResource(R.color.text_tertiary)
+                )
+            )
+        }
+        job.location?.let { location ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.LocationOn,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = colorResource(R.color.text_tertiary)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = location,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = colorResource(R.color.text_tertiary)
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+        job.salary?.let { salary ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.AttachMoney,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = colorResource(R.color.text_tertiary)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = salary,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = colorResource(R.color.text_tertiary)
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun JobApplicationCardBadges(job: JobApplication) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        job.jobType?.let { jobType ->
+            Badge(
+                containerColor = colorResource(R.color.secondary).copy(alpha = 0.2f),
+                contentColor = colorResource(R.color.secondary_foreground)
+            ) {
+                Text(
+                    text = jobType.value.replace("-", " ").uppercase(),
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+        job.experienceLevel?.let { level ->
+            Badge(
+                containerColor = colorResource(R.color.primary).copy(alpha = 0.2f),
+                contentColor = colorResource(R.color.primary_foreground)
+            ) {
+                Text(
+                    text = level.value.uppercase(),
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun JobApplicationCardActions(
+    onGenerateQuestions: () -> Unit,
+    onViewDetails: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Button(
+            onClick = onGenerateQuestions,
+            modifier = Modifier
+                .weight(1f)
+                .testTag("generate_questions_button"),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = colorResource(R.color.primary)
+            )
+        ) {
+            Text("Generate Questions")
+        }
+        OutlinedButton(
+            onClick = onViewDetails,
+            modifier = Modifier.weight(1f)
+        ) {
+            Text("View Details")
+        }
+    }
+}
+
+@Composable
 private fun JobApplicationCard(
     job: JobApplication,
     onJobClick: () -> Unit,
@@ -356,74 +534,17 @@ private fun JobApplicationCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onJobClick() },
-        colors = CardDefaults.cardColors(
-            containerColor = colorResource(R.color.surface)
-        ),
+        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.surface)),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = job.title,
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = colorResource(R.color.text_primary)
-                        ),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = job.company,
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            color = colorResource(R.color.text_secondary)
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                
-                Row {
-                    IconButton(onClick = onViewDetails) {
-                        Icon(
-                            Icons.Default.Visibility,
-                            contentDescription = "View Details",
-                            tint = colorResource(R.color.text_secondary)
-                        )
-                    }
-                    if (job.url != null) {
-                        IconButton(
-                            onClick = { onOpenJobLink(job.url) }
-                        ) {
-                            Icon(
-                                Icons.Default.OpenInNew,
-                                contentDescription = "Open Job Link",
-                                tint = colorResource(R.color.text_secondary)
-                            )
-                        }
-                    }
-                    IconButton(onClick = onDeleteJob) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "Delete Job",
-                            tint = colorResource(R.color.error)
-                        )
-                    }
-                }
-            }
-            
+        Column(modifier = Modifier.padding(20.dp)) {
+            JobApplicationCardHeader(
+                job = job,
+                onViewDetails = onViewDetails,
+                onDeleteJob = onDeleteJob,
+                onOpenJobLink = onOpenJobLink
+            )
             Spacer(modifier = Modifier.height(12.dp))
-            
-            // Description
             Text(
                 text = job.description,
                 style = MaterialTheme.typography.bodyMedium.copy(
@@ -432,137 +553,15 @@ private fun JobApplicationCard(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            
             Spacer(modifier = Modifier.height(16.dp))
-            
-            // Metadata
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Date
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.DateRange,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = colorResource(R.color.text_tertiary)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = formatDate(job.createdAt),
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = colorResource(R.color.text_tertiary)
-                        )
-                    )
-                }
-                
-                // Location
-                job.location?.let { location ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.LocationOn,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = colorResource(R.color.text_tertiary)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = location,
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                color = colorResource(R.color.text_tertiary)
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-                
-                // Salary
-                job.salary?.let { salary ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.AttachMoney,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = colorResource(R.color.text_tertiary)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = salary,
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                color = colorResource(R.color.text_tertiary)
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-            
+            JobApplicationCardMetadata(job = job)
             Spacer(modifier = Modifier.height(12.dp))
-            
-            // Badges
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                job.jobType?.let { jobType ->
-                    Badge(
-                        containerColor = colorResource(R.color.secondary).copy(alpha = 0.2f),
-                        contentColor = colorResource(R.color.secondary_foreground)
-                    ) {
-                        Text(
-                            text = jobType.value.replace("-", " ").uppercase(),
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    }
-                }
-                
-                job.experienceLevel?.let { level ->
-                    Badge(
-                        containerColor = colorResource(R.color.primary).copy(alpha = 0.2f),
-                        contentColor = colorResource(R.color.primary_foreground)
-                    ) {
-                        Text(
-                            text = level.value.uppercase(),
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    }
-                }
-            }
-            
+            JobApplicationCardBadges(job = job)
             Spacer(modifier = Modifier.height(16.dp))
-            
-            // Action Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Button(
-                    onClick = onGenerateQuestions,
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("generate_questions_button"),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = colorResource(R.color.primary)
-                    )
-                ) {
-                    Text("Generate Questions")
-                }
-                
-                OutlinedButton(
-                    onClick = onViewDetails,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("View Details")
-                }
-            }
+            JobApplicationCardActions(
+                onGenerateQuestions = onGenerateQuestions,
+                onViewDetails = onViewDetails
+            )
         }
     }
 }

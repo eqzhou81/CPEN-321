@@ -31,6 +31,103 @@ import com.cpen321.usermanagement.ui.viewmodels.JobViewModel
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+private fun SimilarJobsHeader(
+    selectedJob: JobApplication?,
+    onNavigateBack: () -> Unit,
+    onRefresh: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onNavigateBack) {
+                Icon(
+                    Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = colorResource(R.color.text_primary)
+                )
+            }
+            Column {
+                Text(
+                    text = "Similar Jobs",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = colorResource(R.color.text_primary)
+                    )
+                )
+                selectedJob?.let { job ->
+                    Text(
+                        text = "Based on: ${job.title} at ${job.company}",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = colorResource(R.color.text_secondary)
+                        )
+                    )
+                }
+            }
+        }
+        IconButton(onClick = onRefresh) {
+            Icon(
+                Icons.Default.Refresh,
+                contentDescription = "Refresh",
+                tint = colorResource(R.color.text_secondary)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SimilarJobsErrorCard(errorMessage: String, onDismiss: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = colorResource(R.color.error).copy(alpha = 0.1f)
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.Error,
+                contentDescription = null,
+                tint = colorResource(R.color.error)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = errorMessage,
+                color = colorResource(R.color.error),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            TextButton(onClick = onDismiss) {
+                Text("Dismiss")
+            }
+        }
+    }
+}
+
+@Composable
+private fun SimilarJobsLoadingState() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CircularProgressIndicator(color = colorResource(R.color.primary))
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Searching for similar jobs...",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = colorResource(R.color.text_secondary)
+                )
+            )
+        }
+    }
+}
+
+@Composable
 fun SimilarJobsScreen(
     jobId: String,
     onNavigateBack: () -> Unit,
@@ -41,17 +138,11 @@ fun SimilarJobsScreen(
     val isLoadingSimilarJobs by viewModel.isLoadingSimilarJobs.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val selectedJob by viewModel.selectedJob.collectAsStateWithLifecycle()
-    
     var radius by remember { mutableStateOf(25) }
     var includeRemote by remember { mutableStateOf(true) }
     
-    // Load similar jobs when screen is displayed
     LaunchedEffect(jobId) {
-        viewModel.searchSimilarJobs(
-            jobId = jobId,
-            radius = radius,
-            includeRemote = includeRemote
-        )
+        viewModel.searchSimilarJobs(jobId = jobId, radius = radius, includeRemote = includeRemote)
     }
     
     Column(
@@ -60,145 +151,39 @@ fun SimilarJobsScreen(
             .background(colorResource(R.color.background))
             .padding(16.dp)
     ) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = colorResource(R.color.text_primary)
-                    )
-                }
-                Column {
-                    Text(
-                        text = "Similar Jobs",
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = colorResource(R.color.text_primary)
-                        )
-                    )
-                    selectedJob?.let { job ->
-                        Text(
-                            text = "Based on: ${job.title} at ${job.company}",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = colorResource(R.color.text_secondary)
-                            )
-                        )
-                    }
-                }
+        SimilarJobsHeader(
+            selectedJob = selectedJob,
+            onNavigateBack = onNavigateBack,
+            onRefresh = {
+                viewModel.searchSimilarJobs(jobId = jobId, radius = radius, includeRemote = includeRemote)
             }
-            
-            IconButton(
-                onClick = {
-                    viewModel.searchSimilarJobs(
-                        jobId = jobId,
-                        radius = radius,
-                        includeRemote = includeRemote
-                    )
-                }
-            ) {
-                Icon(
-                    Icons.Default.Refresh,
-                    contentDescription = "Refresh",
-                    tint = colorResource(R.color.text_secondary)
-                )
-            }
-        }
-        
+        )
         Spacer(modifier = Modifier.height(16.dp))
-        
-        // Search Filters
         SearchFiltersSection(
             radius = radius,
             onRadiusChange = { radius = it },
             includeRemote = includeRemote,
             onIncludeRemoteChange = { includeRemote = it },
             onApplyFilters = {
-                viewModel.searchSimilarJobs(
-                    jobId = jobId,
-                    radius = radius,
-                    includeRemote = includeRemote
-                )
+                viewModel.searchSimilarJobs(jobId = jobId, radius = radius, includeRemote = includeRemote)
             }
         )
-        
         Spacer(modifier = Modifier.height(16.dp))
-        
-        // Error Message
         error?.let { errorMessage ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = colorResource(R.color.error).copy(alpha = 0.1f)
-                )
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.Error,
-                        contentDescription = null,
-                        tint = colorResource(R.color.error)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = errorMessage,
-                        color = colorResource(R.color.error),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    TextButton(onClick = { viewModel.clearError() }) {
-                        Text("Dismiss")
-                    }
-                }
-            }
+            SimilarJobsErrorCard(errorMessage = errorMessage, onDismiss = { viewModel.clearError() })
             Spacer(modifier = Modifier.height(16.dp))
         }
-        
-        // Loading State
-        if (isLoadingSimilarJobs) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CircularProgressIndicator(
-                        color = colorResource(R.color.primary)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Searching for similar jobs...",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = colorResource(R.color.text_secondary)
+        when {
+            isLoadingSimilarJobs -> SimilarJobsLoadingState()
+            similarJobs.isEmpty() -> EmptySimilarJobsState()
+            else -> {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(similarJobs) { job ->
+                        SimilarJobCard(
+                            job = job,
+                            onOpenLink = { onOpenJobLink(job.url) }
                         )
-                    )
-                }
-            }
-        }
-        // Empty State
-        else if (similarJobs.isEmpty()) {
-            EmptySimilarJobsState()
-        }
-        // Similar Jobs List
-        else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(similarJobs) { job ->
-                    SimilarJobCard(
-                        job = job,
-                        onOpenLink = { onOpenJobLink(job.url) }
-                    )
+                    }
                 }
             }
         }
@@ -331,62 +316,158 @@ private fun EmptySimilarJobsState() {
 }
 
 @Composable
+private fun SimilarJobCardHeader(
+    job: SimilarJob,
+    onOpenLink: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = job.title,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = colorResource(R.color.text_primary)
+                ),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = job.company,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = colorResource(R.color.text_secondary)
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        IconButton(onClick = onOpenLink) {
+            Icon(
+                Icons.Default.OpenInNew,
+                contentDescription = "Open Job Link",
+                tint = colorResource(R.color.primary)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SimilarJobCardMetadata(job: SimilarJob) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Default.LocationOn,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = colorResource(R.color.text_tertiary)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = job.location,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = colorResource(R.color.text_tertiary)
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        job.distance?.let { distance ->
+            Text(
+                text = "${distance.toInt()}km away",
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = colorResource(R.color.text_tertiary)
+                )
+            )
+        }
+        job.salary?.let { salary ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.AttachMoney,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = colorResource(R.color.text_tertiary)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = salary,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = colorResource(R.color.text_tertiary)
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SimilarJobCardBadges(job: SimilarJob) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        job.jobType?.let { jobType ->
+            Badge(
+                containerColor = getJobTypeColor(jobType).copy(alpha = 0.2f),
+                contentColor = getJobTypeColor(jobType)
+            ) {
+                Text(
+                    text = jobType.replace("-", " ").uppercase(),
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+        job.experienceLevel?.let { level ->
+            Badge(
+                containerColor = colorResource(R.color.primary).copy(alpha = 0.2f),
+                contentColor = colorResource(R.color.primary)
+            ) {
+                Text(
+                    text = level.uppercase(),
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+        if (job.isRemote == true) {
+            Badge(
+                containerColor = colorResource(R.color.job_type_remote).copy(alpha = 0.2f),
+                contentColor = colorResource(R.color.job_type_remote)
+            ) {
+                Text(
+                    text = "REMOTE",
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+        Badge(
+            containerColor = colorResource(R.color.secondary).copy(alpha = 0.2f),
+            contentColor = colorResource(R.color.secondary_foreground)
+        ) {
+            Text(
+                text = job.source.uppercase(),
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
+    }
+}
+
+@Composable
 private fun SimilarJobCard(
     job: SimilarJob,
     onOpenLink: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = colorResource(R.color.surface)
-        ),
+        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.surface)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = job.title,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = colorResource(R.color.text_primary)
-                        ),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = job.company,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = colorResource(R.color.text_secondary)
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                
-                Row {
-                    IconButton(onClick = onOpenLink) {
-                        Icon(
-                            Icons.Default.OpenInNew,
-                            contentDescription = "Open Job Link",
-                            tint = colorResource(R.color.primary)
-                        )
-                    }
-                }
-            }
-            
+        Column(modifier = Modifier.padding(16.dp)) {
+            SimilarJobCardHeader(job = job, onOpenLink = onOpenLink)
             Spacer(modifier = Modifier.height(8.dp))
-            
-            // Description
             Text(
                 text = job.description,
                 style = MaterialTheme.typography.bodySmall.copy(
@@ -395,125 +476,10 @@ private fun SimilarJobCard(
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
-            
             Spacer(modifier = Modifier.height(12.dp))
-            
-            // Metadata
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Location
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.LocationOn,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = colorResource(R.color.text_tertiary)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = job.location,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = colorResource(R.color.text_tertiary)
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                
-                // Distance
-                job.distance?.let { distance ->
-                    Text(
-                        text = "${distance.toInt()}km away",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = colorResource(R.color.text_tertiary)
-                        )
-                    )
-                }
-                
-                // Salary
-                job.salary?.let { salary ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.AttachMoney,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = colorResource(R.color.text_tertiary)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = salary,
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                color = colorResource(R.color.text_tertiary)
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-            
+            SimilarJobCardMetadata(job = job)
             Spacer(modifier = Modifier.height(8.dp))
-            
-            // Badges
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                // Job Type
-                job.jobType?.let { jobType ->
-                    Badge(
-                        containerColor = getJobTypeColor(jobType).copy(alpha = 0.2f),
-                        contentColor = getJobTypeColor(jobType)
-                    ) {
-                        Text(
-                            text = jobType.replace("-", " ").uppercase(),
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    }
-                }
-                
-                // Experience Level
-                job.experienceLevel?.let { level ->
-                    Badge(
-                        containerColor = colorResource(R.color.primary).copy(alpha = 0.2f),
-                        contentColor = colorResource(R.color.primary)
-                    ) {
-                        Text(
-                            text = level.uppercase(),
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    }
-                }
-                
-                // Remote Badge
-                if (job.isRemote == true) {
-                    Badge(
-                        containerColor = colorResource(R.color.job_type_remote).copy(alpha = 0.2f),
-                        contentColor = colorResource(R.color.job_type_remote)
-                    ) {
-                        Text(
-                            text = "REMOTE",
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    }
-                }
-                
-                // Source Badge
-                Badge(
-                    containerColor = colorResource(R.color.secondary).copy(alpha = 0.2f),
-                    contentColor = colorResource(R.color.secondary_foreground)
-                ) {
-                    Text(
-                        text = job.source.uppercase(),
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
-            }
+            SimilarJobCardBadges(job = job)
         }
     }
 }
