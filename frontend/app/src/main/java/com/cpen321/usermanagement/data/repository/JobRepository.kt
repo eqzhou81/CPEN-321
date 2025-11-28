@@ -170,12 +170,17 @@ class JobRepository @Inject constructor(
             if (response.isSuccessful && response.body()?.data != null) {
                 Result.success(response.body()!!.data!!.similarJobs)
             } else {
-                Result.failure(Exception(response.message() ?: "Failed to search similar jobs"))
+                val errorBody = response.errorBody()?.string()
+                val errorMessage = errorBody ?: (response.message() ?: "Failed to search similar jobs")
+                android.util.Log.e("JobRepository", "Error searching similar jobs: HTTP ${response.code()}: $errorMessage")
+                Result.failure(Exception("HTTP ${response.code()}: $errorMessage"))
             }
         } catch (e: IOException) {
-            Result.failure(e)
-        } catch (e: retrofit2.HttpException) {
-            Result.failure(e)
+            android.util.Log.e("JobRepository", "Network error searching similar jobs: ${e.message}", e)
+            Result.failure(Exception("Network error: ${e.message ?: "Unknown error"}"))
+        } catch (e: HttpException) {
+            android.util.Log.e("JobRepository", "HTTP error searching similar jobs: ${e.message}", e)
+            Result.failure(Exception("Server error: ${e.message ?: "Unknown error"}"))
         }
     }
 }

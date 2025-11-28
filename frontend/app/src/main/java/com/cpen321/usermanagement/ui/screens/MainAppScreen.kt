@@ -494,6 +494,12 @@ private fun ProfileScreenContent(
     var showSignOutDialog by remember { mutableStateOf(false) }
     val authState by authViewModel.uiState.collectAsState()
 
+    // Load profile when screen is shown
+    LaunchedEffect(Unit) {
+        profileViewModel.loadProfile()
+    }
+
+    // Handle auth state changes (sign out, account deletion)
     LaunchedEffect(authState.isAuthenticated, authState.errorMessage) {
         if (!authState.isAuthenticated) {
             if (authState.isSigningOut) {
@@ -509,9 +515,16 @@ private fun ProfileScreenContent(
         }
     }
 
-    LaunchedEffect(Unit) {
-        profileViewModel.clearSuccessMessage()
-        profileViewModel.clearError()
+    // Display profile success/error messages
+    LaunchedEffect(uiState.successMessage, uiState.errorMessage) {
+        uiState.successMessage?.let { message ->
+            snackBarHostState.showSnackbar(message)
+            profileViewModel.clearSuccessMessage()
+        }
+        uiState.errorMessage?.let { message ->
+            snackBarHostState.showSnackbar(message)
+            profileViewModel.clearError()
+        }
     }
 
     Box(
@@ -600,8 +613,15 @@ private fun EditableUserInfoCard(
     onSave: (String?) -> Unit,
     isSaving: Boolean
 ) {
-    var name by remember { mutableStateOf(user.name ?: "") }
+    var name by remember(user.id) { mutableStateOf(user.name ?: "") }
     var isEditing by remember { mutableStateOf(false) }
+    
+    // Update name when user changes (e.g., after successful save)
+    LaunchedEffect(user.name) {
+        if (!isEditing) {
+            name = user.name ?: ""
+        }
+    }
     
     Card(
         modifier = Modifier.fillMaxWidth(),

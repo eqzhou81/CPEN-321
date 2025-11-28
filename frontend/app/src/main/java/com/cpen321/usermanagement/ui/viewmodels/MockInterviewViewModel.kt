@@ -98,14 +98,72 @@ class MockInterviewViewModel @Inject constructor(
                             currentQuestionId = currentQuestionId
                         )
                     } else {
-                        _uiState.value = currentState.copy(isSubmitting = false)
+                        Log.e(TAG, "Cannot submit answer: currentQuestionId is blank")
+                        _uiState.value = currentState.copy(
+                            isSubmitting = false,
+                            saveMessage = "Error: Question ID not found"
+                        )
                     }
                 } catch (e: IOException) {
-                    _uiState.value = currentState.copy(isSubmitting = false)
+                    Log.e(TAG, "Failed to submit answer", e)
+                    _uiState.value = currentState.copy(
+                        isSubmitting = false,
+                        saveMessage = "Network error: ${e.message}"
+                    )
                 } catch (e: HttpException) {
-                    _uiState.value = currentState.copy(isSubmitting = false)
+                    Log.e(TAG, "Failed to submit answer", e)
+                    _uiState.value = currentState.copy(
+                        isSubmitting = false,
+                        saveMessage = "Server error: ${e.message()}"
+                    )
                 }
             }
+        } else {
+            Log.d(TAG, "Cannot submit: answer is blank or state is not Success")
+        }
+    }
+    
+    private suspend fun handleAnswerSubmission(
+        currentState: UiState.Success,
+        currentQuestionId: String
+    ) {
+        val request = SubmitAnswerRequest(
+            sessionId = currentState.session.id,
+            questionId = currentQuestionId,
+            answer = currentAnswer
+        )
+        
+        val response = sessionRepository.submitAnswer(request)
+        
+        if (response.isSuccessful && response.body()?.data != null) {
+            val responseData = response.body()!!.data!!
+            currentAnswer = ""
+            
+            // Reload session to get the latest progress and current question
+            val updatedSessionResponse = sessionRepository.getSession(currentState.session.id)
+            if (updatedSessionResponse.isSuccessful && updatedSessionResponse.body()?.data != null) {
+                val sessionData = updatedSessionResponse.body()!!.data!!
+                _uiState.value = UiState.Success(
+                    session = sessionData.session,
+                    currentQuestion = sessionData.currentQuestion,
+                    feedback = responseData.feedback,
+                    answer = "",
+                    isSubmitting = false
+                )
+            } else {
+                // Fallback to response data if reload fails
+                _uiState.value = UiState.Success(
+                    session = responseData.session,
+                    currentQuestion = currentState.currentQuestion,
+                    feedback = responseData.feedback,
+                    answer = "",
+                    isSubmitting = false
+                )
+            }
+        } else {
+            _uiState.value = currentState.copy(
+                isSubmitting = false
+            )
         }
     }
     
@@ -139,11 +197,19 @@ class MockInterviewViewModel @Inject constructor(
                             isSubmitting = false
                         )
                         currentAnswer = preservedAnswer
+                    } else {
+                        Log.e(TAG, "Failed to navigate to previous question: ${response.message()}")
                     }
+                } catch (e: IOException) {
+                    Log.e(TAG, "Network error navigating to previous question", e)
+                } catch (e: HttpException) {
+                    Log.e(TAG, "Server error navigating to previous question", e)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to navigate to previous question", e)
                 }
             }
+        } else {
+            Log.d(TAG, "Cannot go to previous question: already at first question or invalid state")
         }
     }
     
@@ -265,12 +331,19 @@ class MockInterviewViewModel @Inject constructor(
                                 answer = "",
                                 isSubmitting = false
                             )
+                        } else {
+                            Log.e(TAG, "Failed to navigate to next question: ${response.message()}")
                         }
+                    } catch (e: IOException) {
+                        Log.e(TAG, "Network error navigating to next question", e)
+                    } catch (e: HttpException) {
+                        Log.e(TAG, "Server error navigating to next question", e)
                     } catch (e: Exception) {
                         Log.e(TAG, "Failed to navigate to next question", e)
-                        // Keep current state - navigation failure shouldn't disrupt user experience
                     }
                 }
+            } else {
+                Log.d(TAG, "Cannot go to next question: already at last question")
             }
         }
     }
