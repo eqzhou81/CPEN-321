@@ -115,14 +115,7 @@ class DiscussionsTest : BaseComposeTest() {
      * 3. User can see discussion topics and metadata
      * 4. User clicks on multiple discussions to browse
      */
-    @Test
-    fun useCase_BrowseDiscussions_Success() {
-        android.util.Log.d("DiscussionsTest", "=== Use Case: Browse Discussions - Success ===")
-
-        // Note: Navigation to discussions is already done in setup()
-        // Step 1 is complete - we're already on discussions screen
-
-        // Step 2-3: Check that discussions list is displayed
+    private fun verifyDiscussionsListDisplayed() {
         android.util.Log.d("DiscussionsTest", "Step 2-3: Checking for discussions list...")
         val discussionsFound = check(maxRetries = 6) {
             try {
@@ -134,22 +127,18 @@ class DiscussionsTest : BaseComposeTest() {
                 false
             }
         }
-
         assert(discussionsFound) {
             "Failed: Discussions list not displayed. Check backend for existing discussions."
         }
+    }
 
-        // Step 4: Click on multiple discussions to browse
+    private fun clickFirstDiscussionAndVerifyNavigation() {
         android.util.Log.d("DiscussionsTest", "Step 4: Clicking on multiple discussions to browse...")
-
-        // Click on first discussion
         val firstClicked = checkTextAndClick("Amazon", substring = true, maxRetries = 3) ||
                 checkTextAndClick("Discussion", substring = true, maxRetries = 3)
         assert(firstClicked) { "Failed: Could not click on first discussion" }
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
-
-        // Verify we're on discussion detail screen
         val onDetailScreen = checkText("Amazon", maxRetries = 3) ||
                 check(maxRetries = 3) {
                     try {
@@ -160,8 +149,9 @@ class DiscussionsTest : BaseComposeTest() {
                     }
                 }
         assert(onDetailScreen) { "Failed: Did not navigate to discussion detail screen" }
+    }
 
-        // Go back to discussions list
+    private fun navigateBackToDiscussionsList() {
         android.util.Log.d("DiscussionsTest", "Going back to discussions list...")
         val backClicked = checkAndClick(maxRetries = 3) {
             try {
@@ -171,17 +161,22 @@ class DiscussionsTest : BaseComposeTest() {
             }
         }
         if (!backClicked) {
-            // Fallback: try pressing device back button
             pressBack()
             Thread.sleep(1000)
         }
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
-
-        // Verify we're back on discussions list
         assert(checkText("Community Discussions", maxRetries = 6)) {
             "Failed: Did not return to discussions list"
         }
+    }
+
+    @Test
+    fun useCase_BrowseDiscussions_Success() {
+        android.util.Log.d("DiscussionsTest", "=== Use Case: Browse Discussions - Success ===")
+        verifyDiscussionsListDisplayed()
+        clickFirstDiscussionAndVerifyNavigation()
+        navigateBackToDiscussionsList()
         composeTestRule.waitForIdle()
         Thread.sleep(1000)
 

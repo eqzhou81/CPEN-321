@@ -631,6 +631,43 @@ private fun QuestionTypeCardInfo(
 }
 
 @Composable
+private fun QuestionTypeCheckboxRow(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    label: String
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Checkbox(checked = checked, onCheckedChange = onCheckedChange)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(label)
+    }
+}
+
+@Composable
+private fun GenerateQuestionsDialogContent(
+    behavioralSelected: Boolean,
+    technicalSelected: Boolean,
+    onBehavioralChanged: (Boolean) -> Unit,
+    onTechnicalChanged: (Boolean) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        QuestionTypeCheckboxRow(
+            checked = behavioralSelected,
+            onCheckedChange = onBehavioralChanged,
+            label = "Behavioral Questions"
+        )
+        QuestionTypeCheckboxRow(
+            checked = technicalSelected,
+            onCheckedChange = onTechnicalChanged,
+            label = "Technical Questions"
+        )
+    }
+}
+
+@Composable
 private fun GenerateQuestionsDialog(
     showDialog: Boolean,
     onDismiss: () -> Unit,
@@ -639,7 +676,6 @@ private fun GenerateQuestionsDialog(
     var behavioralSelected by remember { mutableStateOf(true) }
     var technicalSelected by remember { mutableStateOf(true) }
     
-    // Reset to defaults when dialog opens
     LaunchedEffect(showDialog) {
         if (showDialog) {
             behavioralSelected = true
@@ -649,40 +685,18 @@ private fun GenerateQuestionsDialog(
     
     if (showDialog) {
         AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-                Text("Select Question Types")
-        },
-        text = {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Checkbox(
-                            checked = behavioralSelected,
-                            onCheckedChange = { behavioralSelected = it }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Behavioral Questions")
-                    }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Checkbox(
-                            checked = technicalSelected,
-                            onCheckedChange = { technicalSelected = it }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Technical Questions")
-                }
-            }
-        },
-        confirmButton = {
-            Button(
+            onDismissRequest = onDismiss,
+            title = { Text("Select Question Types") },
+            text = {
+                GenerateQuestionsDialogContent(
+                    behavioralSelected = behavioralSelected,
+                    technicalSelected = technicalSelected,
+                    onBehavioralChanged = { behavioralSelected = it },
+                    onTechnicalChanged = { technicalSelected = it }
+                )
+            },
+            confirmButton = {
+                Button(
                     onClick = {
                         val selectedTypes = mutableListOf<String>()
                         if (behavioralSelected) selectedTypes.add("behavioral")
@@ -690,15 +704,16 @@ private fun GenerateQuestionsDialog(
                         onGenerate(selectedTypes)
                     },
                     enabled = behavioralSelected || technicalSelected
-            ) {
-                Text("Generate")
+                ) {
+                    Text("Generate")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel")
+                }
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
+        )
+    }
 }
 }

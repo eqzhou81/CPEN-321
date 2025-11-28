@@ -57,35 +57,38 @@ class JobManagementTest : BaseComposeTest() {
     @Test
     fun useCase_PasteJobPosting_Success() {
         android.util.Log.d("JobManagementTest", "=== Use Case 1: Paste Job Posting - Main Success Scenario ===")
-        
-        // Step 1: Navigate to job dashboard
-        android.util.Log.d("JobManagementTest", "Step 1: Checking for 'My Job Applications' screen...")
-        assert(checkText("My Job Applications", maxRetries = 6)) {
-            "Failed: Main screen 'My Job Applications' not found"
-        }
-        composeTestRule.waitForIdle()
-        Thread.sleep(1000)
-        
-        // Step 2: Click "Add Job" button
-        android.util.Log.d("JobManagementTest", "Step 2: Checking for 'Add Job' button...")
-        assert(checkTag("add_job_button", maxRetries = 6)) {
-            "Failed: Add Job button not found"
-        }
-        
+        navigateToJobDashboard()
+        verifyAddJobButtonExists()
         val addClicked = checkTagAndClick("add_job_button", maxRetries = 3)
         assert(addClicked) { "Failed: Could not click Add Job button" }
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
-        
-        // Step 3: Check for "Add Job Application" dialog and select "Paste Text" mode
+        selectPasteTextMode()
+        val jobPostingText = """
+            Software Engineer
+            Google
+            We are looking for a software engineer with 5+ years of experience in Java and Python.
+            Responsibilities include developing scalable systems and working with cross-functional teams.
+        """.trimIndent()
+        enterJobPostingText(jobPostingText)
+        submitJobAndVerifyInList()
+        android.util.Log.d("JobManagementTest", "✓ Use Case 1: Paste Job Posting - Main Success Scenario PASSED")
+    }
+
+    private fun verifyAddJobButtonExists() {
+        android.util.Log.d("JobManagementTest", "Step 2: Checking for 'Add Job' button...")
+        assert(checkTag("add_job_button", maxRetries = 6)) {
+            "Failed: Add Job button not found"
+        }
+    }
+
+    private fun selectPasteTextMode() {
         android.util.Log.d("JobManagementTest", "Step 3: Checking for 'Add Job Application' dialog...")
         assert(checkText("Add Job Application", maxRetries = 6) || checkText("Add Job", maxRetries = 6)) {
             "Failed: Add Job dialog not found"
         }
         composeTestRule.waitForIdle()
         Thread.sleep(1000)
-        
-        // Verify "Paste Text" mode is selected (default) or click it
         val pasteTextMode = checkText("Paste Text", maxRetries = 3)
         if (!pasteTextMode) {
             android.util.Log.d("JobManagementTest", "Clicking 'Paste Text' mode...")
@@ -94,18 +97,11 @@ class JobManagementTest : BaseComposeTest() {
             composeTestRule.waitForIdle()
             Thread.sleep(1000)
         }
-        
-        // Step 4: Paste job posting text
+    }
+
+    private fun enterJobPostingText(jobPostingText: String) {
         android.util.Log.d("JobManagementTest", "Step 4: Inputting job posting text...")
-        val jobPostingText = """
-            Software Engineer
-            Google
-            We are looking for a software engineer with 5+ years of experience in Java and Python.
-            Responsibilities include developing scalable systems and working with cross-functional teams.
-        """.trimIndent()
-        
         try {
-            // Try to find text field by placeholder or label
             composeTestRule.onAllNodes(hasText("Paste the job posting details", substring = true))
                 .onFirst()
                 .performTextInput(jobPostingText)
@@ -114,7 +110,6 @@ class JobManagementTest : BaseComposeTest() {
             android.util.Log.d("JobManagementTest", "✓ Job posting text entered")
         } catch (e: Exception) {
             android.util.Log.w("JobManagementTest", "Could not input text using placeholder: ${e.message}")
-            // Fallback: try to find any text field
             try {
                 composeTestRule.onAllNodes(hasText("Job Posting Text", substring = true))
                     .onFirst()
@@ -125,26 +120,22 @@ class JobManagementTest : BaseComposeTest() {
                 android.util.Log.w("JobManagementTest", "Could not input text: ${e2.message}")
             }
         }
-        
-        // Step 5: Click "Add to Portfolio" button
+    }
+
+    private fun submitJobAndVerifyInList() {
         android.util.Log.d("JobManagementTest", "Step 5: Clicking 'Add to Portfolio' button...")
         val submitClicked = checkTextAndClick("Add to Portfolio", maxRetries = 3) ||
                            checkTextAndClick("Add", maxRetries = 3)
         assert(submitClicked) { "Failed: Could not click Add to Portfolio button" }
         composeTestRule.waitForIdle()
         Thread.sleep(3000)
-        
-        // Step 6-7: Verify job appears in list with stored information
         android.util.Log.d("JobManagementTest", "Step 6-7: Verifying job appears in list...")
         val jobFound = checkText("Software Engineer", maxRetries = 6) ||
                       checkText("Google", maxRetries = 6)
-        
         assert(jobFound) {
             "Failed: Job not found in list after creation. Expected 'Software Engineer' or 'Google'. " +
             "Check backend logs for errors."
         }
-        
-        android.util.Log.d("JobManagementTest", "✓ Use Case 1: Paste Job Posting - Main Success Scenario PASSED")
     }
     
     /**
@@ -161,43 +152,39 @@ class JobManagementTest : BaseComposeTest() {
      * 7. System saves the normalized job posting
      * 8. Job appears in list
      */
-    @Test
-    fun useCase_PasteJobPostingLink_Success() {
-        android.util.Log.d("JobManagementTest", "=== Use Case 2: Paste Job Posting Link - Main Success Scenario ===")
-        
-        // Step 1: Navigate to job dashboard
+    private fun navigateToJobDashboard() {
         android.util.Log.d("JobManagementTest", "Step 1: Checking for 'My Job Applications' screen...")
         assert(checkText("My Job Applications", maxRetries = 6)) {
             "Failed: Main screen not found"
         }
         composeTestRule.waitForIdle()
         Thread.sleep(1000)
-        
-        // Step 2: Click "Add Job" button
+    }
+
+    private fun clickAddJobButton() {
         android.util.Log.d("JobManagementTest", "Step 2: Clicking 'Add Job' button...")
         val addClicked = checkTagAndClick("add_job_button", maxRetries = 3) ||
                         checkTextAndClick("Add", maxRetries = 3)
         assert(addClicked) { "Failed: Could not click Add Job button" }
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
-        
-        // Step 3: Select "Paste Link" mode
+    }
+
+    private fun selectPasteLinkMode() {
         android.util.Log.d("JobManagementTest", "Step 3: Selecting 'Paste Link' mode...")
         assert(checkText("Add Job Application", maxRetries = 6) || checkText("Add Job", maxRetries = 6)) {
             "Failed: Add Job dialog not found"
         }
         composeTestRule.waitForIdle()
         Thread.sleep(1000)
-        
         val linkModeClicked = checkTextAndClick("Paste Link", maxRetries = 3)
         assert(linkModeClicked) { "Failed: Could not click 'Paste Link' option" }
         composeTestRule.waitForIdle()
         Thread.sleep(2000)
-        
-        // Step 4: Enter URL
+    }
+
+    private fun enterJobPostingUrl(jobUrl: String) {
         android.util.Log.d("JobManagementTest", "Step 4: Entering job posting URL...")
-        val jobUrl = "https://careers.google.com/jobs/results/12345"
-        
         try {
             composeTestRule.onAllNodes(hasText("https://", substring = true))
                 .onFirst()
@@ -207,7 +194,6 @@ class JobManagementTest : BaseComposeTest() {
             android.util.Log.d("JobManagementTest", "✓ URL entered")
         } catch (e: Exception) {
             android.util.Log.w("JobManagementTest", "Could not input URL: ${e.message}")
-            // Try alternative approach
             try {
                 composeTestRule.onAllNodes(hasText("Job Posting URL", substring = true))
                     .onFirst()
@@ -218,16 +204,15 @@ class JobManagementTest : BaseComposeTest() {
                 android.util.Log.w("JobManagementTest", "Could not input URL using alternative: ${e2.message}")
             }
         }
-        
-        // Step 5: Click "Add to Portfolio" button
+    }
+
+    private fun submitJobAndVerifyAppears() {
         android.util.Log.d("JobManagementTest", "Step 5: Clicking 'Add to Portfolio' button...")
         val submitClicked = checkTextAndClick("Add to Portfolio", maxRetries = 3) ||
                            checkTextAndClick("Add", maxRetries = 3)
         assert(submitClicked) { "Failed: Could not click Add to Portfolio button" }
         composeTestRule.waitForIdle()
-        Thread.sleep(5000) // Wait for scraping to complete
-        
-        // Step 6-8: Verify job appears in list after scraping
+        Thread.sleep(5000)
         android.util.Log.d("JobManagementTest", "Step 6-8: Verifying job appears in list after scraping...")
         val jobFound = check(maxRetries = 12) {
             try {
@@ -239,11 +224,19 @@ class JobManagementTest : BaseComposeTest() {
                 false
             }
         }
-        
         assert(jobFound) {
             "Failed: Job not found in list after scraping. Check backend logs for scraping errors."
         }
-        
+    }
+
+    @Test
+    fun useCase_PasteJobPostingLink_Success() {
+        android.util.Log.d("JobManagementTest", "=== Use Case 2: Paste Job Posting Link - Main Success Scenario ===")
+        navigateToJobDashboard()
+        clickAddJobButton()
+        selectPasteLinkMode()
+        enterJobPostingUrl("https://careers.google.com/jobs/results/12345")
+        submitJobAndVerifyAppears()
         android.util.Log.d("JobManagementTest", "✓ Use Case 2: Paste Job Posting Link - Main Success Scenario PASSED")
     }
     
