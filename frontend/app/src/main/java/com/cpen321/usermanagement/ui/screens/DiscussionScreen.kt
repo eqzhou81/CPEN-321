@@ -268,6 +268,7 @@ private fun DiscussionScreenScaffold(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DiscussionScreenTopBar(onClose: () -> Unit) {
     TopAppBar(

@@ -7,9 +7,9 @@ import {
   CreateJobApplicationRequest,
   JobApplicationResponse,
   JobApplicationsListResponse,
-  JobSearchRequest,
   SimilarJobsResponse,
-  UpdateJobApplicationRequest,
+  SimilarJobsSearchRequest,
+  UpdateJobApplicationRequest
 } from '../types/jobs.types';
 import logger from '../utils/logger.util';
 
@@ -217,7 +217,7 @@ export class JobController {
    * Search for similar jobs based on a saved job application
    */
   async searchSimilarJobs(
-    req: Request<{ id: string }, unknown, JobSearchRequest>,
+    req: Request<{ id: string }, unknown, SimilarJobsSearchRequest>,
     res: Response<SimilarJobsResponse>,
     next: NextFunction
   ) {

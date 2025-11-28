@@ -137,7 +137,9 @@ fun SimilarJobsScreen(
     var radius by remember { mutableStateOf(25) }
     var includeRemote by remember { mutableStateOf(true) }
     
+    // Load the job application first, then search for similar jobs
     LaunchedEffect(jobId) {
+        viewModel.getJobApplication(jobId)
         viewModel.searchSimilarJobs(jobId = jobId, radius = radius, includeRemote = includeRemote)
     }
     

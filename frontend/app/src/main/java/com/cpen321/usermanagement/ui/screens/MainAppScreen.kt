@@ -412,16 +412,16 @@ private fun DiscussionItemHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                Icons.Default.Chat,
-                contentDescription = null,
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.Chat,
+                    contentDescription = null,
                 tint = colorResource(R.color.primary),
                 modifier = Modifier.size(24.dp)
-            )
+                )
             Spacer(modifier = Modifier.width(spacing.small))
-            Text(
-                text = discussion.topic,
+                Text(
+                    text = discussion.topic,
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = colorResource(R.color.text_primary)
@@ -435,8 +435,8 @@ private fun DiscussionItemHeader(
 @Composable
 private fun DiscussionItemDescription(discussion: DiscussionListResponse) {
     if (discussion.description?.isNotBlank() == true) {
-        Text(
-            text = discussion.description ?: "",
+            Text(
+                text = discussion.description ?: "",
             style = MaterialTheme.typography.bodyMedium.copy(
                 color = colorResource(R.color.text_secondary)
             ),
@@ -455,7 +455,7 @@ private fun DiscussionItemFooter(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
+            Text(
             text = "By ${discussion.creatorName}",
             style = MaterialTheme.typography.labelSmall.copy(
                 color = colorResource(R.color.text_secondary)
@@ -494,6 +494,12 @@ private fun ProfileScreenContent(
     var showSignOutDialog by remember { mutableStateOf(false) }
     val authState by authViewModel.uiState.collectAsState()
 
+    // Load profile when screen is shown
+    LaunchedEffect(Unit) {
+        profileViewModel.loadProfile()
+    }
+
+    // Handle auth state changes (sign out, account deletion)
     LaunchedEffect(authState.isAuthenticated, authState.errorMessage) {
         if (!authState.isAuthenticated) {
             if (authState.isSigningOut) {
@@ -509,9 +515,22 @@ private fun ProfileScreenContent(
         }
     }
 
-    LaunchedEffect(Unit) {
-        profileViewModel.clearSuccessMessage()
-        profileViewModel.clearError()
+    // Display profile success messages
+    LaunchedEffect(uiState.successMessage) {
+        uiState.successMessage?.let { message ->
+            snackBarHostState.showSnackbar(message)
+            kotlinx.coroutines.delay(100)
+            profileViewModel.clearSuccessMessage()
+        }
+    }
+    
+    // Display profile error messages
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { message ->
+            snackBarHostState.showSnackbar(message)
+            kotlinx.coroutines.delay(100)
+            profileViewModel.clearError()
+        }
     }
 
     Box(
@@ -524,7 +543,8 @@ private fun ProfileScreenContent(
             user = uiState.user,
             profileViewModel = profileViewModel,
             onShowSignOutDialog = { showSignOutDialog = true },
-            onShowDeleteDialog = { showDeleteDialog = true }
+            onShowDeleteDialog = { showDeleteDialog = true },
+            isSaving = uiState.isSavingProfile
         )
     }
 
@@ -555,7 +575,8 @@ private fun ProfileContent(
     user: com.cpen321.usermanagement.data.remote.dto.User?,
     profileViewModel: com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel,
     onShowSignOutDialog: () -> Unit,
-    onShowDeleteDialog: () -> Unit
+    onShowDeleteDialog: () -> Unit,
+    isSaving: Boolean
 ) {
     when {
         isLoading -> {
@@ -581,7 +602,7 @@ private fun ProfileContent(
                         onSave = { name ->
                             profileViewModel.updateProfile(name)
                         },
-                        isSaving = profileViewModel.uiState.collectAsState().value.isSavingProfile
+                        isSaving = isSaving
                     )
                 }
 
@@ -600,8 +621,15 @@ private fun EditableUserInfoCard(
     onSave: (String?) -> Unit,
     isSaving: Boolean
 ) {
-    var name by remember { mutableStateOf(user.name ?: "") }
+    var name by remember(user.id) { mutableStateOf(user.name ?: "") }
     var isEditing by remember { mutableStateOf(false) }
+    
+    // Update name when user changes (e.g., after successful save)
+    LaunchedEffect(user.name) {
+        if (!isEditing) {
+            name = user.name ?: ""
+        }
+    }
     
     Card(
         modifier = Modifier.fillMaxWidth(),
