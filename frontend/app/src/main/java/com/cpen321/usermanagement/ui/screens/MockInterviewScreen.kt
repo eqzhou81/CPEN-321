@@ -250,11 +250,7 @@ private fun MockInterviewContent(
             viewModel = viewModel,
             isSessionComplete = isSessionComplete
         )
-        
-        state.saveMessage?.let { message ->
-            SaveMessageCard(message = message, spacing = spacing)
-        }
-        
+
         TipsAndEndSessionSection(
             hasFeedback = state.feedback != null,
             viewModel = viewModel,

@@ -132,7 +132,7 @@ private fun CreateDiscussionDialog(
 }
 
 @Composable
-private fun CreateDiscussionDialogTextFields(
+internal fun CreateDiscussionDialogTextFields(
     topic: String,
     description: String,
     onTopicChange: (String) -> Unit,
@@ -168,7 +168,7 @@ private fun CreateDiscussionDialogTextFields(
 }
 
 @Composable
-private fun CreateDiscussionDialogConfirmButton(
+internal fun CreateDiscussionDialogConfirmButton(
     onCreate: () -> Unit,
     topic: String
 ) {
@@ -186,7 +186,7 @@ private fun CreateDiscussionDialogConfirmButton(
 }
 
 @Composable
-private fun CreateDiscussionDialogDismissButton(onDismiss: () -> Unit) {
+internal fun CreateDiscussionDialogDismissButton(onDismiss: () -> Unit) {
     TextButton(
         onClick = onDismiss,
         colors = ButtonDefaults.textButtonColors(

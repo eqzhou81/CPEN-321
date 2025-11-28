@@ -384,7 +384,7 @@ private fun CreateDiscussionDialog(
             )
         },
         text = {
-            CreateDiscussionDialogFields(
+            CreateDiscussionDialogTextFields(
                 topic = topic,
                 description = description,
                 onTopicChange = onTopicChange,
@@ -778,7 +778,7 @@ private fun EditableUserInfoActions(
 }
 
 @Composable
-private fun EditableUserInfoCancelButton(
+private fun RowScope.EditableUserInfoCancelButton(
     onCancel: () -> Unit,
     isSaving: Boolean
 ) {
@@ -795,7 +795,7 @@ private fun EditableUserInfoCancelButton(
 }
 
 @Composable
-private fun EditableUserInfoSaveButton(
+private fun RowScope.EditableUserInfoSaveButton(
     onSave: () -> Unit,
     isSaving: Boolean,
     name: String
