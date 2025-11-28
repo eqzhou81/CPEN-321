@@ -19,11 +19,6 @@ import androidx.compose.ui.window.Dialog
 import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.data.remote.dto.CreateJobApplicationRequest
 
-/**
- * Add Job Dialog Component
- * Allows users to add job applications by pasting text or URL
- * Follows Lovable design system
- */
 @Composable
 private fun AddJobDialogHeader() {
     Text(
@@ -103,6 +98,80 @@ private fun AddJobModeSelection(
 }
 
 @Composable
+private fun JobTextInputField(
+    jobText: String,
+    onJobTextChange: (String) -> Unit
+) {
+    Text(
+        text = "Job Posting Text",
+        style = MaterialTheme.typography.bodyMedium.copy(
+            fontWeight = FontWeight.Medium,
+            color = colorResource(R.color.text_primary)
+        )
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedTextField(
+        value = jobText,
+        onValueChange = onJobTextChange,
+        placeholder = {
+            Text(
+                "Paste the job posting details here...",
+                color = colorResource(R.color.text_tertiary)
+            )
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = colorResource(R.color.primary),
+            unfocusedBorderColor = colorResource(R.color.border),
+            focusedTextColor = colorResource(R.color.text_primary),
+            unfocusedTextColor = colorResource(R.color.text_primary)
+        ),
+        maxLines = 8
+    )
+}
+
+@Composable
+private fun JobLinkInputField(
+    jobLink: String,
+    onJobLinkChange: (String) -> Unit
+) {
+    Text(
+        text = "Job Posting URL",
+        style = MaterialTheme.typography.bodyMedium.copy(
+            fontWeight = FontWeight.Medium,
+            color = colorResource(R.color.text_primary)
+        )
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedTextField(
+        value = jobLink,
+        onValueChange = onJobLinkChange,
+        placeholder = {
+            Text(
+                "https://...",
+                color = colorResource(R.color.text_tertiary)
+            )
+        },
+        modifier = Modifier.fillMaxWidth(),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = colorResource(R.color.primary),
+            unfocusedBorderColor = colorResource(R.color.border),
+            focusedTextColor = colorResource(R.color.text_primary),
+            unfocusedTextColor = colorResource(R.color.text_primary)
+        ),
+        leadingIcon = {
+            Icon(
+                Icons.Default.Search,
+                contentDescription = null,
+                tint = colorResource(R.color.text_secondary)
+            )
+        }
+    )
+}
+
+@Composable
 private fun AddJobInputFields(
     pasteMode: PasteMode,
     jobText: String,
@@ -111,70 +180,8 @@ private fun AddJobInputFields(
     onJobLinkChange: (String) -> Unit
 ) {
     when (pasteMode) {
-        PasteMode.TEXT -> {
-            Text(
-                text = "Job Posting Text",
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Medium,
-                    color = colorResource(R.color.text_primary)
-                )
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = jobText,
-                onValueChange = onJobTextChange,
-                placeholder = {
-                    Text(
-                        "Paste the job posting details here...",
-                        color = colorResource(R.color.text_tertiary)
-                    )
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = colorResource(R.color.primary),
-                    unfocusedBorderColor = colorResource(R.color.border),
-                    focusedTextColor = colorResource(R.color.text_primary),
-                    unfocusedTextColor = colorResource(R.color.text_primary)
-                ),
-                maxLines = 8
-            )
-        }
-        PasteMode.LINK -> {
-            Text(
-                text = "Job Posting URL",
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Medium,
-                    color = colorResource(R.color.text_primary)
-                )
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = jobLink,
-                onValueChange = onJobLinkChange,
-                placeholder = {
-                    Text(
-                        "https://...",
-                        color = colorResource(R.color.text_tertiary)
-                    )
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = colorResource(R.color.primary),
-                    unfocusedBorderColor = colorResource(R.color.border),
-                    focusedTextColor = colorResource(R.color.text_primary),
-                    unfocusedTextColor = colorResource(R.color.text_primary)
-                ),
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Search,
-                        contentDescription = null,
-                        tint = colorResource(R.color.text_secondary)
-                    )
-                }
-            )
-        }
+        PasteMode.TEXT -> JobTextInputField(jobText, onJobTextChange)
+        PasteMode.LINK -> JobLinkInputField(jobLink, onJobLinkChange)
     }
 }
 

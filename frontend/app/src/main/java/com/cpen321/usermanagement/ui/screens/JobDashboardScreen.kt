@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.colorResource
@@ -403,63 +404,42 @@ private fun JobApplicationCardHeader(
 }
 
 @Composable
+private fun MetadataItem(
+    icon: ImageVector,
+    text: String,
+    maxLines: Int = 1
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            icon,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = colorResource(R.color.text_tertiary)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall.copy(
+                color = colorResource(R.color.text_tertiary)
+            ),
+            maxLines = maxLines,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
 private fun JobApplicationCardMetadata(job: JobApplication) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                Icons.Default.DateRange,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = colorResource(R.color.text_tertiary)
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = formatDate(job.createdAt),
-                style = MaterialTheme.typography.bodySmall.copy(
-                    color = colorResource(R.color.text_tertiary)
-                )
-            )
-        }
+        MetadataItem(Icons.Default.DateRange, formatDate(job.createdAt))
         job.location?.let { location ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.LocationOn,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = colorResource(R.color.text_tertiary)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = location,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = colorResource(R.color.text_tertiary)
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            MetadataItem(Icons.Default.LocationOn, location)
         }
         job.salary?.let { salary ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.AttachMoney,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = colorResource(R.color.text_tertiary)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = salary,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = colorResource(R.color.text_tertiary)
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            MetadataItem(Icons.Default.AttachMoney, salary)
         }
     }
 }
