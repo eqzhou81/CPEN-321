@@ -14,7 +14,7 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, IMAGES_DIR);
   },
-  filename: (req, file: multer.File, cb: (error: Error | null, filename: string) => void) => {
+  filename: (req, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
     const uniqueSuffix = Date.now() + '-' + crypto.randomBytes(4).toString('hex');
     const originalname: string = file.originalname || '';
     cb(null, `${uniqueSuffix}${path.extname(originalname)}`);
@@ -23,7 +23,7 @@ const storage = multer.diskStorage({
 
 const fileFilter = (
   req: Request,
-  file: multer.File,
+  file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
   if (file.mimetype.startsWith('image/')) {
