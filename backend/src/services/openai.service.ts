@@ -28,6 +28,7 @@ class OpenAIService {
   private sanitizeText(text: string | undefined): string {
     if (!text) return '';
     return text
+      // eslint-disable-next-line no-control-regex
       .replace(/[\r\n\t\f\v\u0000-\u001F\u007F-\u009F]/g, ' ')  // Remove all control characters
       .replace(/\s+/g, ' ')  // Collapse multiple spaces
     .trim();  // Remove leading/trailing spaces
