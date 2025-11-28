@@ -42,7 +42,7 @@ io.on('connection', (socket) => {
 });
 
 
-connectDB().catch((error) => {
+connectDB().catch((error: unknown) => {
   logger.error('Failed to connect to database:', error);
   throw new Error(`Database connection failed: ${error instanceof Error ? error.message : String(error)}`);
 });
