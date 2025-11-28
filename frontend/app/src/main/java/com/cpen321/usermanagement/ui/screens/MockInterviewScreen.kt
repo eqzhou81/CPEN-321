@@ -117,12 +117,12 @@ private fun MockInterviewContentState(
 private fun LoadingState(paddingValues: PaddingValues) {
     val spacing = LocalSpacing.current
     
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues),
-        contentAlignment = Alignment.Center
-    ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(spacing.medium)
@@ -149,14 +149,14 @@ private fun ErrorState(
 ) {
     val spacing = LocalSpacing.current
     
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(spacing.large),
             modifier = Modifier.padding(spacing.large)
         ) {
@@ -251,39 +251,8 @@ private fun MockInterviewContent(
             isSessionComplete = isSessionComplete
         )
         
-        // Show save message if present
         state.saveMessage?.let { message ->
-            val isError = message.contains("Failed", ignoreCase = true)
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isError) 
-                        colorResource(R.color.error).copy(alpha = 0.1f)
-                    else 
-                        colorResource(R.color.success).copy(alpha = 0.1f)
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(spacing.medium),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(spacing.small)
-                ) {
-                    Icon(
-                        if (isError) Icons.Default.Error else Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = if (isError) colorResource(R.color.error) else colorResource(R.color.success),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = message,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (isError) colorResource(R.color.error) else colorResource(R.color.success)
-                    )
-                }
-            }
+            SaveMessageCard(message = message, spacing = spacing)
         }
         
         TipsAndEndSessionSection(
@@ -391,7 +360,7 @@ private fun EndSessionButton(
     onEndSession: () -> Unit,
     spacing: com.cpen321.usermanagement.ui.theme.Spacing
 ) {
-    OutlinedButton(
+        OutlinedButton(
         onClick = onEndSession,
         modifier = Modifier
             .fillMaxWidth()
