@@ -24,10 +24,6 @@ import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.data.remote.dto.User
 import com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel
 
-/**
- * Enhanced Profile Screen
- * Displays user information with Lovable design system
- */
 //@OptIn(ExperimentalMaterial3Api::class)
 //@Composable
 //fun EnhancedProfileScreen(
