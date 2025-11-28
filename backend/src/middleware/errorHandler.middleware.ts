@@ -15,6 +15,9 @@ export const notFoundHandler = (req: Request, res: Response) => {
 export const errorHandler = (error: Error, req: Request, res: Response, _next: NextFunction): void => {
   logger.error('Error:', error);
 
+  // Acknowledge unused parameter for linter
+  _next;
+
   res.status(500).json({
     message: 'Internal server error',
   });

@@ -58,6 +58,7 @@ export const authenticateToken: RequestHandler = asyncHandler(async (
       id: mongoose.Types.ObjectId;
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!decoded.id) {
       res.status(401).json({
         error: 'Invalid token',
