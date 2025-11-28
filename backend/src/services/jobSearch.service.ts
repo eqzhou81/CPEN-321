@@ -1185,7 +1185,7 @@ export class JobSearchService {
           config = this.scraperConfigs.amazon;
           break;
         default:
-          throw new Error(`Unknown job source: ${typedSource}`);
+          throw new Error(`Unknown job source: ${String(source)}`);
       }
 
       // Build search URL
