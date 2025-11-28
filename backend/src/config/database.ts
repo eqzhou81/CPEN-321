@@ -15,7 +15,7 @@ export const connectDB = async (): Promise<void> => {
 
     mongoose.connection.on("error", (error: unknown) => {
       if (error instanceof Error) {
-        logger.error("MongoDB connection error:", error.message, error.stack);
+        logger.error("MongoDB connection error:", error.message);
       } else {
         logger.error("MongoDB connection error:", String(error));
       }
