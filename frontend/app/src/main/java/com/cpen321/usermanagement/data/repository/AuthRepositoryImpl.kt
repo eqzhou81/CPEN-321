@@ -27,6 +27,8 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
+import retrofit2.HttpException
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -262,8 +264,9 @@ class AuthRepositoryImpl @Inject constructor(
                 val errorBody = response.errorBody()?.string() ?: "Unknown error"
                 Result.failure(Exception("Server error: $errorBody"))
             }
-        } catch (e: Exception) {
-            // Handle network exceptions (e.g., no internet connection)
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: HttpException) {
             Result.failure(e)
         }
 

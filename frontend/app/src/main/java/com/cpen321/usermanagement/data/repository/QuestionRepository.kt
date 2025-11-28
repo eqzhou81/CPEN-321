@@ -2,6 +2,8 @@ package com.cpen321.usermanagement.data.repository
 
 import com.cpen321.usermanagement.data.remote.api.QuestionApiService
 import com.cpen321.usermanagement.data.remote.dto.*
+import retrofit2.HttpException
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 

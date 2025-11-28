@@ -53,8 +53,10 @@ private fun DiscussionDetailEffects(
             kotlinx.coroutines.delay(100)
             try {
                 listState.animateScrollToItem(allMessages.lastIndex)
-            } catch (e: Exception) {
+            } catch (e: IllegalStateException) {
                 // Silently handle scroll errors to prevent ANR
+            } catch (e: IndexOutOfBoundsException) {
+                // Silently handle index errors to prevent ANR
             }
         }
     }
