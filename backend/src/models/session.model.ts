@@ -165,7 +165,7 @@ export class SessionModel {
   // Find active session by job ID
   async findActiveByJobId(jobId: mongoose.Types.ObjectId, userId: mongoose.Types.ObjectId): Promise<ISession | null> {
     try {
-      if (mongoose.connection.readyState !== ConnectionStates.connected) {
+      if (mongoose.connection.readyState !== ConnectionStates.connected.valueOf()) {
         throw new Error('Database connection is not ready');
       }
 

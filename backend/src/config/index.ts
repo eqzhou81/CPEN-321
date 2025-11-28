@@ -44,7 +44,7 @@ io.on('connection', (socket) => {
 
 connectDB().catch((error) => {
   logger.error('Failed to connect to database:', error);
-  process.exit(1);
+  throw new Error(`Database connection failed: ${error instanceof Error ? error.message : String(error)}`);
 });
 
 // Start BOTH Express + Socket.IO
