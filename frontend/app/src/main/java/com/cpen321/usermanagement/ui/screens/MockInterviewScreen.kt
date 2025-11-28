@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.ui.components.*
+import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.ui.viewmodels.MockInterviewViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,6 +55,7 @@ fun MockInterviewScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MockInterviewTopBar(onBackClick: () -> Unit) {
         TopAppBar(
@@ -113,21 +115,23 @@ private fun MockInterviewContentState(
 
 @Composable
 private fun LoadingState(paddingValues: PaddingValues) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
+    val spacing = LocalSpacing.current
+    
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(spacing.medium)
+        ) {
             CircularProgressIndicator(
-                modifier = Modifier.size(48.dp),
+                modifier = Modifier.size(spacing.extraLarge2),
                 color = colorResource(R.color.primary)
             )
-                        Text(
+            Text(
                 "Loading interview session...",
                 style = MaterialTheme.typography.bodyMedium,
                 color = colorResource(R.color.text_secondary)
@@ -143,6 +147,8 @@ private fun ErrorState(
     viewModel: MockInterviewViewModel,
     paddingValues: PaddingValues
 ) {
+    val spacing = LocalSpacing.current
+    
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -151,39 +157,65 @@ private fun ErrorState(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp),
-            modifier = Modifier.padding(24.dp)
+            verticalArrangement = Arrangement.spacedBy(spacing.large),
+            modifier = Modifier.padding(spacing.large)
         ) {
-            Icon(
-                Icons.Default.Error,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = colorResource(R.color.error)
+            ErrorIcon()
+            ErrorTitle()
+            ErrorMessage(errorMessage = errorMessage)
+            RetryButton(
+                onRetry = { viewModel.loadSession(sessionId) }
             )
-            Text(
-                "Error Loading Session",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = colorResource(R.color.text_primary)
-            )
-            Text(
-                errorMessage,
-                style = MaterialTheme.typography.bodyMedium,
-                color = colorResource(R.color.text_secondary),
-                textAlign = TextAlign.Center
-            )
-            Button(
-                onClick = { viewModel.loadSession(sessionId) },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = colorResource(R.color.primary)
-                )
-            ) {
-                Icon(Icons.Default.Refresh, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Retry")
-            }
         }
+    }
+}
+
+@Composable
+private fun ErrorIcon() {
+    val spacing = LocalSpacing.current
+    
+    Icon(
+        Icons.Default.Error,
+        contentDescription = null,
+        modifier = Modifier.size(spacing.extraLarge3),
+        tint = colorResource(R.color.error)
+    )
+}
+
+@Composable
+private fun ErrorTitle() {
+    Text(
+        "Error Loading Session",
+        style = MaterialTheme.typography.titleLarge.copy(
+            fontWeight = FontWeight.Bold
+        ),
+        color = colorResource(R.color.text_primary)
+    )
+}
+
+@Composable
+private fun ErrorMessage(errorMessage: String) {
+    Text(
+        errorMessage,
+        style = MaterialTheme.typography.bodyMedium,
+        color = colorResource(R.color.text_secondary),
+        textAlign = TextAlign.Center
+    )
+}
+
+@Composable
+private fun RetryButton(onRetry: () -> Unit) {
+    val spacing = LocalSpacing.current
+    
+    Button(
+        onClick = onRetry,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = colorResource(R.color.primary)
+        )
+    ) {
+        Icon(Icons.Default.Refresh, contentDescription = null)
+        Spacer(modifier = Modifier.width(spacing.small))
+        Text("Retry")
     }
 }
 
@@ -194,7 +226,8 @@ private fun MockInterviewContent(
     paddingValues: PaddingValues,
     onBackClick: () -> Unit
 ) {
-    val isSessionComplete = state.session.answeredQuestions >= state.session.totalQuestions
+    val spacing = LocalSpacing.current
+    val isSessionComplete = calculateSessionComplete(state)
     val scrollState = rememberScrollState()
     
     Column(
@@ -202,8 +235,8 @@ private fun MockInterviewContent(
             .fillMaxSize()
             .padding(paddingValues)
             .verticalScroll(scrollState)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+            .padding(horizontal = spacing.large, vertical = spacing.medium),
+        verticalArrangement = Arrangement.spacedBy(spacing.large)
     ) {
         SessionCompletionSection(
             isSessionComplete = isSessionComplete,
@@ -218,11 +251,51 @@ private fun MockInterviewContent(
             isSessionComplete = isSessionComplete
         )
         
+        // Show save message if present
+        state.saveMessage?.let { message ->
+            val isError = message.contains("Failed", ignoreCase = true)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isError) 
+                        colorResource(R.color.error).copy(alpha = 0.1f)
+                    else 
+                        colorResource(R.color.success).copy(alpha = 0.1f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(spacing.medium),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(spacing.small)
+                ) {
+                    Icon(
+                        if (isError) Icons.Default.Error else Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = if (isError) colorResource(R.color.error) else colorResource(R.color.success),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isError) colorResource(R.color.error) else colorResource(R.color.success)
+                    )
+                }
+            }
+        }
+        
         TipsAndEndSessionSection(
             hasFeedback = state.feedback != null,
+            viewModel = viewModel,
             onBackClick = onBackClick
         )
     }
+}
+
+private fun calculateSessionComplete(state: MockInterviewViewModel.UiState.Success): Boolean {
+    return state.session.answeredQuestions >= state.session.totalQuestions
 }
 
 @Composable
@@ -230,9 +303,11 @@ private fun SessionCompletionSection(
     isSessionComplete: Boolean,
     feedback: com.cpen321.usermanagement.data.remote.dto.SessionModels.SessionFeedback?
 ) {
+    val spacing = LocalSpacing.current
+    
     if (isSessionComplete && feedback?.sessionCompleted == true) {
         SessionCompleteCard()
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(spacing.small))
     }
 }
 
@@ -278,7 +353,8 @@ private fun AnswerAndButtonsSection(
                 onSubmitAnswer = viewModel::submitAnswer,
                 canGoPrevious = state.session.currentQuestionIndex > 0,
                 hasAnswer = state.answer.isNotBlank(),
-                isSubmitting = state.isSubmitting
+                isSubmitting = state.isSubmitting,
+                isSaving = state.isSaving
             )
     } else if (state.feedback != null && !isSessionComplete) {
         FeedbackNavigationButtons(
@@ -286,7 +362,8 @@ private fun AnswerAndButtonsSection(
             onSaveSession = viewModel::saveSession,
             onNext = viewModel::nextQuestion,
             canGoPrevious = state.session.currentQuestionIndex > 0,
-            canGoNext = !state.feedback.isLastQuestion
+            canGoNext = !state.feedback.isLastQuestion,
+            isSaving = state.isSaving
         )
     }
 }
@@ -294,26 +371,50 @@ private fun AnswerAndButtonsSection(
 @Composable
 private fun TipsAndEndSessionSection(
     hasFeedback: Boolean,
+    viewModel: MockInterviewViewModel,
     onBackClick: () -> Unit
 ) {
+    val spacing = LocalSpacing.current
+    
     if (!hasFeedback) {
         EnhancedTipsCard()
     }
-        
-        OutlinedButton(
-            onClick = onBackClick,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = colorResource(R.color.text_secondary)
+    
+    EndSessionButton(
+        onEndSession = { viewModel.endSession(onComplete = onBackClick) },
+        spacing = spacing
+    )
+}
+
+@Composable
+private fun EndSessionButton(
+    onEndSession: () -> Unit,
+    spacing: com.cpen321.usermanagement.ui.theme.Spacing
+) {
+    OutlinedButton(
+        onClick = onEndSession,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(spacing.extraLarge2),
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = colorResource(R.color.error)
         ),
         border = androidx.compose.foundation.BorderStroke(
             1.dp, 
-            colorResource(R.color.text_secondary).copy(alpha = 0.3f)
-        )
+            colorResource(R.color.error).copy(alpha = 0.5f)
+        ),
+        shape = RoundedCornerShape(12.dp)
     ) {
-        Icon(Icons.Default.ExitToApp, contentDescription = null)
-        Spacer(modifier = Modifier.width(8.dp))
-        Text("End Session")
+        Icon(
+            Icons.Default.ExitToApp,
+            contentDescription = "End Session",
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(spacing.small))
+        Text(
+            "End Session",
+            style = MaterialTheme.typography.labelLarge
+        )
     }
 }
 

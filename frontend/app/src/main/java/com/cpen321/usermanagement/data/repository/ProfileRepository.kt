@@ -9,8 +9,5 @@ import com.google.android.libraries.places.api.model.Place
 
 interface ProfileRepository {
     suspend fun getProfile(): Result<User>
-
-
-
-
+    suspend fun updateProfile(name: String?): Result<User>
 }

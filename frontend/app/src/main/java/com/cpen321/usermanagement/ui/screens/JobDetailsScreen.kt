@@ -95,13 +95,14 @@ private fun JobDetailsHeader(
             )
         }
         
-        IconButton(onClick = onNavigateToSimilarJobs) {
-            Icon(
-                Icons.Default.Search,
-                contentDescription = "Find Similar Jobs",
-                tint = colorResource(R.color.primary),
-                modifier = Modifier.size(32.dp)
-            )
+        Button(
+            onClick = onNavigateToSimilarJobs,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = colorResource(R.color.primary)
+            ),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text("Find Similar Jobs")
         }
     }
 }

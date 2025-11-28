@@ -57,6 +57,7 @@ fun SessionListScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SessionListTopBar(
     onBackClick: () -> Unit,

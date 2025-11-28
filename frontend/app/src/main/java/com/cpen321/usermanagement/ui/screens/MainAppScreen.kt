@@ -24,6 +24,8 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cpen321.usermanagement.R
@@ -57,6 +59,7 @@ private fun MainAppScreenEffects(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainAppTopBar(selectedTab: MainTab) {
             TopAppBar(
@@ -238,7 +241,7 @@ private fun DiscussionScreenContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(colorResource(R.color.background))
     ) {
         DiscussionListContent(
             isLoading = uiState.isLoading,
@@ -283,18 +286,23 @@ private fun DiscussionListContent(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(
+                    color = colorResource(R.color.primary)
+                )
             }
         }
-        else -> LazyColumn(
+        else -> {
+            val spacing = LocalSpacing.current
+            LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                    .padding(spacing.medium),
             contentPadding = PaddingValues(bottom = 80.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(spacing.medium)
         ) {
             items(discussions) { discussion ->
                 DiscussionItemCard(discussion, onDiscussionClick)
+            }
             }
         }
     }
@@ -302,13 +310,21 @@ private fun DiscussionListContent(
 
 @Composable
 private fun CreateDiscussionFAB(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.BottomEnd
+    ) {
     FloatingActionButton(
         onClick = onClick,
-        modifier = Modifier
-            .align(Alignment.BottomEnd)
-            .padding(16.dp)
-    ) {
-        Icon(Icons.Default.Add, contentDescription = "New Discussion")
+            modifier = Modifier.padding(16.dp),
+            containerColor = colorResource(R.color.primary),
+            contentColor = colorResource(R.color.text_on_primary)
+        ) {
+            Icon(
+                Icons.Default.Add,
+                contentDescription = "New Discussion"
+            )
+        }
     }
 }
 
@@ -321,31 +337,65 @@ private fun CreateDiscussionDialog(
     onDismiss: () -> Unit,
     onCreate: () -> Unit
 ) {
+    val spacing = LocalSpacing.current
+    
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Create Discussion") },
+        containerColor = colorResource(R.color.surface),
+        title = {
+            Text(
+                "Create Discussion",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = colorResource(R.color.text_primary)
+                )
+            )
+        },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(spacing.medium)) {
                 OutlinedTextField(
                     value = topic,
                     onValueChange = onTopicChange,
                     label = { Text("Topic") },
-                    singleLine = true
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = colorResource(R.color.primary),
+                        unfocusedBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
                 )
                 OutlinedTextField(
                     value = description,
                     onValueChange = onDescriptionChange,
-                    label = { Text("Description (optional)") }
+                    label = { Text("Description (optional)") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = colorResource(R.color.primary),
+                        unfocusedBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    minLines = 3
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = onCreate) {
+            Button(
+                onClick = onCreate,
+                enabled = topic.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(R.color.primary)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
                 Text("Create")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = colorResource(R.color.text_secondary)
+                )
+            ) {
                 Text("Cancel")
             }
         }
@@ -359,37 +409,84 @@ private fun DiscussionItemCard(
     discussion: DiscussionListResponse,
     onClick: (String) -> Unit
 ) {
+    val spacing = LocalSpacing.current
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick(discussion.id) },
-        elevation = CardDefaults.cardElevation(2.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = colorResource(R.color.surface)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Column(Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier.padding(spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(spacing.small)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.Chat,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(Modifier.width(8.dp))
+                        tint = colorResource(R.color.primary),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(spacing.small))
+                    Text(
+                        text = discussion.topic,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = colorResource(R.color.text_primary)
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            if (discussion.description?.isNotBlank() == true) {
                 Text(
-                    text = discussion.topic,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    text = discussion.description ?: "",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = colorResource(R.color.text_secondary)
+                    ),
+                    maxLines = 2
                 )
             }
 
-            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
             Text(
-                text = discussion.description ?: "",
-                style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray)
-            )
-
-            Spacer(Modifier.height(8.dp))
+                    text = "By ${discussion.creatorName}",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = colorResource(R.color.text_secondary)
+                    )
+                )
+                Surface(
+                    color = colorResource(R.color.primary).copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
             Text(
-                text = "By ${discussion.creatorName} • ${discussion.messageCount} messages",
-                style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray)
-            )
+                        text = "${discussion.messageCount} messages",
+                        modifier = Modifier.padding(
+                            horizontal = spacing.small,
+                            vertical = spacing.extraSmall
+                        ),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = colorResource(R.color.primary),
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                }
+            }
         }
     }
 }
@@ -436,6 +533,7 @@ private fun ProfileScreenContent(
         ProfileContent(
             isLoading = uiState.isLoadingProfile,
             user = uiState.user,
+            profileViewModel = profileViewModel,
             onShowSignOutDialog = { showSignOutDialog = true },
             onShowDeleteDialog = { showDeleteDialog = true }
         )
@@ -466,28 +564,37 @@ private fun ProfileScreenContent(
 private fun ProfileContent(
     isLoading: Boolean,
     user: com.cpen321.usermanagement.data.remote.dto.User?,
+    profileViewModel: com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel,
     onShowSignOutDialog: () -> Unit,
     onShowDeleteDialog: () -> Unit
 ) {
     when {
-        isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+        isLoading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = colorResource(R.color.primary)
+                )
+            }
+        }
         else -> {
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    text = "Profile",
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.Bold
+                user?.let { 
+                    EditableUserInfoCard(
+                        user = it,
+                        onSave = { name ->
+                            profileViewModel.updateProfile(name)
+                        },
+                        isSaving = profileViewModel.uiState.collectAsState().value.isSavingProfile
                     )
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                user?.let { UserInfoCard(user = it) }
-
-                Spacer(Modifier.height(8.dp))
+                }
 
                 ProfileActionButtons(
                     onShowSignOutDialog = onShowSignOutDialog,
@@ -499,27 +606,111 @@ private fun ProfileContent(
 }
 
 @Composable
-private fun UserInfoCard(user: com.cpen321.usermanagement.data.remote.dto.User) {
+private fun EditableUserInfoCard(
+    user: com.cpen321.usermanagement.data.remote.dto.User,
+    onSave: (String?) -> Unit,
+    isSaving: Boolean
+) {
+    var name by remember { mutableStateOf(user.name ?: "") }
+    var isEditing by remember { mutableStateOf(false) }
+    
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(4.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = colorResource(R.color.surface)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = user.name ?: "User",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold
-                )
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Name") },
+                enabled = isEditing && !isSaving,
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = colorResource(R.color.primary),
+                    unfocusedBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
+                ),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
             )
-            Text(
-                text = user.email ?: "",
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = colorResource(R.color.text_secondary)
-                )
+            
+            OutlinedTextField(
+                value = user.email ?: "",
+                onValueChange = { },
+                label = { Text("Email") },
+                enabled = false,
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f),
+                    disabledTextColor = colorResource(R.color.text_secondary)
+                ),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
             )
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (isEditing) {
+                    OutlinedButton(
+                        onClick = { 
+                            isEditing = false
+                            name = user.name ?: ""
+                        },
+                        modifier = Modifier.weight(1f),
+                        enabled = !isSaving,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = colorResource(R.color.text_secondary)
+                        )
+                    ) {
+                        Text("Cancel")
+                    }
+                    Button(
+                        onClick = { 
+                            onSave(name.takeIf { it.isNotBlank() })
+                            isEditing = false
+                        },
+                        modifier = Modifier.weight(1f),
+                        enabled = !isSaving && name.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colorResource(R.color.primary)
+                        ),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                    ) {
+                        if (isSaving) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = colorResource(R.color.text_on_primary),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("Save")
+                        }
+                    }
+                } else {
+                    Button(
+                        onClick = { isEditing = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colorResource(R.color.primary)
+                        ),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Edit",
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Edit Profile")
+                    }
+                }
+            }
         }
     }
 }
@@ -529,15 +720,24 @@ private fun ProfileActionButtons(
     onShowSignOutDialog: () -> Unit,
     onShowDeleteDialog: () -> Unit
 ) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+) {
     Button(
         onClick = onShowSignOutDialog,
         modifier = Modifier.fillMaxWidth(),
         colors = ButtonDefaults.buttonColors(
             containerColor = colorResource(R.color.error)
-        )
-    ) {
-        Icon(Icons.Default.Logout, contentDescription = null)
-        Spacer(Modifier.width(8.dp))
+            ),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+        ) {
+            Icon(
+                Icons.Default.Logout,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
         Text("Sign Out")
     }
 
@@ -546,11 +746,17 @@ private fun ProfileActionButtons(
         modifier = Modifier.fillMaxWidth(),
         colors = ButtonDefaults.outlinedButtonColors(
             contentColor = colorResource(R.color.error)
-        )
-    ) {
-        Icon(Icons.Default.Delete, contentDescription = null)
-        Spacer(Modifier.width(8.dp))
+            ),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+        ) {
+            Icon(
+                Icons.Default.Delete,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
         Text("Delete Account")
+        }
     }
 }
 

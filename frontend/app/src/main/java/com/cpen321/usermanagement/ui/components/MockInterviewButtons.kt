@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
 import com.cpen321.usermanagement.R
+import com.cpen321.usermanagement.ui.theme.LocalSpacing
 
 @Composable
 fun SubmitAnswerButton(
@@ -21,6 +22,8 @@ fun SubmitAnswerButton(
     hasAnswer: Boolean,
     isSubmitting: Boolean
 ) {
+    val spacing = LocalSpacing.current
+    
     Button(
         onClick = onSubmitAnswer,
         enabled = hasAnswer && !isSubmitting,
@@ -30,7 +33,7 @@ fun SubmitAnswerButton(
             disabledContainerColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
         ),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-        contentPadding = PaddingValues(vertical = 16.dp)
+        contentPadding = PaddingValues(vertical = spacing.medium)
     ) {
         if (isSubmitting) {
             CircularProgressIndicator(
@@ -38,11 +41,11 @@ fun SubmitAnswerButton(
                 color = Color.White,
                 strokeWidth = 2.dp
             )
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(spacing.medium))
             Text("Submitting...", style = MaterialTheme.typography.labelLarge)
         } else {
             Icon(Icons.Default.Send, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(spacing.small))
             Text("Submit Answer", style = MaterialTheme.typography.labelLarge)
         }
     }
@@ -52,16 +55,41 @@ fun SubmitAnswerButton(
 fun ActionSecondaryButtons(
     onPrevious: () -> Unit,
     onSaveSession: () -> Unit,
-    canGoPrevious: Boolean
+    canGoPrevious: Boolean,
+    isSaving: Boolean = false
 ) {
+    val spacing = LocalSpacing.current
+    
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(spacing.medium)
+    ) {
+        PreviousButton(
+            onPrevious = onPrevious,
+            canGoPrevious = canGoPrevious,
+            modifier = Modifier.weight(1f),
+            spacing = spacing
+        )
+        SaveButton(
+            onSaveSession = onSaveSession,
+            modifier = Modifier.weight(1f),
+            spacing = spacing,
+            isSaving = isSaving
+        )
+    }
+}
+
+@Composable
+private fun PreviousButton(
+    onPrevious: () -> Unit,
+    canGoPrevious: Boolean,
+    modifier: Modifier = Modifier,
+    spacing: com.cpen321.usermanagement.ui.theme.Spacing
     ) {
         OutlinedButton(
             onClick = onPrevious,
             enabled = canGoPrevious,
-            modifier = Modifier.weight(1f),
+        modifier = modifier,
             colors = ButtonDefaults.outlinedButtonColors(
                 contentColor = colorResource(R.color.text_primary)
             ),
@@ -73,15 +101,25 @@ fun ActionSecondaryButtons(
         ) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = null,
+            contentDescription = "Previous",
                 modifier = Modifier.size(18.dp)
             )
-            Spacer(modifier = Modifier.width(6.dp))
+        Spacer(modifier = Modifier.width(spacing.extraSmall))
             Text("Previous", style = MaterialTheme.typography.labelMedium)
         }
+}
+
+@Composable
+private fun SaveButton(
+    onSaveSession: () -> Unit,
+    modifier: Modifier = Modifier,
+    spacing: com.cpen321.usermanagement.ui.theme.Spacing,
+    isSaving: Boolean = false
+) {
         OutlinedButton(
             onClick = onSaveSession,
-            modifier = Modifier.weight(1f),
+            modifier = modifier,
+            enabled = !isSaving,
             colors = ButtonDefaults.outlinedButtonColors(
                 contentColor = colorResource(R.color.text_primary)
             ),
@@ -91,14 +129,21 @@ fun ActionSecondaryButtons(
             ),
             shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
         ) {
-            Icon(
-                Icons.Default.Bookmark,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
+            if (isSaving) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    color = colorResource(R.color.text_primary),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Icon(
+                    Icons.Default.Bookmark,
+                    contentDescription = "Save Session",
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(spacing.extraSmall))
             Text("Save", style = MaterialTheme.typography.labelMedium)
-        }
     }
 }
 
@@ -109,11 +154,14 @@ fun EnhancedActionButtonsRow(
     onSubmitAnswer: () -> Unit,
     canGoPrevious: Boolean,
     hasAnswer: Boolean,
-    isSubmitting: Boolean = false
+    isSubmitting: Boolean = false,
+    isSaving: Boolean = false
 ) {
+    val spacing = LocalSpacing.current
+    
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(spacing.medium)
     ) {
         SubmitAnswerButton(
             onSubmitAnswer = onSubmitAnswer,
@@ -123,7 +171,8 @@ fun EnhancedActionButtonsRow(
         ActionSecondaryButtons(
             onPrevious = onPrevious,
             onSaveSession = onSaveSession,
-            canGoPrevious = canGoPrevious
+            canGoPrevious = canGoPrevious,
+            isSaving = isSaving
         )
     }
 }
@@ -133,6 +182,8 @@ fun NextQuestionButton(
     onNext: () -> Unit,
     canGoNext: Boolean
 ) {
+    val spacing = LocalSpacing.current
+    
     Button(
         onClick = onNext,
         enabled = canGoNext,
@@ -142,13 +193,13 @@ fun NextQuestionButton(
             disabledContainerColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
         ),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-        contentPadding = PaddingValues(vertical = 16.dp)
+        contentPadding = PaddingValues(vertical = spacing.medium)
     ) {
         Text("Next Question", style = MaterialTheme.typography.labelLarge)
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(spacing.small))
         Icon(
             Icons.AutoMirrored.Filled.ArrowForward,
-            contentDescription = null,
+            contentDescription = "Next Question",
             modifier = Modifier.size(20.dp)
         )
     }
@@ -158,53 +209,27 @@ fun NextQuestionButton(
 fun FeedbackSecondaryButtons(
     onPrevious: () -> Unit,
     onSaveSession: () -> Unit,
-    canGoPrevious: Boolean
+    canGoPrevious: Boolean,
+    isSaving: Boolean = false
 ) {
+    val spacing = LocalSpacing.current
+    
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(spacing.medium)
     ) {
-        OutlinedButton(
-            onClick = onPrevious,
-            enabled = canGoPrevious,
+        PreviousButton(
+            onPrevious = onPrevious,
+            canGoPrevious = canGoPrevious,
             modifier = Modifier.weight(1f),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = colorResource(R.color.text_primary)
-            ),
-            border = BorderStroke(
-                1.dp, 
-                colorResource(R.color.text_secondary).copy(alpha = 0.3f)
-            ),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
-        ) {
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text("Previous", style = MaterialTheme.typography.labelMedium)
-        }
-        OutlinedButton(
-            onClick = onSaveSession,
+            spacing = spacing
+        )
+        SaveButton(
+            onSaveSession = onSaveSession,
             modifier = Modifier.weight(1f),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = colorResource(R.color.text_primary)
-            ),
-            border = BorderStroke(
-                1.dp, 
-                colorResource(R.color.text_secondary).copy(alpha = 0.3f)
-            ),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
-        ) {
-            Icon(
-                Icons.Default.Bookmark,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text("Save", style = MaterialTheme.typography.labelMedium)
-        }
+            spacing = spacing,
+            isSaving = isSaving
+        )
     }
 }
 
@@ -214,11 +239,14 @@ fun FeedbackNavigationButtons(
     onPrevious: () -> Unit,
     onSaveSession: () -> Unit,
     canGoNext: Boolean,
-    canGoPrevious: Boolean
+    canGoPrevious: Boolean,
+    isSaving: Boolean = false
 ) {
+    val spacing = LocalSpacing.current
+    
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(spacing.medium)
     ) {
         NextQuestionButton(
             onNext = onNext,
@@ -227,7 +255,8 @@ fun FeedbackNavigationButtons(
         FeedbackSecondaryButtons(
             onPrevious = onPrevious,
             onSaveSession = onSaveSession,
-            canGoPrevious = canGoPrevious
+            canGoPrevious = canGoPrevious,
+            isSaving = isSaving
         )
     }
 }

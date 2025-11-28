@@ -16,8 +16,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cpen321.usermanagement.R
+import com.cpen321.usermanagement.data.remote.dto.QuestionsData
+import com.cpen321.usermanagement.data.remote.dto.QuestionProgress
 import com.cpen321.usermanagement.ui.viewmodels.QuestionViewModel
 import com.cpen321.usermanagement.ui.viewmodels.MainViewModel
+import com.cpen321.usermanagement.ui.viewmodels.MainUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,12 +103,12 @@ private fun QuestionsDashboardState(
 )
 
 private data class QuestionsDashboardStateData(
-    val questions: QuestionsResponse?,
+    val questions: QuestionsData?,
     val questionProgress: QuestionProgress?,
     val isLoading: Boolean,
     val error: String?,
     val sessionCreated: String?,
-    val mainUiState: MainViewModel.UiState
+    val mainUiState: MainUiState
 )
 
 private data class QuestionsDashboardHandlers(
@@ -144,7 +147,7 @@ private fun createQuestionsDashboardHandlers(
 
 private data class QuestionsDashboardEffectsState(
     val sessionCreated: String?,
-    val questions: QuestionsResponse?,
+    val questions: QuestionsData?,
     val isLoading: Boolean,
     val hasAttemptedGeneration: Boolean,
     val shouldReload: Boolean
@@ -204,8 +207,8 @@ private data class QuestionsDashboardLayoutState(
     val sessionError: String?,
     val isLoading: Boolean,
     val shouldReload: Boolean,
-    val questions: QuestionsResponse?,
-    val mainUiState: MainViewModel.UiState,
+    val questions: QuestionsData?,
+    val mainUiState: MainUiState,
     val showGenerateDialog: Boolean
 )
 
@@ -222,8 +225,8 @@ private data class QuestionsDashboardLayoutCallbacks(
 private data class QuestionsDashboardContentState(
     val isLoading: Boolean,
     val shouldReload: Boolean,
-    val questions: com.cpen321.usermanagement.data.remote.dto.QuestionsResponse?,
-    val mainUiState: com.cpen321.usermanagement.ui.viewmodels.MainViewModel.MainUiState,
+    val questions: QuestionsData?,
+    val mainUiState: MainUiState,
     val jobId: String,
     val showGenerateDialog: Boolean
 )
@@ -466,7 +469,7 @@ private fun SessionCreationLoadingState() {
 
 @Composable
 private fun QuestionsAvailableContent(
-    questions: com.cpen321.usermanagement.data.remote.dto.QuestionsResponse,
+    questions: QuestionsData,
     onNavigateToTechnicalQuestions: () -> Unit,
     onCreateMockInterview: () -> Unit
 ) {
@@ -561,20 +564,21 @@ private fun QuestionTypeCardContent(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     questionCount: Int,
     completedCount: Int
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(20.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+) {
+    Row(
+        modifier = Modifier
+            .padding(20.dp)
+            .fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         QuestionTypeCardInfo(
             title = title,
             description = description,
             icon = icon,
             questionCount = questionCount,
-            completedCount = completedCount
+            completedCount = completedCount,
+            modifier = Modifier.weight(1f)
         )
         Icon(
             Icons.Default.ChevronRight,
@@ -590,12 +594,13 @@ private fun QuestionTypeCardInfo(
     description: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     questionCount: Int,
-    completedCount: Int
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-        ) {
+    completedCount: Int,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
             Icon(
                     icon,
                 contentDescription = null,
@@ -715,5 +720,4 @@ private fun GenerateQuestionsDialog(
             }
         )
     }
-}
 }

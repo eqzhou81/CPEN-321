@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -277,17 +278,14 @@ private fun TechnicalQuestionCardHeader(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = if (question.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                        contentDescription = if (question.isCompleted) "Mark as incomplete" else "Mark as complete",
-                        tint = if (question.isCompleted) colorResource(R.color.success) else colorResource(R.color.text_tertiary),
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clickable { onToggleCompletion() }
+                    Switch(
+                        checked = question.isCompleted,
+                        onCheckedChange = { onToggleCompletion() },
+                        modifier = Modifier.testTag("complete_switch_${question.id}")
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-            DifficultyBadge(difficulty = question.difficulty)
-        }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    DifficultyBadge(difficulty = question.difficulty)
+                }
                 question.language?.let { language ->
                     Badge(
                         containerColor = colorResource(R.color.secondary).copy(alpha = 0.2f),

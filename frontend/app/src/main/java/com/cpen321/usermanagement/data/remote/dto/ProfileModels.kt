@@ -45,12 +45,14 @@ data class DeleteProfileRequest(
  *   message: string;
  *   profile: GetProfileResponse;
  * }
+ * Note: profile is GetProfileResponse which is the User object directly
  */
 data class UpdateProfileResponse(
     val success: Boolean,
     val message: String,
-    val profile: GetProfileResponse
+    val profile: User  // Backend returns GetProfileResponse which is the User object directly
 )
+
 data class GetProfileResponse(
     val data: ProfileData
 )

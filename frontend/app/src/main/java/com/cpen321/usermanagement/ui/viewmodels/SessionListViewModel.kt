@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import java.io.IOException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -40,9 +42,9 @@ class SessionListViewModel @Inject constructor(
                     )
                 }
             } catch (e: IOException) {
-                _uiState.value = UiState.Error("Network error: ${e.message}")
-            } catch (e: retrofit2.HttpException) {
-                _uiState.value = UiState.Error("Server error: ${e.message}")
+                _uiState.value = UiState.Error("Network error: ${e.message ?: "Unknown error"}")
+            } catch (e: HttpException) {
+                _uiState.value = UiState.Error("Server error: ${e.message()}")
             }
         }
     }

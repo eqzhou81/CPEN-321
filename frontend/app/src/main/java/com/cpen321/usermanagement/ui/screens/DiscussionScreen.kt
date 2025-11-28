@@ -17,9 +17,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cpen321.usermanagement.R
+import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.ui.viewmodels.DiscussionViewModel
 import com.cpen321.usermanagement.ui.viewmodels.DiscussionUiState
 import com.cpen321.usermanagement.data.remote.api.DiscussionListResponse
@@ -55,21 +59,27 @@ private fun DiscussionScreenContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(colorResource(R.color.background))
     ) {
         when {
             isLoading && allDiscussions.isEmpty() ->
-                CircularProgressIndicator(Modifier.align(Alignment.Center))
-            else -> LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                contentPadding = PaddingValues(bottom = 80.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = colorResource(R.color.primary)
+                )
+            else -> {
+                val spacing = LocalSpacing.current
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(spacing.medium),
+                    contentPadding = PaddingValues(bottom = 80.dp),
+                    verticalArrangement = Arrangement.spacedBy(spacing.medium)
+                ) {
                 items(allDiscussions) { discussion ->
                     DiscussionItem(discussion, onDiscussionClick)
                 }
+            }
             }
         }
     }
@@ -86,36 +96,67 @@ private fun CreateDiscussionDialog(
     onCreate: () -> Unit
 ) {
     if (showDialog) {
+        val spacing = LocalSpacing.current
         AlertDialog(
             onDismissRequest = onDismiss,
-            title = { Text("Create Discussion") },
+            containerColor = colorResource(R.color.surface),
+            title = {
+                Text(
+                    "Create Discussion",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = colorResource(R.color.text_primary)
+                    )
+                )
+            },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(spacing.medium)) {
                     OutlinedTextField(
                         value = topic,
                         onValueChange = onTopicChange,
                         modifier = Modifier.testTag("discussion_topic_input"),
                         label = { Text("Topic") },
-                        singleLine = true
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = colorResource(R.color.primary),
+                            unfocusedBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
                     )
                     OutlinedTextField(
                         value = description,
                         onValueChange = onDescriptionChange,
                         modifier = Modifier.testTag("discussion_description_input"),
-                        label = { Text("Description (optional)") }
+                        label = { Text("Description (optional)") },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = colorResource(R.color.primary),
+                            unfocusedBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        minLines = 3
                     )
                 }
             },
             confirmButton = {
-                TextButton(
+                Button(
                     onClick = onCreate,
-                    modifier = Modifier.testTag("create_discussion_button")
+                    enabled = topic.isNotBlank(),
+                    modifier = Modifier.testTag("create_discussion_button"),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(R.color.primary)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("Create")
                 }
             },
             dismissButton = {
-                TextButton(onClick = onDismiss) {
+                TextButton(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = colorResource(R.color.text_secondary)
+                    )
+                ) {
                     Text("Cancel")
                 }
             }
@@ -147,10 +188,27 @@ fun DiscussionScreen(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Community Discussions", modifier = Modifier.testTag("discussions_title")) },
+                title = {
+                    Text(
+                        "Community Discussions",
+                        modifier = Modifier.testTag("discussions_title"),
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = colorResource(R.color.text_primary)
+                        )
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = colorResource(R.color.surface),
+                    titleContentColor = colorResource(R.color.text_primary)
+                ),
                 actions = {
                     IconButton(onClick = onClose) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = colorResource(R.color.text_primary)
+                        )
                     }
                 }
             )
@@ -158,7 +216,9 @@ fun DiscussionScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showDialog = true },
-                modifier = Modifier.testTag("new_discussion_button")
+                modifier = Modifier.testTag("new_discussion_button"),
+                containerColor = colorResource(R.color.primary),
+                contentColor = colorResource(R.color.text_on_primary)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "New Discussion")
             }
@@ -192,37 +252,84 @@ fun DiscussionItem(
     discussion: DiscussionListResponse,
     onClick: (String) -> Unit
 ) {
+    val spacing = LocalSpacing.current
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick(discussion.id) },
-        elevation = CardDefaults.cardElevation(2.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = colorResource(R.color.surface)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
     ) {
-        Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.Chat,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(Modifier.width(8.dp))
+        Column(
+            modifier = Modifier.padding(spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(spacing.small)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Chat,
+                        contentDescription = null,
+                        tint = colorResource(R.color.primary),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(spacing.small))
+                    Text(
+                        text = discussion.topic,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = colorResource(R.color.text_primary)
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            if (discussion.description?.isNotBlank() == true) {
                 Text(
-                    text = discussion.topic,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    text = discussion.description ?: "",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = colorResource(R.color.text_secondary)
+                    ),
+                    maxLines = 2
                 )
             }
 
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = discussion.description ?: "",
-                style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray)
-            )
-
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = "By ${discussion.creatorName} • ${discussion.messageCount} messages",
-                style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "By ${discussion.creatorName}",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = colorResource(R.color.text_secondary)
+                    )
+                )
+                Surface(
+                    color = colorResource(R.color.primary).copy(alpha = 0.1f),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "${discussion.messageCount} messages",
+                        modifier = Modifier.padding(
+                            horizontal = spacing.small,
+                            vertical = spacing.extraSmall
+                        ),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = colorResource(R.color.primary),
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                }
+            }
         }
     }
 }

@@ -17,6 +17,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cpen321.usermanagement.R
+import com.cpen321.usermanagement.ui.theme.LocalSpacing
 
 @Composable
 fun EnhancedQuestionCard(
@@ -323,11 +324,8 @@ fun EnhancedProgressCard(
     totalQuestions: Int,
     currentIndex: Int
 ) {
-    val progress = if (totalQuestions > 0) {
-        completedQuestions.toFloat() / totalQuestions
-    } else {
-        0f
-    }
+    val spacing = LocalSpacing.current
+    val progress = calculateProgress(completedQuestions, totalQuestions)
     
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -336,9 +334,22 @@ fun EnhancedProgressCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(spacing.large),
+            verticalArrangement = Arrangement.spacedBy(spacing.medium)
         ) {
+            ProgressCardHeader()
+            ProgressBar(progress = progress, spacing = spacing)
+            ProgressCardFooter(
+                completedQuestions = completedQuestions,
+                totalQuestions = totalQuestions,
+                currentIndex = currentIndex
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProgressCardHeader() {
             Text(
                 "Progress",
                 style = MaterialTheme.typography.titleMedium.copy(
@@ -346,23 +357,53 @@ fun EnhancedProgressCard(
                 ),
                 color = colorResource(R.color.text_primary)
             )
+}
             
+@Composable
+private fun ProgressBar(
+    progress: Float,
+    spacing: com.cpen321.usermanagement.ui.theme.Spacing
+) {
             LinearProgressIndicator(
                 progress = { progress },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(12.dp)
+            .height(spacing.medium)
                     .clip(RoundedCornerShape(6.dp)),
                 color = colorResource(R.color.primary),
                 trackColor = colorResource(R.color.primary).copy(alpha = 0.2f)
             )
-            
+}
+
+@Composable
+private fun ProgressCardFooter(
+    completedQuestions: Int,
+    totalQuestions: Int,
+    currentIndex: Int
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            "$completedQuestions of $totalQuestions questions answered",
+            style = MaterialTheme.typography.bodySmall,
+            color = colorResource(R.color.text_secondary)
+        )
             Text(
-                "Question ${currentIndex + 1} of $totalQuestions",
+            "Question ${currentIndex + 1}",
                 style = MaterialTheme.typography.bodySmall,
                 color = colorResource(R.color.text_secondary)
             )
         }
+}
+
+private fun calculateProgress(completedQuestions: Int, totalQuestions: Int): Float {
+    return if (totalQuestions > 0) {
+        completedQuestions.toFloat() / totalQuestions
+    } else {
+        0f
     }
 }
 
@@ -406,18 +447,28 @@ fun SessionCompleteCard() {
 
 @Composable
 fun EnhancedTipsCard() {
+    val spacing = LocalSpacing.current
+    
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = colorResource(R.color.primary).copy(alpha = 0.05f),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(spacing.medium)
         ) {
+            TipsCardHeader(spacing = spacing)
+            TipsList(spacing = spacing)
+        }
+    }
+}
+
+@Composable
+private fun TipsCardHeader(spacing: com.cpen321.usermanagement.ui.theme.Spacing) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(spacing.small)
             ) {
                 Icon(
                     Icons.Default.Lightbulb,
@@ -432,25 +483,28 @@ fun EnhancedTipsCard() {
                     ),
                     color = colorResource(R.color.text_primary)
                 )
+    }
             }
             
+@Composable
+private fun TipsList(spacing: com.cpen321.usermanagement.ui.theme.Spacing) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(spacing.small)
             ) {
                 TipItem("Use the STAR method: Situation, Task, Action, Result")
                 TipItem("Be specific with examples from your experience")
                 TipItem("Keep answers concise but comprehensive (2-3 minutes)")
                 TipItem("Practice speaking clearly and confidently")
-            }
-        }
     }
 }
 
 @Composable
 private fun TipItem(text: String) {
+    val spacing = LocalSpacing.current
+    
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(spacing.small),
         verticalAlignment = Alignment.Top
     ) {
         Text(

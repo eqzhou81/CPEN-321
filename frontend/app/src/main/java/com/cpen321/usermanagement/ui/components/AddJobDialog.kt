@@ -270,7 +270,7 @@ fun AddJobDialog(
                     jobLink = jobLink,
                     isLoading = isLoading,
                     onDismiss = onDismiss,
-                    onAddJob = {
+                    onSubmit = {
                         isLoading = true
                         if (pasteMode == PasteMode.TEXT && jobText.isNotBlank()) {
                             val request = parseJobText(jobText)

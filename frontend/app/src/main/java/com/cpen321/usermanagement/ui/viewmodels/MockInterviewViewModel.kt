@@ -41,7 +41,9 @@ class MockInterviewViewModel @Inject constructor(
             val currentQuestion: Question?,
             val feedback: SessionFeedback? = null,
             val answer: String = "",
-            val isSubmitting: Boolean = false
+            val isSubmitting: Boolean = false,
+            val isSaving: Boolean = false,
+            val saveMessage: String? = null
         ) : UiState()
         data class Error(val message: String) : UiState()
     }
@@ -88,10 +90,11 @@ class MockInterviewViewModel @Inject constructor(
                 try {
                     _uiState.value = currentState.copy(isSubmitting = true)
                     
-                    val currentQuestionId = if (currentState.session.currentQuestionIndex < currentState.session.questionIds.size) {
-                        currentState.session.questionIds[currentState.session.currentQuestionIndex].id
-                    } else {
-                        currentState.currentQuestion?.id ?: ""
+                    val currentQuestionId = getCurrentQuestionId(currentState)
+                    
+                    if (currentQuestionId.isBlank()) {
+                        _uiState.value = currentState.copy(isSubmitting = false)
+                        return@launch
                     }
                     
                     val request = SubmitAnswerRequest(
@@ -104,25 +107,28 @@ class MockInterviewViewModel @Inject constructor(
                     
                     if (response.isSuccessful && response.body()?.data != null) {
                         val responseData = response.body()!!.data!!
-                        
                         currentAnswer = ""
-                        // Reload session to get the latest progress
+                        
+                        // Reload session to get the latest progress and current question
                         val updatedSessionResponse = sessionRepository.getSession(currentState.session.id)
-                        val updatedSession = if (updatedSessionResponse.isSuccessful && updatedSessionResponse.body()?.data != null) {
-                            updatedSessionResponse.body()!!.data!!.session
+                        if (updatedSessionResponse.isSuccessful && updatedSessionResponse.body()?.data != null) {
+                            val sessionData = updatedSessionResponse.body()!!.data!!
+                            _uiState.value = UiState.Success(
+                                session = sessionData.session,
+                                currentQuestion = sessionData.currentQuestion,
+                                feedback = responseData.feedback,
+                                answer = "",
+                                isSubmitting = false
+                            )
                         } else {
-                            responseData.session
-                        }
-                        
-                        _uiState.value = UiState.Success(
-                            session = updatedSession,
-                            currentQuestion = currentState.currentQuestion,
-                            feedback = responseData.feedback,
-                            answer = "",
-                            isSubmitting = false
-                        )
-                        
-                        if (responseData.feedback.sessionCompleted) {
+                            // Fallback to response data if reload fails
+                            _uiState.value = UiState.Success(
+                                session = responseData.session,
+                                currentQuestion = currentState.currentQuestion,
+                                feedback = responseData.feedback,
+                                answer = "",
+                                isSubmitting = false
+                            )
                         }
                     } else {
                         _uiState.value = currentState.copy(
@@ -178,62 +184,94 @@ class MockInterviewViewModel @Inject constructor(
     
     fun saveSession() {
         val currentState = _uiState.value
-        if (currentState is UiState.Success && currentAnswer.isNotBlank()) {
+        if (currentState is UiState.Success) {
             viewModelScope.launch {
+                _uiState.value = currentState.copy(isSaving = true, saveMessage = null)
                 try {
-                    // Save the answer by submitting it (but we'll keep the session active)
-                    // The backend will save the answer when we submit
-                    // For now, we'll just pause the session and the answer will be preserved in the UI state
-                    // When user returns, they can continue from where they left off
-                    
-                    // First, update status to paused
-                    val request = UpdateStatusRequest(status = "paused")
-                    val response = sessionRepository.updateSessionStatus(
-                        currentState.session.id,
-                        request
-                    )
-                    
-                    if (response.isSuccessful && response.body()?.data != null) {
-                        // Answer is already saved in currentAnswer, which persists in the ViewModel
-                        // When user returns, the answer will still be there
-                        // Reload session to get updated status
-                        val updatedSessionResponse = sessionRepository.getSession(currentState.session.id)
-                        if (updatedSessionResponse.isSuccessful && updatedSessionResponse.body()?.data != null) {
-                            val updatedSession = updatedSessionResponse.body()!!.data!!.session
-                            _uiState.value = currentState.copy(
-                                session = updatedSession,
-                                answer = currentAnswer // Preserve the answer
-                            )
-                        }
+                    if (currentAnswer.isNotBlank()) {
+                        // Save the answer first by submitting it
+                        saveAnswerAndPauseSession(currentState)
+                    } else {
+                        // No answer to save, just pause the session
+                        pauseSessionOnly(currentState)
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to save session", e)
-                    // Error saving - answer is still preserved in currentAnswer
-                }
-            }
-        } else if (currentState is UiState.Success) {
-            // No answer to save, just pause the session
-            viewModelScope.launch {
-                try {
-                    val request = UpdateStatusRequest(status = "paused")
-                    val response = sessionRepository.updateSessionStatus(
-                        currentState.session.id,
-                        request
+                    val updatedState = (_uiState.value as? UiState.Success)?.copy(
+                        isSaving = false,
+                        saveMessage = "Session saved successfully"
                     )
+                    _uiState.value = updatedState ?: _uiState.value
                     
-                    if (response.isSuccessful && response.body()?.data != null) {
-                        val updatedSessionResponse = sessionRepository.getSession(currentState.session.id)
-                        if (updatedSessionResponse.isSuccessful && updatedSessionResponse.body()?.data != null) {
-                            val updatedSession = updatedSessionResponse.body()!!.data!!.session
-                            _uiState.value = currentState.copy(session = updatedSession)
-                        }
-                    }
+                    // Clear message after 3 seconds
+                    kotlinx.coroutines.delay(3000)
+                    _uiState.value = (updatedState?.copy(saveMessage = null)) ?: _uiState.value
                 } catch (e: IOException) {
-                    android.util.Log.e("MockInterviewViewModel", "Error updating session status", e)
-                } catch (e: retrofit2.HttpException) {
-                    android.util.Log.e("MockInterviewViewModel", "Error updating session status", e)
+                    Log.e(TAG, "Failed to save session", e)
+                    _uiState.value = (_uiState.value as? UiState.Success)?.copy(
+                        isSaving = false,
+                        saveMessage = "Failed to save session: ${e.message}"
+                    ) ?: _uiState.value
+                } catch (e: HttpException) {
+                    Log.e(TAG, "Failed to save session", e)
+                    _uiState.value = (_uiState.value as? UiState.Success)?.copy(
+                        isSaving = false,
+                        saveMessage = "Failed to save session: ${e.message()}"
+                    ) ?: _uiState.value
                 }
             }
+        }
+    }
+    
+    private suspend fun saveAnswerAndPauseSession(currentState: UiState.Success) {
+        val currentQuestionId = getCurrentQuestionId(currentState)
+        if (currentQuestionId.isNotBlank()) {
+            val request = SubmitAnswerRequest(
+                sessionId = currentState.session.id,
+                questionId = currentQuestionId,
+                answer = currentAnswer
+            )
+            val submitResponse = sessionRepository.submitAnswer(request)
+            
+            if (submitResponse.isSuccessful && submitResponse.body()?.data != null) {
+                pauseSessionOnly(currentState)
+            } else {
+                // Even if submit fails, try to pause the session
+                pauseSessionOnly(currentState)
+            }
+        } else {
+            pauseSessionOnly(currentState)
+        }
+    }
+    
+    private suspend fun pauseSessionOnly(currentState: UiState.Success) {
+        val request = UpdateStatusRequest(status = "paused")
+        val response = sessionRepository.updateSessionStatus(
+            currentState.session.id,
+            request
+        )
+        
+        if (response.isSuccessful && response.body()?.data != null) {
+            reloadSessionState(currentState.session.id, currentState)
+        }
+    }
+    
+    private suspend fun reloadSessionState(sessionId: String, currentState: UiState.Success) {
+        val updatedSessionResponse = sessionRepository.getSession(sessionId)
+        if (updatedSessionResponse.isSuccessful && updatedSessionResponse.body()?.data != null) {
+            val sessionData = updatedSessionResponse.body()!!.data!!
+            val updatedSession = sessionData.session
+            _uiState.value = currentState.copy(
+                session = updatedSession,
+                currentQuestion = sessionData.currentQuestion,
+                answer = currentAnswer
+            )
+        }
+    }
+    
+    private fun getCurrentQuestionId(currentState: UiState.Success): String {
+        return if (currentState.session.currentQuestionIndex < currentState.session.questionIds.size) {
+            currentState.session.questionIds[currentState.session.currentQuestionIndex].id
+        } else {
+            currentState.currentQuestion?.id ?: ""
         }
     }
     
@@ -269,6 +307,44 @@ class MockInterviewViewModel @Inject constructor(
                     }
                 }
             }
+        }
+    }
+    
+    fun endSession(onComplete: () -> Unit) {
+        val currentState = _uiState.value
+        if (currentState is UiState.Success) {
+            viewModelScope.launch {
+                try {
+                    val status = if (currentState.session.answeredQuestions >= currentState.session.totalQuestions) {
+                        "completed"
+                    } else {
+                        "cancelled"
+                    }
+                    
+                    val request = UpdateStatusRequest(status = status)
+                    val response = sessionRepository.updateSessionStatus(
+                        currentState.session.id,
+                        request
+                    )
+                    
+                    if (response.isSuccessful) {
+                        onComplete()
+                    } else {
+                        // Even if update fails, navigate back
+                        onComplete()
+                    }
+                } catch (e: IOException) {
+                    Log.e(TAG, "Failed to end session", e)
+                    // Navigate back even on error
+                    onComplete()
+                } catch (e: HttpException) {
+                    Log.e(TAG, "Failed to end session", e)
+                    // Navigate back even on error
+                    onComplete()
+                }
+            }
+        } else {
+            onComplete()
         }
     }
 }

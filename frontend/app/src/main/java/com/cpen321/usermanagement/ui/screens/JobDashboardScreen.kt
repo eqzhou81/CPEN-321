@@ -98,37 +98,53 @@ private fun JobDashboardHeader(onAddJobClick: () -> Unit) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.Top
+    ) {
+        Column(
+            modifier = Modifier.weight(1f)
         ) {
-            Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
                     text = "My Job Applications",
-                modifier = Modifier.testTag("job_applications_title"),
+                    modifier = Modifier.testTag("job_applications_title"),
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = colorResource(R.color.text_primary)
                     )
                 )
+                Button(
+                    onClick = onAddJobClick,
+                    modifier = Modifier.testTag("add_job_button"),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(R.color.primary)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "Add Job Application",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Add Job")
+                }
+            }
                 Text(
                     text = "Track your applications and practice interview questions",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = colorResource(R.color.text_secondary)
                     )
                 )
-            }
-            FloatingActionButton(
-            onClick = onAddJobClick,
-            modifier = Modifier.testTag("add_job_button"),
-                containerColor = colorResource(R.color.primary),
-                contentColor = colorResource(R.color.text_on_primary)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Job Application")
         }
     }
 }
 
 private data class JobDashboardContentState(
-    val jobStatistics: JobStatistics?,
+    val jobStatistics: JobStatisticsData?,
     val error: String?,
     val isLoading: Boolean,
     val jobApplications: List<JobApplication>,

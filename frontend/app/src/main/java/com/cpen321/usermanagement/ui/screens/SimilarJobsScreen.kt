@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cpen321.usermanagement.R
+import com.cpen321.usermanagement.data.remote.dto.JobApplication
 import com.cpen321.usermanagement.data.remote.dto.SimilarJob
 import com.cpen321.usermanagement.ui.viewmodels.JobViewModel
 
@@ -52,7 +53,7 @@ private fun SimilarJobsHeader(
                             color = colorResource(R.color.text_primary)
                         )
                     )
-                    selectedJob?.let { job ->
+                    selectedJob?.let { job: JobApplication ->
                         Text(
                             text = "Based on: ${job.title} at ${job.company}",
                             style = MaterialTheme.typography.bodyMedium.copy(
