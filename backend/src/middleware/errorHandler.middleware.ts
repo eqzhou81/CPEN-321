@@ -12,8 +12,7 @@ export const notFoundHandler = (req: Request, res: Response) => {
   });
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const errorHandler = (error: Error, req: Request, res: Response, _next: NextFunction) => {
+export const errorHandler = (error: Error, req: Request, res: Response, _next: NextFunction): void => {
   logger.error('Error:', error);
 
   return res.status(500).json({
