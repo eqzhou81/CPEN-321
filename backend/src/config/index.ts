@@ -1,11 +1,11 @@
 import dotenv from 'dotenv';
-import { connectDB } from './database';
 import { app } from '../config/app';
 import logger from '../utils/logger.util';
+import { connectDB } from './database';
 
 //for real time socket
-import { Server } from 'socket.io';
 import http from 'http';
+import { Server } from 'socket.io';
 
 
 dotenv.config();
@@ -42,7 +42,7 @@ io.on('connection', (socket) => {
 });
 
 
-void connectDB();
+connectDB();
 
 // Start BOTH Express + Socket.IO
 server.listen(PORT, () => {

@@ -48,7 +48,7 @@ const jobApplicationSchema = new Schema<IJobApplication>(
         validator: function (url: string) {
           if (!url) return true;
           try {
-            void new URL(url);
+            new URL(url);
             return true;
           } catch {
             return false;
