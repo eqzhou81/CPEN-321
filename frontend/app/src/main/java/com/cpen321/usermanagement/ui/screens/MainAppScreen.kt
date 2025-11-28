@@ -352,52 +352,22 @@ private fun CreateDiscussionDialog(
             )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(spacing.medium)) {
-                OutlinedTextField(
-                    value = topic,
-                    onValueChange = onTopicChange,
-                    label = { Text("Topic") },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = colorResource(R.color.primary),
-                        unfocusedBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                )
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = onDescriptionChange,
-                    label = { Text("Description (optional)") },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = colorResource(R.color.primary),
-                        unfocusedBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    minLines = 3
-                )
-            }
+            CreateDiscussionDialogFields(
+                topic = topic,
+                description = description,
+                onTopicChange = onTopicChange,
+                onDescriptionChange = onDescriptionChange,
+                spacing = spacing
+            )
         },
         confirmButton = {
-            Button(
-                onClick = onCreate,
-                enabled = topic.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = colorResource(R.color.primary)
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Create")
-            }
+            CreateDiscussionDialogConfirmButton(
+                onCreate = onCreate,
+                topic = topic
+            )
         },
         dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = colorResource(R.color.text_secondary)
-                )
-            ) {
-                Text("Cancel")
-            }
+            CreateDiscussionDialogDismissButton(onDismiss = onDismiss)
         }
     )
 }
@@ -645,92 +615,158 @@ private fun EditableUserInfoCard(
             modifier = Modifier.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Name") },
-                enabled = isEditing && !isSaving,
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = colorResource(R.color.primary),
-                    unfocusedBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
-                ),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+            EditableUserInfoFields(
+                name = name,
+                onNameChange = { name = it },
+                email = user.email ?: "",
+                isEditing = isEditing,
+                isSaving = isSaving
             )
-            
-            OutlinedTextField(
-                value = user.email ?: "",
-                onValueChange = { },
-                label = { Text("Email") },
-                enabled = false,
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    disabledBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f),
-                    disabledTextColor = colorResource(R.color.text_secondary)
-                ),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
-            )
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                if (isEditing) {
-                    OutlinedButton(
-                        onClick = { 
-                            isEditing = false
-                            name = user.name ?: ""
-                        },
-                        modifier = Modifier.weight(1f),
-                        enabled = !isSaving,
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = colorResource(R.color.text_secondary)
-                        )
-                    ) {
-                        Text("Cancel")
-                    }
-                    Button(
-                        onClick = { 
-                            onSave(name.takeIf { it.isNotBlank() })
-                            isEditing = false
-                        },
-                        modifier = Modifier.weight(1f),
-                        enabled = !isSaving && name.isNotBlank(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = colorResource(R.color.primary)
-                        ),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
-                    ) {
-                        if (isSaving) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                color = colorResource(R.color.text_on_primary),
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text("Save")
-                        }
-                    }
-                } else {
-                    Button(
-                        onClick = { isEditing = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = colorResource(R.color.primary)
-                        ),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = "Edit",
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Edit Profile")
-                    }
+            EditableUserInfoActions(
+                isEditing = isEditing,
+                isSaving = isSaving,
+                name = name,
+                originalName = user.name ?: "",
+                onEdit = { isEditing = true },
+                onCancel = {
+                    isEditing = false
+                    name = user.name ?: ""
+                },
+                onSave = {
+                    onSave(name.takeIf { it.isNotBlank() })
+                    isEditing = false
                 }
-            }
+            )
         }
+    }
+}
+
+@Composable
+private fun EditableUserInfoFields(
+    name: String,
+    onNameChange: (String) -> Unit,
+    email: String,
+    isEditing: Boolean,
+    isSaving: Boolean
+) {
+    OutlinedTextField(
+        value = name,
+        onValueChange = onNameChange,
+        label = { Text("Name") },
+        enabled = isEditing && !isSaving,
+        modifier = Modifier.fillMaxWidth(),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = colorResource(R.color.primary),
+            unfocusedBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
+        ),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+    )
+    
+    OutlinedTextField(
+        value = email,
+        onValueChange = { },
+        label = { Text("Email") },
+        enabled = false,
+        modifier = Modifier.fillMaxWidth(),
+        colors = OutlinedTextFieldDefaults.colors(
+            disabledBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f),
+            disabledTextColor = colorResource(R.color.text_secondary)
+        ),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+    )
+}
+
+@Composable
+private fun EditableUserInfoActions(
+    isEditing: Boolean,
+    isSaving: Boolean,
+    name: String,
+    originalName: String,
+    onEdit: () -> Unit,
+    onCancel: () -> Unit,
+    onSave: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        if (isEditing) {
+            EditableUserInfoCancelButton(
+                onCancel = onCancel,
+                isSaving = isSaving
+            )
+            EditableUserInfoSaveButton(
+                onSave = onSave,
+                isSaving = isSaving,
+                name = name
+            )
+        } else {
+            EditableUserInfoEditButton(onEdit = onEdit)
+        }
+    }
+}
+
+@Composable
+private fun EditableUserInfoCancelButton(
+    onCancel: () -> Unit,
+    isSaving: Boolean
+) {
+    OutlinedButton(
+        onClick = onCancel,
+        modifier = Modifier.weight(1f),
+        enabled = !isSaving,
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = colorResource(R.color.text_secondary)
+        )
+    ) {
+        Text("Cancel")
+    }
+}
+
+@Composable
+private fun EditableUserInfoSaveButton(
+    onSave: () -> Unit,
+    isSaving: Boolean,
+    name: String
+) {
+    Button(
+        onClick = onSave,
+        modifier = Modifier.weight(1f),
+        enabled = !isSaving && name.isNotBlank(),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = colorResource(R.color.primary)
+        ),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+    ) {
+        if (isSaving) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(16.dp),
+                color = colorResource(R.color.text_on_primary),
+                strokeWidth = 2.dp
+            )
+        } else {
+            Text("Save")
+        }
+    }
+}
+
+@Composable
+private fun EditableUserInfoEditButton(onEdit: () -> Unit) {
+    Button(
+        onClick = onEdit,
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = colorResource(R.color.primary)
+        ),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+    ) {
+        Icon(
+            Icons.Default.Edit,
+            contentDescription = "Edit",
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text("Edit Profile")
     }
 }
 

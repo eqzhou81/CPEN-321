@@ -110,57 +110,90 @@ private fun CreateDiscussionDialog(
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(spacing.medium)) {
-                    OutlinedTextField(
-                        value = topic,
-                        onValueChange = onTopicChange,
-                        modifier = Modifier.testTag("discussion_topic_input"),
-                        label = { Text("Topic") },
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = colorResource(R.color.primary),
-                            unfocusedBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    OutlinedTextField(
-                        value = description,
-                        onValueChange = onDescriptionChange,
-                        modifier = Modifier.testTag("discussion_description_input"),
-                        label = { Text("Description (optional)") },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = colorResource(R.color.primary),
-                            unfocusedBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        minLines = 3
-                    )
-                }
+                CreateDiscussionDialogTextFields(
+                    topic = topic,
+                    description = description,
+                    onTopicChange = onTopicChange,
+                    onDescriptionChange = onDescriptionChange,
+                    spacing = spacing
+                )
             },
             confirmButton = {
-                Button(
-                    onClick = onCreate,
-                    enabled = topic.isNotBlank(),
-                    modifier = Modifier.testTag("create_discussion_button"),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = colorResource(R.color.primary)
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Create")
-                }
+                CreateDiscussionDialogConfirmButton(
+                    onCreate = onCreate,
+                    topic = topic
+                )
             },
             dismissButton = {
-                TextButton(
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = colorResource(R.color.text_secondary)
-                    )
-                ) {
-                    Text("Cancel")
-                }
+                CreateDiscussionDialogDismissButton(onDismiss = onDismiss)
             }
         )
+    }
+}
+
+@Composable
+private fun CreateDiscussionDialogTextFields(
+    topic: String,
+    description: String,
+    onTopicChange: (String) -> Unit,
+    onDescriptionChange: (String) -> Unit,
+    spacing: com.cpen321.usermanagement.ui.theme.Spacing
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(spacing.medium)) {
+        OutlinedTextField(
+            value = topic,
+            onValueChange = onTopicChange,
+            modifier = Modifier.testTag("discussion_topic_input"),
+            label = { Text("Topic") },
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = colorResource(R.color.primary),
+                unfocusedBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
+            ),
+            shape = RoundedCornerShape(12.dp)
+        )
+        OutlinedTextField(
+            value = description,
+            onValueChange = onDescriptionChange,
+            modifier = Modifier.testTag("discussion_description_input"),
+            label = { Text("Description (optional)") },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = colorResource(R.color.primary),
+                unfocusedBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
+            ),
+            shape = RoundedCornerShape(12.dp),
+            minLines = 3
+        )
+    }
+}
+
+@Composable
+private fun CreateDiscussionDialogConfirmButton(
+    onCreate: () -> Unit,
+    topic: String
+) {
+    Button(
+        onClick = onCreate,
+        enabled = topic.isNotBlank(),
+        modifier = Modifier.testTag("create_discussion_button"),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = colorResource(R.color.primary)
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Text("Create")
+    }
+}
+
+@Composable
+private fun CreateDiscussionDialogDismissButton(onDismiss: () -> Unit) {
+    TextButton(
+        onClick = onDismiss,
+        colors = ButtonDefaults.textButtonColors(
+            contentColor = colorResource(R.color.text_secondary)
+        )
+    ) {
+        Text("Cancel")
     }
 }
 
@@ -184,52 +217,14 @@ fun DiscussionScreen(
         uiState = uiState
     )
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Community Discussions",
-                        modifier = Modifier.testTag("discussions_title"),
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = colorResource(R.color.text_primary)
-                        )
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorResource(R.color.surface),
-                    titleContentColor = colorResource(R.color.text_primary)
-                ),
-                actions = {
-                    IconButton(onClick = onClose) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = "Close",
-                            tint = colorResource(R.color.text_primary)
-                        )
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showDialog = true },
-                modifier = Modifier.testTag("new_discussion_button"),
-                containerColor = colorResource(R.color.primary),
-                contentColor = colorResource(R.color.text_on_primary)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "New Discussion")
-            }
-        }
-    ) { padding ->
-        DiscussionScreenContent(
-            allDiscussions = allDiscussions,
-            isLoading = uiState.isLoading,
-            onDiscussionClick = onDiscussionClick
-        )
-    }
+    DiscussionScreenScaffold(
+        onClose = onClose,
+        onShowDialog = { showDialog = true },
+        allDiscussions = allDiscussions,
+        isLoading = uiState.isLoading,
+        onDiscussionClick = onDiscussionClick,
+        snackbarHostState = snackbarHostState
+    )
 
     CreateDiscussionDialog(
         showDialog = showDialog,
@@ -245,6 +240,73 @@ fun DiscussionScreen(
             showDialog = false
         }
     )
+}
+
+@Composable
+private fun DiscussionScreenScaffold(
+    onClose: () -> Unit,
+    onShowDialog: () -> Unit,
+    allDiscussions: List<DiscussionListResponse>,
+    isLoading: Boolean,
+    onDiscussionClick: (String) -> Unit,
+    snackbarHostState: SnackbarHostState
+) {
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        topBar = {
+            DiscussionScreenTopBar(onClose = onClose)
+        },
+        floatingActionButton = {
+            DiscussionScreenFAB(onShowDialog = onShowDialog)
+        }
+    ) { padding ->
+        DiscussionScreenContent(
+            allDiscussions = allDiscussions,
+            isLoading = isLoading,
+            onDiscussionClick = onDiscussionClick
+        )
+    }
+}
+
+@Composable
+private fun DiscussionScreenTopBar(onClose: () -> Unit) {
+    TopAppBar(
+        title = {
+            Text(
+                "Community Discussions",
+                modifier = Modifier.testTag("discussions_title"),
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = colorResource(R.color.text_primary)
+                )
+            )
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = colorResource(R.color.surface),
+            titleContentColor = colorResource(R.color.text_primary)
+        ),
+        actions = {
+            IconButton(onClick = onClose) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = "Close",
+                    tint = colorResource(R.color.text_primary)
+                )
+            }
+        }
+    )
+}
+
+@Composable
+private fun DiscussionScreenFAB(onShowDialog: () -> Unit) {
+    FloatingActionButton(
+        onClick = onShowDialog,
+        modifier = Modifier.testTag("new_discussion_button"),
+        containerColor = colorResource(R.color.primary),
+        contentColor = colorResource(R.color.text_on_primary)
+    ) {
+        Icon(Icons.Default.Add, contentDescription = "New Discussion")
+    }
 }
 
 @Composable
