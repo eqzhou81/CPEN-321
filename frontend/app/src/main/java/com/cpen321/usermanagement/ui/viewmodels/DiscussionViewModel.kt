@@ -20,8 +20,8 @@ import io.socket.client.Socket
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import org.json.JSONException
 import org.json.JSONObject
-
 import javax.inject.Inject
 
 data class DiscussionUiState(
