@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -143,11 +144,11 @@ private fun MainAppContent(
                                     currentUserName = userName
                                 )
                             } else {
-                                scope.launch {
-                                    snackBarHostState.showSnackbar(
+                    scope.launch {
+                        snackBarHostState.showSnackbar(
                                         "User not authenticated",
-                                        duration = SnackbarDuration.Short
-                                    )
+                            duration = SnackbarDuration.Short
+                        )
                                 }
                             }
                         } else {
@@ -393,15 +394,65 @@ private fun CreateDiscussionDialog(
             )
         },
         confirmButton = {
-            CreateDiscussionDialogConfirmButton(
-                onCreate = onCreate,
-                topic = topic
-            )
+            Button(
+                onClick = onCreate,
+                enabled = topic.isNotBlank(),
+                modifier = Modifier.testTag("create_discussion_button"),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(R.color.primary)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Create")
+            }
         },
         dismissButton = {
-            CreateDiscussionDialogDismissButton(onDismiss = onDismiss)
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = colorResource(R.color.text_secondary)
+                )
+            ) {
+                Text("Cancel")
+            }
         }
     )
+}
+
+@Composable
+private fun CreateDiscussionDialogTextFields(
+    topic: String,
+    description: String,
+    onTopicChange: (String) -> Unit,
+    onDescriptionChange: (String) -> Unit,
+    spacing: com.cpen321.usermanagement.ui.theme.Spacing
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(spacing.medium)) {
+        OutlinedTextField(
+            value = topic,
+            onValueChange = onTopicChange,
+            modifier = Modifier.testTag("discussion_topic_input"),
+            label = { Text("Topic") },
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = colorResource(R.color.primary),
+                unfocusedBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
+            ),
+            shape = RoundedCornerShape(12.dp)
+        )
+        OutlinedTextField(
+            value = description,
+            onValueChange = onDescriptionChange,
+            modifier = Modifier.testTag("discussion_description_input"),
+            label = { Text("Description (optional)") },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = colorResource(R.color.primary),
+                unfocusedBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
+            ),
+            shape = RoundedCornerShape(12.dp),
+            minLines = 3
+        )
+    }
 }
 
 
@@ -563,7 +614,7 @@ private fun ProfileScreenContent(
         uiState.successMessage?.let { message ->
             snackBarHostState.showSnackbar(message)
             kotlinx.coroutines.delay(100)
-            profileViewModel.clearSuccessMessage()
+        profileViewModel.clearSuccessMessage()
         }
     }
     
@@ -572,7 +623,7 @@ private fun ProfileScreenContent(
         uiState.errorMessage?.let { message ->
             snackBarHostState.showSnackbar(message)
             kotlinx.coroutines.delay(100)
-            profileViewModel.clearError()
+        profileViewModel.clearError()
         }
     }
 

@@ -127,20 +127,20 @@ class MockInterviewViewModel @Inject constructor(
         currentState: UiState.Success,
         currentQuestionId: String
     ) {
-        val request = SubmitAnswerRequest(
-            sessionId = currentState.session.id,
-            questionId = currentQuestionId,
-            answer = currentAnswer
-        )
-        
-        val response = sessionRepository.submitAnswer(request)
-        
-        if (response.isSuccessful && response.body()?.data != null) {
-            val responseData = response.body()!!.data!!
+                    val request = SubmitAnswerRequest(
+                        sessionId = currentState.session.id,
+                        questionId = currentQuestionId,
+                        answer = currentAnswer
+                    )
+                    
+                    val response = sessionRepository.submitAnswer(request)
+                    
+                    if (response.isSuccessful && response.body()?.data != null) {
+                        val responseData = response.body()!!.data!!
             currentAnswer = ""
-            
+                        
             // Reload session to get the latest progress and current question
-            val updatedSessionResponse = sessionRepository.getSession(currentState.session.id)
+                        val updatedSessionResponse = sessionRepository.getSession(currentState.session.id)
             if (updatedSessionResponse.isSuccessful && updatedSessionResponse.body()?.data != null) {
                 val sessionData = updatedSessionResponse.body()!!.data!!
                 _uiState.value = UiState.Success(
@@ -148,21 +148,26 @@ class MockInterviewViewModel @Inject constructor(
                     currentQuestion = sessionData.currentQuestion,
                     feedback = responseData.feedback,
                     answer = "",
-                    isSubmitting = false
+                    isSubmitting = false,
+                    isSaving = false
                 )
-            } else {
+                        } else {
                 // Fallback to response data if reload fails
-                _uiState.value = UiState.Success(
+                        _uiState.value = UiState.Success(
                     session = responseData.session,
-                    currentQuestion = currentState.currentQuestion,
-                    feedback = responseData.feedback,
-                    answer = "",
-                    isSubmitting = false
-                )
-            }
-        } else {
-            _uiState.value = currentState.copy(
-                isSubmitting = false
+                    currentQuestion = responseData.currentQuestion ?: currentState.currentQuestion,
+                            feedback = responseData.feedback,
+                            answer = "",
+                    isSubmitting = false,
+                    isSaving = false
+                        )
+                        }
+                    } else {
+            val errorBody = response.errorBody()?.string() ?: response.message()
+            Log.e(TAG, "Failed to submit answer: $errorBody")
+                        _uiState.value = currentState.copy(
+                isSubmitting = false,
+                saveMessage = "Failed to submit answer: ${errorBody ?: "Unknown error"}"
             )
         }
     }
@@ -194,18 +199,33 @@ class MockInterviewViewModel @Inject constructor(
                             currentQuestion = responseData.currentQuestion,
                             feedback = null,
                             answer = preservedAnswer,
-                            isSubmitting = false
+                            isSubmitting = false,
+                            isSaving = false,
+                            saveMessage = null
                         )
                         currentAnswer = preservedAnswer
                     } else {
-                        Log.e(TAG, "Failed to navigate to previous question: ${response.message()}")
+                        val errorBody = response.errorBody()?.string() ?: response.message()
+                        Log.e(TAG, "Failed to navigate to previous question: $errorBody")
+                        _uiState.value = currentState.copy(
+                            saveMessage = "Failed to navigate: ${errorBody ?: "Unknown error"}"
+                        )
                     }
                 } catch (e: IOException) {
                     Log.e(TAG, "Network error navigating to previous question", e)
+                    _uiState.value = currentState.copy(
+                        saveMessage = "Network error: ${e.message ?: "Unknown error"}"
+                    )
                 } catch (e: HttpException) {
                     Log.e(TAG, "Server error navigating to previous question", e)
+                    _uiState.value = currentState.copy(
+                        saveMessage = "Server error: ${e.message() ?: "Unknown error"}"
+                    )
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to navigate to previous question", e)
+                    _uiState.value = currentState.copy(
+                        saveMessage = "Error: ${e.message ?: "Unknown error"}"
+                    )
                 }
             }
         } else {
@@ -226,27 +246,43 @@ class MockInterviewViewModel @Inject constructor(
                         // No answer to save, just pause the session
                         pauseSessionOnly(currentState)
                     }
-                    val updatedState = (_uiState.value as? UiState.Success)?.copy(
-                        isSaving = false,
-                        saveMessage = "Session saved successfully"
-                    )
-                    _uiState.value = updatedState ?: _uiState.value
                     
-                    // Clear message after 3 seconds
-                    kotlinx.coroutines.delay(3000)
-                    _uiState.value = (updatedState?.copy(saveMessage = null)) ?: _uiState.value
+                    // Get the latest state after save
+                    val latestState = _uiState.value as? UiState.Success
+                    if (latestState != null) {
+                        val updatedState = latestState.copy(
+                            isSaving = false,
+                            saveMessage = "Session saved successfully"
+                        )
+                        _uiState.value = updatedState
+                        
+                        // Clear message after 3 seconds
+                        kotlinx.coroutines.delay(3000)
+                        val finalState = _uiState.value as? UiState.Success
+                        if (finalState != null) {
+                            _uiState.value = finalState.copy(saveMessage = null)
+                        }
+                    }
                 } catch (e: IOException) {
                     Log.e(TAG, "Failed to save session", e)
-                    _uiState.value = (_uiState.value as? UiState.Success)?.copy(
+                    val latestState = _uiState.value as? UiState.Success
+                    _uiState.value = latestState?.copy(
                         isSaving = false,
-                        saveMessage = "Failed to save session: ${e.message}"
-                    ) ?: _uiState.value
+                        saveMessage = "Failed to save session: ${e.message ?: "Network error"}"
+                    ) ?: currentState.copy(
+                        isSaving = false,
+                        saveMessage = "Failed to save session: ${e.message ?: "Network error"}"
+                    )
                 } catch (e: HttpException) {
                     Log.e(TAG, "Failed to save session", e)
-                    _uiState.value = (_uiState.value as? UiState.Success)?.copy(
+                    val latestState = _uiState.value as? UiState.Success
+                    _uiState.value = latestState?.copy(
                         isSaving = false,
-                        saveMessage = "Failed to save session: ${e.message()}"
-                    ) ?: _uiState.value
+                        saveMessage = "Failed to save session: ${e.message() ?: "Server error"}"
+                    ) ?: currentState.copy(
+                        isSaving = false,
+                        saveMessage = "Failed to save session: ${e.message() ?: "Server error"}"
+                    )
                 }
             }
         }
@@ -274,13 +310,13 @@ class MockInterviewViewModel @Inject constructor(
     }
     
     private suspend fun pauseSessionOnly(currentState: UiState.Success) {
-        val request = UpdateStatusRequest(status = "paused")
-        val response = sessionRepository.updateSessionStatus(
-            currentState.session.id,
-            request
-        )
-        
-        if (response.isSuccessful && response.body()?.data != null) {
+                    val request = UpdateStatusRequest(status = "paused")
+                    val response = sessionRepository.updateSessionStatus(
+                        currentState.session.id,
+                        request
+                    )
+                    
+                    if (response.isSuccessful && response.body()?.data != null) {
             reloadSessionState(currentState.session.id, currentState)
         }
     }
@@ -329,17 +365,32 @@ class MockInterviewViewModel @Inject constructor(
                                 currentQuestion = responseData.currentQuestion,
                                 feedback = null,
                                 answer = "",
-                                isSubmitting = false
+                                isSubmitting = false,
+                                isSaving = false,
+                                saveMessage = null
                             )
                         } else {
-                            Log.e(TAG, "Failed to navigate to next question: ${response.message()}")
+                            val errorBody = response.errorBody()?.string() ?: response.message()
+                            Log.e(TAG, "Failed to navigate to next question: $errorBody")
+                            _uiState.value = currentState.copy(
+                                saveMessage = "Failed to navigate: ${errorBody ?: "Unknown error"}"
+                            )
                         }
                     } catch (e: IOException) {
                         Log.e(TAG, "Network error navigating to next question", e)
+                        _uiState.value = currentState.copy(
+                            saveMessage = "Network error: ${e.message ?: "Unknown error"}"
+                        )
                     } catch (e: HttpException) {
                         Log.e(TAG, "Server error navigating to next question", e)
+                        _uiState.value = currentState.copy(
+                            saveMessage = "Server error: ${e.message() ?: "Unknown error"}"
+                        )
                     } catch (e: Exception) {
                         Log.e(TAG, "Failed to navigate to next question", e)
+                        _uiState.value = currentState.copy(
+                            saveMessage = "Error: ${e.message ?: "Unknown error"}"
+                        )
                     }
                 }
             } else {

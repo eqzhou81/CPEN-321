@@ -364,15 +364,15 @@ private fun ProgressBar(
     progress: Float,
     spacing: com.cpen321.usermanagement.ui.theme.Spacing
 ) {
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier
-                    .fillMaxWidth()
-            .height(spacing.medium)
-                    .clip(RoundedCornerShape(6.dp)),
-                color = colorResource(R.color.primary),
-                trackColor = colorResource(R.color.primary).copy(alpha = 0.2f)
-            )
+    LinearProgressIndicator(
+        progress = { progress },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(6.dp)
+            .clip(RoundedCornerShape(6.dp)),
+        color = colorResource(R.color.primary),
+        trackColor = colorResource(R.color.primary).copy(alpha = 0.2f)
+    )
 }
 
 @Composable

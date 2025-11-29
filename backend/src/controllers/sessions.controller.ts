@@ -378,9 +378,21 @@ export class SessionsController {
             sessionCompleted: false,
           };
         } catch (error) {
-          logger.error('Error generating AI feedback:', error);
+          logger.error('Error generating AI feedback:', {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            questionId,
+            answerLength: answer.length
+          });
+          
+          // Only return generic feedback if it's a real error, not just OpenAI being unavailable
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          if (errorMessage.includes('API key') || errorMessage.includes('authentication')) {
+            logger.error('OpenAI API key issue - check environment variables');
+          }
+          
           feedback = {
-            feedback: 'Thank you for your answer. Due to a technical issue, detailed feedback is not available right now.',
+            feedback: 'Thank you for your answer. Due to a technical issue, detailed feedback is not available right now. Please try again later.',
             score: 7,
             strengths: ['Provided a complete response'],
             improvements: ['Continue practicing to improve your interview skills'],
