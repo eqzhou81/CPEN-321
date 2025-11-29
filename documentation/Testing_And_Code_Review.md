@@ -6,6 +6,7 @@
 | ----------------- | --------------------- | ------------- |
 | Nov 20  | 4.2 | Changed the front end test to show execution logs and the correct descriptions and expectations | 
 | Nov 28  | 2.1.1 | Changed the mmocked components| 
+| Nov 28  | 5.4 | We were able to get down to 7 codacy issues| 
 
 ## 2. Back-end test specification : APIs
 
@@ -891,33 +892,43 @@ Codacy ran on main at commit **f3e480b50bcdd6d7aac653b2393089cec4da8bd9**.
 
 ## 5.2 Issues breakdown by category
 
-<img width="350" height="268" alt="Screenshot 2025-11-09 at 10 48 46 PM" src="https://github.com/user-attachments/assets/62106ed6-40ba-438e-839b-7fc1f7d72f98" />
+![System Diagram](./images/issuesOverview.png)
 
 
 
 ## 5.3 Issues breakdown by code pattern
 
-<img width="1305" height="328" alt="Screenshot 2025-11-09 at 10 47 08 PM" src="https://github.com/user-attachments/assets/f52c7290-f434-4dbb-a99f-fe5dc6c238c3" />
+![System Diagram](./images/issuesError.png)
+![System Diagram](./images/issuesSecurity.png)
+![System Diagram](./images/issuesComplexity.png)
 
 
 ## 5.4 Justification for unfixed issues
-The case **useCase\_PasteJobPostingLink\_InvalidUrl\_Failure()** is failing because the UI currently allows a malformed URL (e.g., `not-a-valid-url`) to pass through to submission, or the test can’t reliably target the URL field / validation state. In either case, the expected behavior (“submission rejected; no scraping or job creation”) isn’t deterministically enforced or asserted.
+###  1. Detect inappropriate function body content (database.ts)
+
+The use of `mongoose.connection.on("error", ...)` is valid and recommended. The official Mongoose documentation specifies that applications should listen for `"error"` events on the connection to properly handle failures.
+
+**Sources:**  
+- Mongoose Docs — Connection error events: https://mongoosejs.com/docs/connections.html#connection-events  
+- Stack Overflow — Handling mongoose connection events: https://stackoverflow.com/questions/36895101/mongoose-connection-event-handling
 
 
-**App-side fixes:**
+###  2. Function too long (ProfileScreenContent — Jetpack Compose)
 
-*   Add strict URL validation on the “Paste Link” form (e.g., `Patterns.WEB_URL`, `Uri.parse(url).scheme in {"http","https"}`) and **disable** the “Add to Portfolio” button until valid.
-    
-*   Show an inline error (“Invalid URL”) with a **testTag** (e.g., `invalid_url_error`) so tests can assert it.
-    
-*   Give the URL text field a stable **testTag** (e.g., `job_link_input`) and the submit button a **testTag** (e.g., `add_job_submit`).
-    
+Jetpack Compose permits larger screen-level composables when it improves cohesion and readability. Google’s guidelines emphasize structuring UI logically rather than enforcing strict line limits.
 
-**Test-side fixes (minimal, stable):**
+**Sources:**  
+- Android Developers — Thinking in Compose: https://developer.android.com/jetpack/compose/mental-model  
+- Android Developers — Compose Architecture: https://developer.android.com/jetpack/compose/architecture
 
-*   Target `job_link_input` to enter the URL (instead of substring text matching).
-    
-*   Assert the submit button is **disabled** after typing an invalid URL (or that clicking it shows `invalid_url_error`) and assert **no navigation** occurs and **no new `job_list_item`** appears.
+
+### 3. Too many functions in file (MainAppScreen.kt — 27 composables)
+
+Jetpack Compose commonly groups many small composables inside a single screen file. Official Compose sample apps often include 20+ composables per file, making this pattern idiomatic and acceptable.
+
+**Sources:**  
+- Android Official Compose Samples: https://github.com/android/compose-samples  
+- Android Developers — Compose Architecture: https://developer.android.com/jetpack/compose/architecture
     
 
 * * *
