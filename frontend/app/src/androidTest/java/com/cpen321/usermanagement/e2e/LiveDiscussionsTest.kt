@@ -43,28 +43,28 @@ class LiveDiscussionsTest : BaseComposeTest() {
         android.util.Log.d("LiveDiscussionsTest", "Navigating to discussions screen...")
 
         // Wait for main screen
-        assert(checkText("My Job Applications", maxRetries = 6)) {
-            "Failed: Main screen 'My Job Applications' not found"
+        assert(checkText("Job Applications", maxRetries = 6)) {
+            "Failed: Main screen not found"
         }
         composeTestRule.waitForIdle()
         Thread.sleep(1000)
 
-        // Click discussions button
-        val buttonFound = check(maxRetries = 6) {
+        // Click discussions tab in bottom navigation (using unmerged tree)
+        val tabFound = check(maxRetries = 6) {
             try {
-                composeTestRule.onNodeWithContentDescription("Discussions").assertExists()
+                composeTestRule.onNodeWithContentDescription("Discussions", useUnmergedTree = true).assertExists()
                 true
             } catch (e: Exception) {
                 false
             }
         }
 
-        if (buttonFound) {
+        if (tabFound) {
             try {
-                composeTestRule.onNodeWithContentDescription("Discussions").performClick()
-                android.util.Log.d("LiveDiscussionsTest", "✓ Clicked Discussions button")
+                composeTestRule.onNodeWithContentDescription("Discussions", useUnmergedTree = true).performClick()
+                android.util.Log.d("LiveDiscussionsTest", "✓ Clicked Discussions tab")
             } catch (e: Exception) {
-                android.util.Log.w("LiveDiscussionsTest", "Could not click Discussions button: ${e.message}")
+                android.util.Log.w("LiveDiscussionsTest", "Could not click Discussions tab: ${e.message}")
             }
         }
 
@@ -72,8 +72,8 @@ class LiveDiscussionsTest : BaseComposeTest() {
         Thread.sleep(2000)
 
         // Verify we're on the discussions screen
-        assert(checkText("Community Discussions", maxRetries = 6)) {
-            "Failed: Did not navigate to Community Discussions screen"
+        assert(checkText("Discussions", maxRetries = 6)) {
+            "Failed: Did not navigate to Discussions screen"
         }
 
         composeTestRule.waitForIdle()

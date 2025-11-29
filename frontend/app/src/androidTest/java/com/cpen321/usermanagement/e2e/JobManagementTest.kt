@@ -385,25 +385,16 @@ class JobManagementTest : BaseComposeTest() {
     @Test
     fun useCase_PasteJobPosting_EmptyText_Failure() {
         android.util.Log.d("JobManagementTest", "=== Use Case 1 - Failure Scenario: Empty Text ===")
-        
+
         navigateToJobDashboard()
         openAddJobForm()
         attemptSubmitWithEmptyText()
         navigateBackToJobList()
         verifyJobWasNotCreated()
-        
+
         android.util.Log.d("JobManagementTest", "✓ Side effect verified: Job was NOT created - test PASSED")
     }
-    
-    private fun navigateToJobDashboard() {
-        android.util.Log.d("JobManagementTest", "Step 1: Verifying we're on job applications list...")
-        assert(checkText("My Job Applications", maxRetries = 6)) {
-            "Failed: Main screen not found"
-        }
-        composeTestRule.waitForIdle()
-        Thread.sleep(1000)
-    }
-    
+
     private fun openAddJobForm() {
         android.util.Log.d("JobManagementTest", "Step 2: Opening Add Job form...")
         val addClicked = checkTagAndClick("add_job_button", maxRetries = 3) ||
@@ -480,7 +471,7 @@ class JobManagementTest : BaseComposeTest() {
     @Test
     fun useCase_PasteJobPostingLink_InvalidUrl_Failure() {
         android.util.Log.d("JobManagementTest", "=== Use Case 2 - Failure Scenario: Invalid URL ===")
-        
+
         navigateToJobDashboard()
         openAddJobForm()
         selectPasteLinkMode()
@@ -488,42 +479,10 @@ class JobManagementTest : BaseComposeTest() {
         attemptSubmitInvalidUrl()
         navigateBackToJobList()
         verifyJobNotCreated()
-        
+
         android.util.Log.d("JobManagementTest", "✓ Side effect verified: Job was NOT created - test PASSED")
     }
-    
-    private fun navigateToJobDashboard() {
-        android.util.Log.d("JobManagementTest", "Step 1: Verifying we're on job applications list...")
-        assert(checkText("My Job Applications", maxRetries = 6)) {
-            "Failed: Main screen not found"
-        }
-        composeTestRule.waitForIdle()
-        Thread.sleep(1000)
-    }
-    
-    private fun openAddJobForm() {
-        android.util.Log.d("JobManagementTest", "Step 2: Opening Add Job form...")
-        val addClicked = checkTagAndClick("add_job_button", maxRetries = 3) ||
-                        checkTextAndClick("Add", maxRetries = 3)
-        assert(addClicked) { "Failed: Could not click Add Job button" }
-        composeTestRule.waitForIdle()
-        Thread.sleep(2000)
-    }
-    
-    private fun selectPasteLinkMode() {
-        android.util.Log.d("JobManagementTest", "Step 3: Selecting 'Paste Link' mode...")
-        assert(checkText("Add Job Application", maxRetries = 6) || checkText("Add Job", maxRetries = 6)) {
-            "Failed: Add Job dialog not found"
-        }
-        composeTestRule.waitForIdle()
-        Thread.sleep(1000)
-        
-        val linkModeClicked = checkTextAndClick("Paste Link", maxRetries = 3)
-        assert(linkModeClicked) { "Failed: Could not click 'Paste Link' option" }
-        composeTestRule.waitForIdle()
-        Thread.sleep(2000)
-    }
-    
+
     private fun enterInvalidUrl(invalidUrl: String) {
         android.util.Log.d("JobManagementTest", "Step 4: Entering invalid URL...")
         try {
@@ -556,25 +515,7 @@ class JobManagementTest : BaseComposeTest() {
             Thread.sleep(5000)
         }
     }
-    
-    private fun navigateBackToJobList() {
-        android.util.Log.d("JobManagementTest", "Step 6: Navigating back to job list...")
-        val cancelClicked = checkTextAndClick("Cancel", maxRetries = 3)
-        if (!cancelClicked) {
-            pressBack()
-            Thread.sleep(1000)
-        }
-        composeTestRule.waitForIdle()
-        Thread.sleep(2000)
-        
-        android.util.Log.d("JobManagementTest", "Step 7: Verifying we're on job applications list...")
-        assert(checkText("My Job Applications", maxRetries = 6)) {
-            "Failed: Not on job applications list"
-        }
-        composeTestRule.waitForIdle()
-        Thread.sleep(2000)
-    }
-    
+
     private fun verifyJobNotCreated() {
         android.util.Log.d("JobManagementTest", "Step 8: Verifying side effect - job was NOT created...")
         

@@ -35,46 +35,46 @@ class DiscussionsTest : BaseComposeTest() {
         android.util.Log.d("DiscussionsTest", "Navigating to discussions screen...")
 
         // Step 1: Wait for main screen to load
-        assert(checkText("My Job Applications", maxRetries = 6)) {
-            "Failed: Main screen 'My Job Applications' not found"
+        assert(checkText("Job Applications", maxRetries = 6)) {
+            "Failed: Main screen not found"
         }
         composeTestRule.waitForIdle()
         Thread.sleep(1000)
 
-        // Step 2: Find and click the discussions button (Chat icon in top app bar)
-        // The button has contentDescription = "Discussions"
-        android.util.Log.d("DiscussionsTest", "Looking for Discussions button...")
-        var discussionsButtonClicked = false
+        // Step 2: Find and click the discussions tab in bottom navigation
+        // The tab has contentDescription = "Discussions"
+        android.util.Log.d("DiscussionsTest", "Looking for Discussions tab in bottom navigation...")
+        var discussionsTabClicked = false
 
-        // Try to find and click by content description
-        val buttonFound = check(maxRetries = 6) {
+        // Try to find and click by content description (using unmerged tree for navigation items)
+        val tabFound = check(maxRetries = 6) {
             try {
-                composeTestRule.onNodeWithContentDescription("Discussions").assertExists()
+                composeTestRule.onNodeWithContentDescription("Discussions", useUnmergedTree = true).assertExists()
                 true
             } catch (e: Exception) {
                 false
             }
         }
 
-        if (buttonFound) {
+        if (tabFound) {
             try {
-                composeTestRule.onNodeWithContentDescription("Discussions").performClick()
-                android.util.Log.d("DiscussionsTest", "✓ Clicked Discussions button")
-                discussionsButtonClicked = true
+                composeTestRule.onNodeWithContentDescription("Discussions", useUnmergedTree = true).performClick()
+                android.util.Log.d("DiscussionsTest", "✓ Clicked Discussions tab")
+                discussionsTabClicked = true
             } catch (e: Exception) {
-                android.util.Log.w("DiscussionsTest", "Could not click Discussions button: ${e.message}")
+                android.util.Log.w("DiscussionsTest", "Could not click Discussions tab: ${e.message}")
             }
         }
 
         // Fallback: try clicking by text if content description didn't work
-        if (!discussionsButtonClicked) {
-            android.util.Log.w("DiscussionsTest", "Discussions button not found by content description, trying text...")
-            discussionsButtonClicked = checkTextAndClick("Discussions", maxRetries = 3)
+        if (!discussionsTabClicked) {
+            android.util.Log.w("DiscussionsTest", "Discussions tab not found by content description, trying text...")
+            discussionsTabClicked = checkTextAndClick("Discussions", maxRetries = 3)
         }
 
-        assert(discussionsButtonClicked) {
-            "Failed: Could not find or click Discussions button. " +
-                    "Make sure the button has contentDescription='Discussions' in the top app bar."
+        assert(discussionsTabClicked) {
+            "Failed: Could not find or click Discussions tab. " +
+                    "Make sure the tab has contentDescription='Discussions' in the bottom navigation bar."
         }
 
         composeTestRule.waitForIdle()
@@ -82,8 +82,8 @@ class DiscussionsTest : BaseComposeTest() {
 
         // Step 3: Verify we're on the discussions screen
         android.util.Log.d("DiscussionsTest", "Verifying we're on discussions screen...")
-        assert(checkText("Community Discussions", maxRetries = 6)) {
-            "Failed: Did not navigate to Community Discussions screen"
+        assert(checkText("Discussions", maxRetries = 6)) {
+            "Failed: Did not navigate to Discussions screen"
         }
 
         composeTestRule.waitForIdle()
@@ -398,8 +398,8 @@ class DiscussionsTest : BaseComposeTest() {
         composeTestRule.waitForIdle()
         Thread.sleep(5000)
     }
-    
-    private fun navigateBackToDiscussionsList() {
+
+    private fun verifySubmissionAndClose() {
         android.util.Log.d("DiscussionsTest", "Step 6: Checking state after submission...")
         val stillOnForm = check(maxRetries = 3) {
             try {
@@ -494,7 +494,7 @@ class DiscussionsTest : BaseComposeTest() {
         val testTopic = enterValidTopic()
         enterInvalidDescription("A".repeat(501))
         attemptSubmit()
-        navigateBackToDiscussionsList()
+        verifySubmissionAndClose()
         verifyDiscussionNotCreated(testTopic)
         
         android.util.Log.d("DiscussionsTest", "✓ Side effect verified: Discussion was NOT created - test PASSED")

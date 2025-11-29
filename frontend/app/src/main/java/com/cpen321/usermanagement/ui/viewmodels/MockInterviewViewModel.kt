@@ -155,7 +155,7 @@ class MockInterviewViewModel @Inject constructor(
                 // Fallback to response data if reload fails
                         _uiState.value = UiState.Success(
                     session = responseData.session,
-                    currentQuestion = responseData.currentQuestion ?: currentState.currentQuestion,
+                    currentQuestion = currentState.currentQuestion,
                             feedback = responseData.feedback,
                             answer = "",
                     isSubmitting = false,

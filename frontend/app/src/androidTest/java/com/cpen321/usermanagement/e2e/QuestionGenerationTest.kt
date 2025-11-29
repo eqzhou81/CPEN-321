@@ -309,19 +309,6 @@ class QuestionGenerationTest : BaseComposeTest() {
         }
         android.util.Log.d("QuestionGenerationTest", "✓ Use Case 1 - Failure Scenario 4a: No Job Description PASSED")
     }
-                                  checkText("Technical", maxRetries = 3)
-                
-                if (!hasBehavioral && !hasTechnical) {
-                    android.util.Log.d("QuestionGenerationTest", "✓ Side effect verified: No question buttons found - questions were NOT generated")
-                } else {
-                    android.util.Log.d("QuestionGenerationTest", "Note: Question buttons found - job had description (acceptable in E2E)")
-                }
-            }
-        }
-        
-        // Test passes if we reach this point
-        android.util.Log.d("QuestionGenerationTest", "✓ Use Case 1 - Failure Scenario 4a: No Job Description PASSED")
-    }
 
     /**
      * Use Case 1 - Failure Scenario 5a: OpenAI API failure

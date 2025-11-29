@@ -420,44 +420,6 @@ private fun CreateDiscussionDialog(
 }
 
 @Composable
-private fun CreateDiscussionDialogTextFields(
-    topic: String,
-    description: String,
-    onTopicChange: (String) -> Unit,
-    onDescriptionChange: (String) -> Unit,
-    spacing: com.cpen321.usermanagement.ui.theme.Spacing
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(spacing.medium)) {
-        OutlinedTextField(
-            value = topic,
-            onValueChange = onTopicChange,
-            modifier = Modifier.testTag("discussion_topic_input"),
-            label = { Text("Topic") },
-            singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = colorResource(R.color.primary),
-                unfocusedBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
-            ),
-            shape = RoundedCornerShape(12.dp)
-        )
-        OutlinedTextField(
-            value = description,
-            onValueChange = onDescriptionChange,
-            modifier = Modifier.testTag("discussion_description_input"),
-            label = { Text("Description (optional)") },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = colorResource(R.color.primary),
-                unfocusedBorderColor = colorResource(R.color.text_secondary).copy(alpha = 0.3f)
-            ),
-            shape = RoundedCornerShape(12.dp),
-            minLines = 3
-        )
-    }
-}
-
-
-
-@Composable
 private fun DiscussionItemCard(
     discussion: DiscussionListResponse,
     onClick: (String) -> Unit
